@@ -9,6 +9,11 @@
 <body>
 
 <!-- ============================================================
+     LOGIN SCREEN — maneja auth sin redirecciones
+     ============================================================ -->
+
+
+<!-- ============================================================
      TOAST CONTAINER
      ============================================================ -->
 <div class="toast-container" id="toastContainer"></div>
@@ -499,12 +504,12 @@ import {
 
 // ── Firebase config ──
 const firebaseConfig = {
-  apiKey:            "TU_API_KEY",
-  authDomain:        "TU_PROJECT.firebaseapp.com",
-  projectId:         "TU_PROJECT_ID",
-  storageBucket:     "TU_PROJECT.appspot.com",
-  messagingSenderId: "TU_SENDER_ID",
-  appId:             "TU_APP_ID"
+  apiKey:            "AIzaSyDwdJYoUblnjFR312_JwcZg1Q9QzaUL7zc",
+  authDomain:        "kayra-cotizaciones.firebaseapp.com",
+  projectId:         "kayra-cotizaciones",
+  storageBucket:     "kayra-cotizaciones.firebasestorage.app",
+  messagingSenderId: "987228375495",
+  appId:             "1:987228375495:web:9b37fe2b95a1d2bdbdb1e2"
 };
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -522,34 +527,23 @@ let editingCotId = null;
 let afterClienteSave = null; // callback para cotización
 
 // ── Auth guard ──
-// Timeout de seguridad: si Firebase no responde en 5s, redirigir al login
-const authTimeout = setTimeout(() => {
-  window.location.href = 'index.html';
-}, 5000);
-
-onAuthStateChanged(auth, user => {
-  clearTimeout(authTimeout);
-  if (!user) {
-    window.location.href = 'index.html';
-    return;
-  }
-  if (!WHITELIST.includes(user.email)) {
-    signOut(auth).then(() => { window.location.href = 'index.html'; });
+const unsubApp = onAuthStateChanged(auth, user => {
+  unsubApp();
+  if (!user || !WHITELIST.includes(user.email)) {
+    // Pequeño delay para evitar race con index.html
+    setTimeout(() => { window.location.href = 'index.html'; }, 200);
     return;
   }
   currentUser = user;
-  document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
-  document.getElementById('userEmail').textContent = user.email;
+  document.getElementById('userName').textContent    = user.displayName || user.email.split('@')[0];
+  document.getElementById('userEmail').textContent   = user.email;
   const av = document.getElementById('userAvatar');
-  if (user.photoURL) {
-    av.innerHTML = `<img src="${user.photoURL}" alt="">`;
-  } else {
-    av.textContent = (user.displayName || user.email)[0].toUpperCase();
-  }
+  if (user.photoURL) { av.innerHTML = `<img src="${user.photoURL}" alt="">`; }
+  else { av.textContent = (user.displayName || user.email)[0].toUpperCase(); }
   init();
 });
 
-window.logout = () => signOut(auth).then(() => window.location.href = 'index.html');
+window.logout = () => signOut(auth).then(() => { window.location.href = 'index.html'; });
 
 // ── Init ──
 async function init() {
