@@ -189,6 +189,7 @@
       </div>
 
       <div class="filters-bar">
+        <div id="buscadorCot"></div>
         <select class="input" id="filtroEstado" onchange="loadCotizaciones()" style="max-width:160px">
           <option value="">Todos los estados</option>
           <option>Cotización</option><option>Pendiente</option>
@@ -233,6 +234,9 @@
           Nuevo cliente
         </button>
       </div>
+      <div class="filters-bar">
+        <div id="buscadorClientes"></div>
+      </div>
       <div class="card">
         <div class="table-wrap">
           <table class="table">
@@ -256,6 +260,9 @@
           Agregar servicio
         </button>
       </div>
+      <div class="filters-bar">
+        <div id="buscadorCatalogo"></div>
+      </div>
       <div id="catalogoContent"><div class="loading-page"><div class="spinner"></div></div></div>
     </div>
 
@@ -272,6 +279,7 @@
         </button>
       </div>
       <div class="filters-bar">
+        <div id="buscadorGastos"></div>
         <input type="month" class="input" id="filtroGastoMes" onchange="loadGastos()" style="max-width:200px">
       </div>
       <div class="grid-2" style="margin-bottom:16px">
@@ -589,6 +597,9 @@ let afterClienteSave = null; // callback para cotización
 let comboCliente = null; // controlador del buscador de cliente en el modal de cotización
 let cotizacionesActuales = [];         // última lista cargada (para ordenar en la tabla)
 let cotSort = { campo:null, dir:'asc' }; // estado de ordenamiento de la tabla
+let gastosActuales = [];               // última lista de gastos cargada (para filtrar en la tabla)
+// Texto de búsqueda activo por página (filtran las listas ya cargadas en memoria)
+let cotFiltroTexto = '', clienteFiltroTexto = '', catalogoFiltroTexto = '', gastoFiltroTexto = '';
 
 // ── Auth guard ──
 const unsubApp = onAuthStateChanged(auth, user => {
@@ -619,6 +630,16 @@ async function init() {
   const mesActual = new Date().toISOString().slice(0,7);
   document.getElementById('filtroMes').value = mesActual;
   document.getElementById('filtroGastoMes').value = mesActual;
+
+  // Buscadores (lupa) de cada listado
+  document.getElementById('buscadorCot').outerHTML      = buscadorHtml('buscadorCot', 'Buscar número, cliente, temática...');
+  document.getElementById('buscadorClientes').outerHTML = buscadorHtml('buscadorClientes', 'Buscar por nombre, teléfono, dirección...');
+  document.getElementById('buscadorCatalogo').outerHTML = buscadorHtml('buscadorCatalogo', 'Buscar servicio, categoría...');
+  document.getElementById('buscadorGastos').outerHTML   = buscadorHtml('buscadorGastos', 'Buscar descripción, categoría, cotización...');
+  initBuscador('buscadorCot',      val => { cotFiltroTexto      = val; renderCotizaciones(); });
+  initBuscador('buscadorClientes', val => { clienteFiltroTexto  = val; renderClientes(); });
+  initBuscador('buscadorCatalogo', val => { catalogoFiltroTexto = val; renderCatalogo(); });
+  initBuscador('buscadorGastos',   val => { gastoFiltroTexto    = val; renderGastos(); });
 }
 
 // ── Navigation ──
@@ -768,6 +789,37 @@ function comboAttach(root, { items, getLabel, getSub, getId, onSelect, hiddenSel
 }
 
 // ============================================================
+// BUSCADOR EXPANDIBLE (lupa) — filtra tablas ya cargadas en memoria,
+// sin volver a consultar Firestore.
+// ============================================================
+function initBuscador(id, onFiltrar) {
+  const wrap  = document.getElementById(id);
+  if (!wrap) return;
+  const btn   = wrap.querySelector('.search-btn');
+  const input = wrap.querySelector('.search-input');
+  function cerrar() {
+    wrap.classList.remove('open');
+    input.value = '';
+    onFiltrar('');
+  }
+  btn.addEventListener('click', () => {
+    if (wrap.classList.contains('open') && !input.value) { cerrar(); }
+    else { wrap.classList.add('open'); input.focus(); }
+  });
+  input.addEventListener('input', () => onFiltrar(input.value));
+  input.addEventListener('keydown', e => { if (e.key === 'Escape') cerrar(); });
+  input.addEventListener('blur', () => { if (!input.value) wrap.classList.remove('open'); });
+}
+function buscadorHtml(id, placeholder) {
+  return `<div class="search-box" id="${id}">
+    <button type="button" class="search-btn" title="Buscar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <input type="text" class="search-input" placeholder="${placeholder}">
+  </div>`;
+}
+
+// ============================================================
 // LOGS / REGISTROS  — registra cada acción hecha en el sistema
 // ============================================================
 async function logAccion(accion, entidad, detalle) {
@@ -839,15 +891,22 @@ async function loadClientes(render = false) {
 }
 function renderClientes() {
   const tbody = document.getElementById('clientesTbody');
-  if (!clientes.length) {
-    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><h3>Sin clientes</h3><p>Agrega tu primer cliente</p></div></td></tr>`;
+  let lista = clientes;
+  if (clienteFiltroTexto) {
+    const q = normalizarTexto(clienteFiltroTexto);
+    lista = lista.filter(c => normalizarTexto([c.nombre,c.telefono,c.direccion].join(' ')).includes(q));
+  }
+  if (!lista.length) {
+    tbody.innerHTML = clienteFiltroTexto
+      ? `<tr><td colspan="4"><div class="empty-state"><h3>Sin resultados</h3><p>Ningún cliente coincide con “${escapeHtml(clienteFiltroTexto)}”</p></div></td></tr>`
+      : `<tr><td colspan="4"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><h3>Sin clientes</h3><p>Agrega tu primer cliente</p></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = clientes.map(c => `
+  tbody.innerHTML = lista.map(c => `
     <tr>
-      <td><strong>${c.nombre}</strong></td>
-      <td>${c.telefono||'—'}</td>
-      <td>${c.direccion||'—'}</td>
+      <td><strong>${escapeHtml(c.nombre)}</strong></td>
+      <td>${escapeHtml(c.telefono)||'—'}</td>
+      <td>${escapeHtml(c.direccion)||'—'}</td>
       <td>
         <div class="table-actions">
           <button class="btn btn-ghost btn-icon" onclick="openClienteModal(false,'${c.id}')" title="Editar">
@@ -933,13 +992,20 @@ async function loadCatalogo(render = false) {
 }
 function renderCatalogo() {
   const container = document.getElementById('catalogoContent');
-  if (!catalogo.length) {
-    container.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state"><h3>Sin servicios</h3><p>Agrega los servicios que ofreces</p></div></div></div>`;
+  let lista = catalogo;
+  if (catalogoFiltroTexto) {
+    const q = normalizarTexto(catalogoFiltroTexto);
+    lista = lista.filter(s => normalizarTexto([s.nombre,s.categoria,s.descripcion].join(' ')).includes(q));
+  }
+  if (!lista.length) {
+    container.innerHTML = catalogoFiltroTexto
+      ? `<div class="card"><div class="card-body"><div class="empty-state"><h3>Sin resultados</h3><p>Ningún servicio coincide con “${escapeHtml(catalogoFiltroTexto)}”</p></div></div></div>`
+      : `<div class="card"><div class="card-body"><div class="empty-state"><h3>Sin servicios</h3><p>Agrega los servicios que ofreces</p></div></div></div>`;
     return;
   }
   // Agrupar por categoría
   const grupos = {};
-  catalogo.forEach(s => {
+  lista.forEach(s => {
     const cat = s.categoria || 'Sin categoría';
     if (!grupos[cat]) grupos[cat] = [];
     grupos[cat].push(s);
@@ -1090,6 +1156,10 @@ function renderCotizaciones() {
   });
 
   let cots = [...cotizacionesActuales];
+  if (cotFiltroTexto) {
+    const q = normalizarTexto(cotFiltroTexto);
+    cots = cots.filter(c => normalizarTexto([c.numero,c.cliente_nombre,c.tematica,c.estado].join(' ')).includes(q));
+  }
   if (cotSort.campo) {
     const campo = cotSort.campo, dir = cotSort.dir === 'asc' ? 1 : -1;
     cots.sort((a,b) => {
@@ -1104,7 +1174,9 @@ function renderCotizaciones() {
   }
 
   if (!cots.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><h3>Sin cotizaciones</h3><p>Crea tu primera cotización</p></div></td></tr>`;
+    tbody.innerHTML = cotFiltroTexto
+      ? `<tr><td colspan="7"><div class="empty-state"><h3>Sin resultados</h3><p>Ninguna cotización coincide con “${escapeHtml(cotFiltroTexto)}”</p></div></td></tr>`
+      : `<tr><td colspan="7"><div class="empty-state"><h3>Sin cotizaciones</h3><p>Crea tu primera cotización</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = cots.map(c => {
@@ -1579,17 +1651,27 @@ window.loadGastos = async function() {
   if (mesAnio) constraints.unshift(where('mes_anio','==',mesAnio));
   const q = query(collection(db,'gastos'), ...constraints);
   const snap = await getDocs(q);
-  const gastos = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-  const total  = gastos.reduce((s,g) => s + (g.monto||0), 0);
-  document.getElementById('gastosTotalMes').textContent = formatMoney(total);
-  document.getElementById('gastosCount').textContent    = gastos.length;
+  gastosActuales = snap.docs.map(d => ({ id:d.id, ...d.data() }));
   document.getElementById('gastosSubtitle').textContent = mesVal || 'Todos';
+  renderGastos();
+};
+function renderGastos() {
+  let lista = gastosActuales;
+  if (gastoFiltroTexto) {
+    const q = normalizarTexto(gastoFiltroTexto);
+    lista = lista.filter(g => normalizarTexto([g.descripcion,g.categoria,g.cot_numero,g.cot_cliente].join(' ')).includes(q));
+  }
+  const total = lista.reduce((s,g) => s + (g.monto||0), 0);
+  document.getElementById('gastosTotalMes').textContent = formatMoney(total);
+  document.getElementById('gastosCount').textContent    = lista.length;
   const tbody = document.getElementById('gastosTbody');
-  if (!gastos.length) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><h3>Sin gastos registrados</h3></div></td></tr>`;
+  if (!lista.length) {
+    tbody.innerHTML = gastoFiltroTexto
+      ? `<tr><td colspan="6"><div class="empty-state"><h3>Sin resultados</h3><p>Ningún gasto coincide con “${escapeHtml(gastoFiltroTexto)}”</p></div></td></tr>`
+      : `<tr><td colspan="6"><div class="empty-state"><h3>Sin gastos registrados</h3></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = gastos.map(g => `
+  tbody.innerHTML = lista.map(g => `
     <tr>
       <td>${g.fecha||'—'}</td>
       <td>${escapeHtml(g.descripcion)||'—'}</td>
@@ -1607,7 +1689,7 @@ window.loadGastos = async function() {
         </div>
       </td>
     </tr>`).join('');
-};
+}
 // Trae una lista ligera de cotizaciones (más recientes primero) para el selector de gastos
 async function cotizacionesParaSelect() {
   const snap = await getDocs(query(collection(db,'cotizaciones'), orderBy('creado_en','desc'), limit(300)));

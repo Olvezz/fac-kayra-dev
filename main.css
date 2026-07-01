@@ -458,11 +458,34 @@ p  { line-height: 1.6; }
   max-height:230px; overflow-y:auto;
   box-shadow:0 10px 28px rgba(20,20,30,0.14);
 }
-.combo-list.open { display:block; }
-.combo-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 12px; cursor:pointer; font-size:0.85rem; }
+.combo-list.open { display:block; background:#FCFCFE; }
+.combo-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; cursor:pointer; font-size:0.85rem; border-bottom:1px solid var(--border); }
+.combo-item:last-child { border-bottom:none; }
 .combo-item:hover, .combo-item.active { background:var(--morado-ghost); }
+.combo-item span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .combo-item small { color:var(--text-secondary); font-size:0.75rem; white-space:nowrap; flex-shrink:0; }
-.combo-empty { padding:12px; color:var(--text-secondary); font-size:0.82rem; text-align:center; }
+.combo-empty { padding:14px 12px; color:var(--text-secondary); font-size:0.82rem; text-align:center; }
+
+/* ── Buscador expandible (lupa) para filtrar tablas ── */
+.search-box {
+  display:flex; align-items:center;
+  background:#fff; border:1px solid var(--border); border-radius:20px;
+  transition:border-color .15s, box-shadow .15s;
+}
+.search-box .search-btn {
+  display:flex; align-items:center; justify-content:center;
+  width:34px; height:34px; flex-shrink:0;
+  border:none; background:transparent; color:var(--text-secondary); cursor:pointer; border-radius:50%;
+}
+.search-box .search-btn:hover { color:var(--morado); background:var(--morado-ghost); }
+.search-box .search-btn svg { width:16px; height:16px; }
+.search-box .search-input {
+  width:0; opacity:0; border:none; outline:none; background:transparent;
+  font-size:0.85rem; padding:0; color:var(--text);
+  transition:width .22s ease, opacity .18s ease, padding .22s ease;
+}
+.search-box.open { border-color:var(--morado); box-shadow:0 0 0 3px var(--morado-ghost); }
+.search-box.open .search-input { width:210px; opacity:1; padding-right:12px; }
 
 /* ── Galería de eventos realizados ── */
 .galeria-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }
