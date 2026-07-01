@@ -144,9 +144,14 @@
         </button>
       </div>
 
+      <div class="filters-bar">
+        <input type="month" class="input" id="filtroDashMes" onchange="loadDashboard()" style="max-width:180px">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtroDashMes').value=new Date().toISOString().slice(0,7);loadDashboard()">Mes actual</button>
+      </div>
+
       <div class="grid-4" id="dashMetrics" style="margin-bottom:20px">
-        <div class="metric-card"><div class="metric-label">Cobrado este mes</div><div class="metric-value morado" id="mCobrado">—</div></div>
-        <div class="metric-card"><div class="metric-label">Gastos este mes</div><div class="metric-value" id="mGastos">—</div></div>
+        <div class="metric-card"><div class="metric-label">Cobrado en el mes</div><div class="metric-value morado" id="mCobrado">—</div></div>
+        <div class="metric-card"><div class="metric-label">Gastos en el mes</div><div class="metric-value" id="mGastos">—</div></div>
         <div class="metric-card"><div class="metric-label">Beneficio neto</div><div class="metric-value verde" id="mBeneficio">—</div></div>
         <div class="metric-card"><div class="metric-label">Cotizaciones</div><div class="metric-value turquesa" id="mCotizaciones">—</div></div>
       </div>
@@ -155,7 +160,7 @@
         <!-- Próximos eventos -->
         <div class="card">
           <div class="card-header">
-            <span class="card-title">🎈 Próximos eventos</span>
+            <span class="card-title" id="dashProximosTitulo">🎈 Próximos eventos</span>
           </div>
           <div class="card-body" id="dashProximos">
             <div class="loading-page"><div class="spinner"></div></div>
@@ -306,8 +311,11 @@
     <div class="page" id="page-cierres">
       <div class="page-header">
         <div><div class="page-title">Cierres Mensuales</div></div>
-        <button class="btn btn-primary" onclick="cerrarMesActual()">
-          Calcular cierre de este mes
+      </div>
+      <div class="filters-bar">
+        <input type="month" class="input" id="filtroCierreMes" style="max-width:180px">
+        <button class="btn btn-primary" onclick="calcularCierreMes()">
+          Calcular cierre del mes elegido
         </button>
       </div>
       <div id="cierresContent"><div class="loading-page"><div class="spinner"></div></div></div>
@@ -624,12 +632,14 @@ window.logout = () => signOut(auth).then(() => { window.location.href = 'index.h
 async function init() {
   appConfig = await loadConfig();
   await Promise.all([loadClientes(), loadCatalogo()]);
-  loadDashboard();
 
   // Set mes actual en filtros
   const mesActual = new Date().toISOString().slice(0,7);
   document.getElementById('filtroMes').value = mesActual;
   document.getElementById('filtroGastoMes').value = mesActual;
+  document.getElementById('filtroDashMes').value = mesActual;
+  document.getElementById('filtroCierreMes').value = mesActual;
+  loadDashboard();
 
   // Buscadores (lupa) de cada listado
   document.getElementById('buscadorCot').outerHTML      = buscadorHtml('buscadorCot', 'Buscar número, cliente, temática...');
@@ -1803,12 +1813,20 @@ async function loadCierres() {
       </tr>`).join('')}
     </tbody></table></div></div>`;
 }
-window.cerrarMesActual = async function() {
-  const hoy = new Date();
-  const mes  = hoy.getMonth() + 1;
-  const anio = hoy.getFullYear();
+window.calcularCierreMes = async function() {
+  const mesVal = document.getElementById('filtroCierreMes').value; // YYYY-MM
+  if (!mesVal) { toast('Elige el mes que quieres cerrar','error'); return; }
+  const [anioStr, mesStr] = mesVal.split('-');
+  const mes  = Number(mesStr);
+  const anio = Number(anioStr);
   const mesAnio = `${String(mes).padStart(2,'0')}-${anio}`;
-  if (!confirm(`¿Calcular el cierre de ${mes}/${anio}?`)) return;
+
+  // Si ese mes ya tiene un cierre calculado, avisar antes de recalcular
+  const yaExiste = await getDoc(doc(db,'cierres',mesAnio));
+  const mensaje = yaExiste.exists()
+    ? `El cierre de ${mes}/${anio} ya existe. ¿Recalcularlo con los datos actuales?`
+    : `¿Calcular el cierre de ${mes}/${anio}?`;
+  if (!confirm(mensaje)) return;
   try {
     const [cots, gastos] = await Promise.all([
       getDocs(query(collection(db,'cotizaciones'), where('mes_anio','==',mesAnio))),
@@ -1977,10 +1995,18 @@ window.saveFoto = async function(id) {
 // ============================================================
 async function loadDashboard() {
   const hoy = new Date();
-  const mes = hoy.getMonth()+1;
-  const anio = hoy.getFullYear();
-  const mesAnio = `${String(mes).padStart(2,'0')}-${anio}`;
-  document.getElementById('dashSubtitle').textContent = `${['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][mes-1]} ${anio}`;
+  const NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  // Mes a consultar: el elegido en el selector, o el actual si está vacío
+  let mesInput = document.getElementById('filtroDashMes').value; // YYYY-MM
+  if (!mesInput) {
+    mesInput = hoy.toISOString().slice(0,7);
+    document.getElementById('filtroDashMes').value = mesInput;
+  }
+  const [anioSel, mesSel] = mesInput.split('-').map(Number);
+  const esMesActual = anioSel === hoy.getFullYear() && mesSel === hoy.getMonth()+1;
+  const mesAnio = `${String(mesSel).padStart(2,'0')}-${anioSel}`;
+  document.getElementById('dashSubtitle').textContent = `${NOMBRES_MES[mesSel-1]} ${anioSel}`;
 
   const [cotSnap, gastoSnap] = await Promise.all([
     getDocs(query(collection(db,'cotizaciones'), where('mes_anio','==',mesAnio))),
@@ -1998,17 +2024,18 @@ async function loadDashboard() {
   document.getElementById('mBeneficio').textContent   = formatMoney(beneficio);
   document.getElementById('mCotizaciones').textContent = cots.length;
 
-  // Próximos eventos
-  const proximos = cots
-    .filter(c => c.fecha_evento && (c.estado==='Reservado'||c.estado==='Pagada'))
-    .map(c => ({ ...c, _fe: c.fecha_evento?.toDate ? c.fecha_evento.toDate() : new Date(c.fecha_evento) }))
-    .filter(c => c._fe >= hoy)
-    .sort((a,b) => a._fe - b._fe)
-    .slice(0,5);
+  // Próximos eventos (mes actual) / Eventos del mes (mes pasado o futuro elegido)
+  document.getElementById('dashProximosTitulo').textContent = esMesActual ? '🎈 Próximos eventos' : `🎈 Eventos de ${NOMBRES_MES[mesSel-1]}`;
+  let proximos = cots
+    .filter(c => c.fecha_evento && (c.estado==='Reservado'||c.estado==='Pagada'||c.estado==='Realizado'))
+    .map(c => ({ ...c, _fe: c.fecha_evento?.toDate ? c.fecha_evento.toDate() : new Date(c.fecha_evento) }));
+  if (esMesActual) proximos = proximos.filter(c => c._fe >= hoy);
+  proximos = proximos.sort((a,b) => a._fe - b._fe).slice(0,5);
 
   const proxDiv = document.getElementById('dashProximos');
   if (!proximos.length) {
-    proxDiv.innerHTML = `<div class="empty-state" style="padding:30px 0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg><p>Sin eventos próximos</p></div>`;
+    const msg = esMesActual ? 'Sin eventos próximos' : 'Sin eventos ese mes';
+    proxDiv.innerHTML = `<div class="empty-state" style="padding:30px 0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg><p>${msg}</p></div>`;
   } else {
     proxDiv.innerHTML = proximos.map(c => {
       const dias = Math.ceil((c._fe - hoy) / 86400000);
@@ -2022,7 +2049,7 @@ async function loadDashboard() {
           <div style="font-size:0.78rem;color:var(--text-secondary)">${c.tematica||'Sin temática'}${c.hora_evento?' · '+c.hora_evento:''}</div>
         </div>
         <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:0.75rem;font-weight:700;color:${dias<=2?'#EF4444':dias<=5?'#D97706':'var(--turquesa-dark)'}">${dias===0?'¡HOY!':dias===1?'Mañana':'En '+dias+' días'}</div>
+          ${esMesActual ? `<div style="font-size:0.75rem;font-weight:700;color:${dias<=2?'#EF4444':dias<=5?'#D97706':'var(--turquesa-dark)'}">${dias===0?'¡HOY!':dias===1?'Mañana':'En '+dias+' días'}</div>` : ''}
           ${badgeHtml(c.estado)}
         </div>
       </div>`;
@@ -2033,7 +2060,7 @@ async function loadDashboard() {
   const recDiv = document.getElementById('dashRecientes');
   const recientes = cots.slice(0,6);
   if (!recientes.length) {
-    recDiv.innerHTML = `<div class="empty-state" style="padding:30px"><p>Sin cotizaciones este mes</p></div>`;
+    recDiv.innerHTML = `<div class="empty-state" style="padding:30px"><p>Sin cotizaciones ese mes</p></div>`;
   } else {
     recDiv.innerHTML = recientes.map(c => `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--border)">
