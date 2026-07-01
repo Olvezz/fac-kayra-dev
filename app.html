@@ -145,8 +145,12 @@
       </div>
 
       <div class="filters-bar">
-        <input type="month" class="input" id="filtroDashMes" oninput="loadDashboard()" style="max-width:180px">
+        <input type="month" class="input" id="filtroDashMes" oninput="loadDashboard()" onchange="loadDashboard()" style="max-width:180px">
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtroDashMes').value=new Date().toISOString().slice(0,7);loadDashboard()">Mes actual</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadDashboard()" title="Recargar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:-2px"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Actualizar
+        </button>
       </div>
 
       <div class="grid-4" id="dashMetrics" style="margin-bottom:20px">
@@ -543,7 +547,7 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label>Abono recibido (RD$) <small style="color:var(--text-secondary);font-weight:400">— No aparece en el PDF</small></label>
+            <label>Abono recibido (RD$) <small style="color:var(--text-secondary);font-weight:400">— se incluye en el PDF y WhatsApp si es mayor a 0</small></label>
             <input class="input" type="number" id="cotAbono" value="0" min="0" oninput="recalcTotales()">
           </div>
           <div class="form-group">
@@ -1645,7 +1649,19 @@ async function construirPDFDoc(c) {
   });
   pdoc.setFillColor(...morado); pdoc.rect(tx-4,y+1,W-M-tx+4+M,9,'F');
   pdoc.setFont('helvetica','bold'); pdoc.setFontSize(10); pdoc.setTextColor(255,255,255);
-  pdoc.text('TOTAL', tx, y+7); pdoc.text(formatMoney(c.total), W-M, y+7, {align:'right'}); y+=18;
+  pdoc.text('TOTAL', tx, y+7); pdoc.text(formatMoney(c.total), W-M, y+7, {align:'right'}); y+=15;
+  // Abono / saldo pendiente (solo si se registró un abono)
+  if (Number(c.abono) > 0) {
+    if (y > 255) { pdoc.addPage(); y = 20; }
+    const saldo = Math.max((c.total||0) - Number(c.abono), 0);
+    [['Abono recibido', formatMoney(c.abono)], ['Saldo pendiente', formatMoney(saldo)]].forEach(([l,v]) => {
+      pdoc.setFont('helvetica','normal'); pdoc.setFontSize(8.5);
+      pdoc.setTextColor(...gris); pdoc.text(l, tx, y);
+      pdoc.setFont('helvetica','bold'); pdoc.setTextColor(...morado); pdoc.text(v, W-M, y, {align:'right'});
+      y += 6;
+    });
+  }
+  y += 3;
   // Footer
   pdoc.setDrawColor(...grisClaro); pdoc.line(M,283,W-M,283);
   pdoc.setFont('helvetica','normal'); pdoc.setFontSize(7.5); pdoc.setTextColor(...gris);
@@ -1697,6 +1713,11 @@ function mensajeWA(c) {
   L.push('');
   if (Number(c.transporte) > 0) L.push(`Transporte: RD$${Number(c.transporte).toLocaleString('es-DO')}`);
   L.push(`*TOTAL: ${formatMoney(c.total)}*`);
+  if (Number(c.abono) > 0) {
+    const saldo = Math.max((c.total||0) - Number(c.abono), 0);
+    L.push(`Abono recibido: ${formatMoney(c.abono)}`);
+    L.push(`*Saldo pendiente: ${formatMoney(saldo)}*`);
+  }
   L.push('');
   L.push('Cualquier pregunta, ¡aquí estamos! 💜');
   return L.join('\n');
@@ -2106,10 +2127,17 @@ async function loadDashboard() {
   const inicioMes = new Date(anioSel, mesSel-1, 1);
   const finMes    = new Date(anioSel, mesSel, 1);
 
+  // En el mes actual, "próximos eventos" no debe cortarse en el fin de mes:
+  // un evento el día 1 del mes siguiente sigue siendo "próximo" si faltan pocos días.
+  // Solo al elegir explícitamente otro mes se acota la búsqueda a ese mes exacto.
+  const eventosQuery = esMesActual
+    ? query(collection(db,'cotizaciones'), where('fecha_evento','>=',hoy))
+    : query(collection(db,'cotizaciones'), where('fecha_evento','>=',inicioMes), where('fecha_evento','<',finMes));
+
   const [cotSnap, gastoSnap, eventosSnap] = await Promise.all([
     getDocs(query(collection(db,'cotizaciones'), where('mes_anio','==',mesAnio))),
     getDocs(query(collection(db,'gastos'), where('mes_anio','==',mesAnio))),
-    getDocs(query(collection(db,'cotizaciones'), where('fecha_evento','>=',inicioMes), where('fecha_evento','<',finMes))),
+    getDocs(eventosQuery),
   ]);
   const cots   = cotSnap.docs.map(d=>({id:d.id,...d.data()}));
   const gastos = gastoSnap.docs.map(d=>d.data());
