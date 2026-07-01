@@ -2106,7 +2106,7 @@ window.saveFoto = async function(id) {
 // ============================================================
 // DASHBOARD
 // ============================================================
-async function loadDashboard() {
+window.loadDashboard = async function() {
   const hoy = new Date();
   const NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -2202,7 +2202,7 @@ async function loadDashboard() {
         </div>
       </div>`).join('');
   }
-}
+};
 
 // ============================================================
 // GLOBAL: modal helpers, search
