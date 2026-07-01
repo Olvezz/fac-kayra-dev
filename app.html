@@ -286,6 +286,7 @@
       <div class="filters-bar">
         <div id="buscadorGastos"></div>
         <input type="month" class="input" id="filtroGastoMes" onchange="loadGastos()" style="max-width:200px">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtroGastoMes').value='';loadGastos()">Limpiar</button>
       </div>
       <div class="grid-2" style="margin-bottom:16px">
         <div class="metric-card">
@@ -646,10 +647,32 @@ async function init() {
   document.getElementById('buscadorClientes').outerHTML = buscadorHtml('buscadorClientes', 'Buscar por nombre, teléfono, dirección...');
   document.getElementById('buscadorCatalogo').outerHTML = buscadorHtml('buscadorCatalogo', 'Buscar servicio, categoría...');
   document.getElementById('buscadorGastos').outerHTML   = buscadorHtml('buscadorGastos', 'Buscar descripción, categoría, cotización...');
-  initBuscador('buscadorCot',      val => { cotFiltroTexto      = val; renderCotizaciones(); });
+  // Al escribir en el buscador, se ignoran los filtros de estado/mes y se
+  // recarga sin restricciones para poder buscar en TODAS las cotizaciones/gastos,
+  // no solo en los que ya estaban visibles por el filtro activo.
+  initBuscador('buscadorCot', async val => {
+    cotFiltroTexto = val;
+    const fEstado = document.getElementById('filtroEstado');
+    const fMes    = document.getElementById('filtroMes');
+    if (val && (fEstado.value || fMes.value)) {
+      fEstado.value = ''; fMes.value = '';
+      await loadCotizaciones(); // ya llama a renderCotizaciones() al terminar
+    } else {
+      renderCotizaciones();
+    }
+  });
   initBuscador('buscadorClientes', val => { clienteFiltroTexto  = val; renderClientes(); });
   initBuscador('buscadorCatalogo', val => { catalogoFiltroTexto = val; renderCatalogo(); });
-  initBuscador('buscadorGastos',   val => { gastoFiltroTexto    = val; renderGastos(); });
+  initBuscador('buscadorGastos', async val => {
+    gastoFiltroTexto = val;
+    const fMes = document.getElementById('filtroGastoMes');
+    if (val && fMes.value) {
+      fMes.value = '';
+      await loadGastos(); // ya llama a renderGastos() al terminar
+    } else {
+      renderGastos();
+    }
+  });
 }
 
 // ── Navigation ──
