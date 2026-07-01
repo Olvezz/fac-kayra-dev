@@ -547,8 +547,6 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc,
   updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, runTransaction
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 // ── Firebase config ──
 const firebaseConfig = {
@@ -562,7 +560,6 @@ const firebaseConfig = {
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
-const storage = getStorage(app);
 
 const WHITELIST = ['kayrafullparty@gmail.com','kayravale14@gmail.com','oliverjunior071914@gmail.com'];
 const COT_PREFIX = 'KFP';
@@ -1747,6 +1744,29 @@ window.openFotoModal = async function(id) {
   document.getElementById('modalOverlay').classList.add('open');
 };
 
+// Comprime y redimensiona una imagen en el navegador y devuelve un data URL (JPEG).
+// Evita usar Firebase Storage (que requiere configurar CORS): la foto se guarda
+// directamente en Firestore ya reducida, bien por debajo del límite de 1 MB.
+function comprimirImagen(file, maxLado = 1280, calidad = 0.75) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = () => { img.src = reader.result; };
+    reader.onerror = rej;
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height && width > maxLado) { height = Math.round(height * maxLado / width); width = maxLado; }
+      else if (height > maxLado)             { width = Math.round(width * maxLado / height); height = maxLado; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      res(canvas.toDataURL('image/jpeg', calidad));
+    };
+    img.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+}
+
 window.saveFoto = async function(id) {
   const btn = document.getElementById('fotoSaveBtn');
   const file = document.getElementById('fFotoArchivo').files[0];
@@ -1754,11 +1774,14 @@ window.saveFoto = async function(id) {
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
     if (file) {
-      // Subir a Firebase Storage
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-      const refImg = storageRef(storage, `eventos/${id}/foto_${Date.now()}.${ext}`);
-      await uploadBytes(refImg, file);
-      url = await getDownloadURL(refImg);
+      // Comprimir la imagen a data URL (se guarda dentro de Firestore)
+      url = await comprimirImagen(file);
+      // Seguridad: si aún supera ~900 KB, comprimir más agresivo
+      if (url.length > 900000) url = await comprimirImagen(file, 1000, 0.6);
+      if (url.length > 1000000) {
+        toast('La imagen es muy grande incluso comprimida. Usa una foto más liviana o pega una URL.', 'error');
+        btn.disabled=false; btn.textContent='Guardar foto'; return;
+      }
     }
     if (!url) { toast('Elige un archivo o pega una URL','error'); btn.disabled=false; btn.textContent='Guardar foto'; return; }
     await updateDoc(doc(db,'cotizaciones',id), { foto_url: url, foto_en: serverTimestamp() });
@@ -1768,11 +1791,7 @@ window.saveFoto = async function(id) {
     if (document.getElementById('page-galeria').classList.contains('active')) loadGaleria();
   } catch(e) {
     console.error(e);
-    // Mensaje amable si Storage no está habilitado
-    const msg = /storage|CORS|unauthorized|bucket/i.test(e.message)
-      ? 'No se pudo subir el archivo (¿Firebase Storage habilitado?). Prueba pegando una URL de imagen.'
-      : 'Error al guardar la foto: ' + e.message;
-    toast(msg, 'error');
+    toast('Error al guardar la foto: ' + e.message, 'error');
     btn.disabled = false; btn.textContent = 'Guardar foto';
   }
 };
