@@ -415,9 +415,11 @@
         <div class="form-row">
           <div class="form-group">
             <label>Cliente *</label>
-            <select class="input" id="cotClienteId" onchange="onClienteSelect(this.value)" required>
-              <option value="">— Selecciona un cliente —</option>
-            </select>
+            <div class="combo" id="comboCliente">
+              <input type="text" class="input combo-input" placeholder="Busca por nombre o teléfono..." autocomplete="off">
+              <input type="hidden" id="cotClienteId" required>
+              <div class="combo-list"></div>
+            </div>
           </div>
           <div class="form-group" style="display:flex;align-items:flex-end">
             <button type="button" class="btn btn-secondary btn-sm" onclick="openClienteModal(true)">
@@ -584,6 +586,7 @@ let clientes    = [];
 let catalogo    = [];
 let editingCotId = null;
 let afterClienteSave = null; // callback para cotización
+let comboCliente = null; // controlador del buscador de cliente en el modal de cotización
 let cotizacionesActuales = [];         // última lista cargada (para ordenar en la tabla)
 let cotSort = { campo:null, dir:'asc' }; // estado de ordenamiento de la tabla
 
@@ -679,6 +682,91 @@ function escapeHtml(s) {
 // Normaliza un teléfono a solo dígitos (para comparar clientes por número)
 function normalizarTel(t) { return String(t||'').replace(/\D/g,''); }
 
+// Formatea en vivo un input de teléfono como (XXX) XXX-XXXX, solo dígitos
+window.formatTelefonoInput = function(input) {
+  let d = input.value.replace(/\D/g,'').slice(0,10);
+  let out = d;
+  if (d.length > 6)      out = `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+  else if (d.length > 3) out = `(${d.slice(0,3)}) ${d.slice(3)}`;
+  else if (d.length > 0) out = `(${d}`;
+  input.value = out;
+};
+
+// Quita acentos y pasa a minúsculas, para comparar texto sin importar tildes
+const RE_DIACRITICOS = new RegExp('[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']', 'g');
+function normalizarTexto(s) {
+  return String(s||'').normalize('NFD').replace(RE_DIACRITICOS,'').toLowerCase();
+}
+
+// ============================================================
+// COMBO BUSCABLE — select con autocompletado (cliente / servicios)
+// ============================================================
+// root: contenedor .combo con .combo-input (texto), un <input> con id
+// propio para el valor (hidden o el que sea) y .combo-list (el desplegable).
+function comboAttach(root, { items, getLabel, getSub, getId, onSelect, hiddenSelector }) {
+  const input  = root.querySelector('.combo-input');
+  const hidden = hiddenSelector ? root.querySelector(hiddenSelector) : root.querySelector('input[type="hidden"]');
+  const list   = root.querySelector('.combo-list');
+  const idOf   = getId || (it => it.id);
+  let data = items || [];
+  let filtrados = [];
+  let activo = -1;
+
+  function render() {
+    if (!filtrados.length) {
+      list.innerHTML = `<div class="combo-empty">Sin resultados</div>`;
+    } else {
+      list.innerHTML = filtrados.map((it,i) => `
+        <div class="combo-item${i===activo?' active':''}" data-i="${i}">
+          <span>${escapeHtml(getLabel(it))}</span>
+          ${getSub ? `<small>${escapeHtml(getSub(it)||'')}</small>` : ''}
+        </div>`).join('');
+    }
+    list.classList.add('open');
+  }
+  function filtrar() {
+    const q = normalizarTexto(input.value);
+    filtrados = !q ? data : data.filter(it => normalizarTexto(getLabel(it)+' '+(getSub?getSub(it):'')).includes(q));
+    activo = -1;
+    render();
+  }
+  function cerrar() { list.classList.remove('open'); }
+  function elegir(it) {
+    hidden.value = idOf(it);
+    input.value  = getLabel(it);
+    cerrar();
+    if (onSelect) onSelect(it);
+  }
+  input.addEventListener('input', filtrar);
+  input.addEventListener('focus', filtrar);
+  input.addEventListener('blur', () => setTimeout(cerrar, 150));
+  input.addEventListener('keydown', e => {
+    if (!list.classList.contains('open') && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { filtrar(); return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); activo = Math.min(activo+1, filtrados.length-1); render(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); activo = Math.max(activo-1, 0); render(); }
+    else if (e.key === 'Enter') { if (activo>=0 && filtrados[activo]) { e.preventDefault(); elegir(filtrados[activo]); } }
+    else if (e.key === 'Escape') { cerrar(); }
+  });
+  list.addEventListener('mousedown', e => {
+    const el = e.target.closest('.combo-item');
+    if (!el) return;
+    e.preventDefault();
+    const it = filtrados[+el.dataset.i];
+    if (it) elegir(it);
+  });
+
+  return {
+    setItems(nuevos) { data = nuevos || []; },
+    clear() { hidden.value=''; input.value=''; cerrar(); },
+    setValue(id, opts) {
+      const it = data.find(x => idOf(x) === id);
+      if (it) { hidden.value = idOf(it); input.value = getLabel(it); if (!opts?.silent && onSelect) onSelect(it); }
+      else     { hidden.value = id || ''; }
+    },
+    setDisplay(texto) { input.value = texto || ''; }, // para mostrar un nombre guardado que ya no existe en la lista
+  };
+}
+
 // ============================================================
 // LOGS / REGISTROS  — registra cada acción hecha en el sistema
 // ============================================================
@@ -746,16 +834,7 @@ async function loadClientes(render = false) {
   const snap = await getDocs(q);
   clientes = snap.docs.map(d => ({ id:d.id, ...d.data() }));
   if (render) renderClientes();
-  // Actualizar select en modal de cotización
-  const sel = document.getElementById('cotClienteId');
-  const curVal = sel.value;
-  sel.innerHTML = '<option value="">— Selecciona un cliente —</option>';
-  clientes.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.id; opt.textContent = c.nombre;
-    sel.appendChild(opt);
-  });
-  if (curVal) sel.value = curVal;
+  if (comboCliente) comboCliente.setItems(clientes); // refresca la lista del buscador de la cotización
   document.getElementById('clientesSubtitle').textContent = `${clientes.length} clientes registrados`;
 }
 function renderClientes() {
@@ -789,7 +868,7 @@ window.openClienteModal = function(fromCot = false, editId = null) {
     <div class="form-group"><label>Nombre / Razón social *</label>
       <input class="input" id="fClienteNombre" value="${c?.nombre||''}" placeholder="Nombre completo" required></div>
     <div class="form-group"><label>Teléfono (WhatsApp)</label>
-      <input class="input" id="fClienteTelefono" value="${c?.telefono||''}" placeholder="(809) 000-0000"></div>
+      <input class="input" id="fClienteTelefono" value="${c?.telefono||''}" placeholder="(809) 000-0000" inputmode="numeric" oninput="formatTelefonoInput(this)"></div>
     <div class="form-group"><label>Dirección</label>
       <input class="input" id="fClienteDireccion" value="${c?.direccion||''}" placeholder="Santo Domingo"></div>
     <div class="form-group"><label>Notas internas</label>
@@ -1070,6 +1149,7 @@ window.openNuevaCotizacion = function() {
   document.getElementById('cotForm').reset();
   document.getElementById('cotItems').innerHTML = '';
   document.getElementById('cotClienteInfo').style.display = 'none';
+  comboCliente?.clear();
   document.getElementById('cotMetodoPago').value = appConfig.metodo_pago_default || 'Transferencia';
   recalcTotales();
   addItemRow();
@@ -1081,8 +1161,7 @@ window.openEditCotizacion = async function(id) {
   if (!snap.exists()) return;
   const c = snap.data();
   document.getElementById('cotModalTitle').textContent = `Editar ${c.numero}`;
-  document.getElementById('cotClienteId').value = c.cliente_id || '';
-  if (c.cliente_id) onClienteSelect(c.cliente_id);
+  comboCliente?.setValue(c.cliente_id || '');
   document.getElementById('cotFechaEvento').value = c.fecha_evento
     ? (c.fecha_evento.toDate ? c.fecha_evento.toDate() : new Date(c.fecha_evento)).toISOString().split('T')[0]
     : '';
@@ -1112,54 +1191,70 @@ window.onClienteSelect = function(clienteId) {
   }
 };
 
+// Inicializa el buscador de cliente (autocompletado) del modal de cotización
+comboCliente = comboAttach(document.getElementById('comboCliente'), {
+  items: clientes,
+  getLabel: c => c.nombre,
+  getSub:   c => c.telefono || '',
+  onSelect: c => onClienteSelect(c.id),
+});
+
 // ── Item rows ──
 window.addItemRow = function(item = null) {
   const tbody = document.getElementById('cotItems');
-  const idx   = tbody.children.length;
   const tr    = document.createElement('tr');
-  const svcs  = catalogo.map(s =>
-    `<option value="${s.id}" data-precio="${s.precio_final}" ${item?.catalogo_id===s.id?'selected':''}>${s.nombre} (${formatMoney(s.precio_final)})</option>`
-  ).join('');
   tr.innerHTML = `
     <td>
-      <select class="input" style="font-size:0.82rem" onchange="onServicioSelect(this,${idx})">
-        <option value="">— Selecciona —</option>${svcs}
-      </select>
+      <div class="combo combo-sm">
+        <input type="text" class="input combo-input" placeholder="Busca un servicio..." autocomplete="off" style="font-size:0.82rem">
+        <input type="hidden" class="svc-id">
+        <div class="combo-list"></div>
+      </div>
     </td>
-    <td><input type="number" class="input" value="${item?.cantidad||1}" min="1" oninput="recalcItem(${idx})" style="width:60px;padding:6px 8px"></td>
+    <td><input type="number" class="input inp-cant" value="${item?.cantidad||1}" min="1" oninput="recalcItem(this)" style="width:60px;padding:6px 8px"></td>
     <td>
       <div class="input-group">
         <span class="input-prefix" style="font-size:0.7rem">RD$</span>
-        <input type="number" class="input" value="${item?.precio_unitario||0}" min="0" oninput="recalcItem(${idx})" style="padding-left:30px;padding-top:6px;padding-bottom:6px">
+        <input type="number" class="input inp-precio" value="${item?.precio_unitario||0}" min="0" oninput="recalcItem(this)" style="padding-left:30px;padding-top:6px;padding-bottom:6px">
       </div>
     </td>
-    <td><input type="number" class="input" value="${item?.descuento||0}" min="0" max="100" oninput="recalcItem(${idx})" style="width:60px;padding:6px 8px"></td>
-    <td id="subtotal_${idx}" style="font-weight:600;color:var(--morado)">${formatMoney(item?.subtotal||0)}</td>
+    <td><input type="number" class="input inp-desc" value="${item?.descuento||0}" min="0" max="100" oninput="recalcItem(this)" style="width:60px;padding:6px 8px"></td>
+    <td class="subtotal-cell" style="font-weight:600;color:var(--morado)">${formatMoney(item?.subtotal||0)}</td>
     <td><button type="button" class="btn btn-ghost btn-icon" style="color:#EF4444" onclick="removeItemRow(this)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button></td>`;
   tbody.appendChild(tr);
-  if (item) recalcItem(idx);
+
+  comboAttach(tr.querySelector('.combo'), {
+    items: catalogo,
+    hiddenSelector: '.svc-id',
+    getLabel: s => s.nombre,
+    getSub:   s => `${s.categoria||''} · ${formatMoney(s.precio_final)}`,
+    onSelect: s => {
+      tr.querySelector('.inp-precio').value = s.precio_final;
+      recalcRow(tr);
+    },
+  });
+
+  // Precargar servicio guardado (al editar una cotización existente)
+  if (item?.catalogo_id) {
+    const svc = catalogo.find(s => s.id === item.catalogo_id);
+    if (svc) { tr.querySelector('.svc-id').value = svc.id; tr.querySelector('.combo-input').value = svc.nombre; }
+    else if (item.nombre) { tr.querySelector('.combo-input').value = item.nombre; } // el servicio ya no existe en el catálogo
+  }
+  recalcRow(tr);
 };
-window.onServicioSelect = function(sel, idx) {
-  const opt = sel.options[sel.selectedIndex];
-  const precio = parseFloat(opt.getAttribute('data-precio')) || 0;
-  const row = document.getElementById('cotItems').children[idx];
-  if (row) row.querySelectorAll('input')[1].value = precio;
-  recalcItem(idx);
-};
-window.recalcItem = function(idx) {
-  const row = document.getElementById('cotItems').children[idx];
+window.recalcItem = function(inputEl) { recalcRow(inputEl.closest('tr')); };
+function recalcRow(row) {
   if (!row) return;
-  const inputs = row.querySelectorAll('input');
-  const cant   = parseFloat(inputs[0].value) || 0;
-  const precio = parseFloat(inputs[1].value) || 0;
-  const desc   = parseFloat(inputs[2].value) || 0;
+  const cant   = parseFloat(row.querySelector('.inp-cant')?.value) || 0;
+  const precio = parseFloat(row.querySelector('.inp-precio')?.value) || 0;
+  const desc   = parseFloat(row.querySelector('.inp-desc')?.value) || 0;
   const sub    = cant * precio * (1 - desc / 100);
-  const el = document.getElementById(`subtotal_${idx}`);
-  if (el) el.textContent = formatMoney(sub);
+  const cell = row.querySelector('.subtotal-cell');
+  if (cell) cell.textContent = formatMoney(sub);
   recalcTotales();
-};
+}
 window.removeItemRow = function(btn) {
   btn.closest('tr').remove();
   recalcTotales();
@@ -1168,11 +1263,10 @@ window.removeItemRow = function(btn) {
 window.recalcTotales = function() {
   const rows   = document.getElementById('cotItems').children;
   let subtotal = 0;
-  Array.from(rows).forEach((row, idx) => {
-    const inputs = row.querySelectorAll('input');
-    const cant   = parseFloat(inputs[0]?.value) || 0;
-    const precio = parseFloat(inputs[1]?.value) || 0;
-    const desc   = parseFloat(inputs[2]?.value) || 0;
+  Array.from(rows).forEach(row => {
+    const cant   = parseFloat(row.querySelector('.inp-cant')?.value) || 0;
+    const precio = parseFloat(row.querySelector('.inp-precio')?.value) || 0;
+    const desc   = parseFloat(row.querySelector('.inp-desc')?.value) || 0;
     subtotal += cant * precio * (1 - desc / 100);
   });
   const itbisPct    = appConfig.itbis || 0;
@@ -1193,15 +1287,15 @@ window.saveCotizacion = async function() {
   if (!rows.length) { toast('Agrega al menos un servicio','error'); return; }
 
   const cliente = clientes.find(c => c.id === clienteId);
-  const items   = rows.map((row, idx) => {
-    const sel    = row.querySelector('select');
-    const inputs = row.querySelectorAll('input');
-    const cant   = parseFloat(inputs[0].value) || 1;
-    const precio = parseFloat(inputs[1].value) || 0;
-    const desc   = parseFloat(inputs[2].value) || 0;
+  const items   = rows.map(row => {
+    const svcId      = row.querySelector('.svc-id').value;
+    const nombreLibre= row.querySelector('.combo-input').value.trim();
+    const cant   = parseFloat(row.querySelector('.inp-cant').value) || 1;
+    const precio = parseFloat(row.querySelector('.inp-precio').value) || 0;
+    const desc   = parseFloat(row.querySelector('.inp-desc').value) || 0;
     const sub    = cant * precio * (1 - desc / 100);
-    const svc    = catalogo.find(s => s.id === sel.value);
-    return { catalogo_id: sel.value, nombre: svc?.nombre || sel.options[sel.selectedIndex]?.text || '—',
+    const svc    = catalogo.find(s => s.id === svcId);
+    return { catalogo_id: svcId, nombre: svc?.nombre || nombreLibre || '— Selecciona —',
              cantidad: cant, precio_unitario: precio, descuento: desc, subtotal: sub };
   });
   const itbisPct   = appConfig.itbis || 0;
