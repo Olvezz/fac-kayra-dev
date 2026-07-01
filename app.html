@@ -87,7 +87,17 @@
         Cierres
       </div>
 
+      <div class="sidebar-item" data-page="galeria" onclick="navTo('galeria')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+        Galería
+      </div>
+
       <div class="sidebar-section-label">Sistema</div>
+
+      <div class="sidebar-item" data-page="logs" onclick="navTo('logs')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
+        Registros
+      </div>
 
       <div class="sidebar-item" data-page="config" onclick="navTo('config')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -182,7 +192,8 @@
         <select class="input" id="filtroEstado" onchange="loadCotizaciones()" style="max-width:160px">
           <option value="">Todos los estados</option>
           <option>Cotización</option><option>Pendiente</option>
-          <option>Reservado</option><option>Pagada</option><option>Anulada</option>
+          <option>Reservado</option><option>Pagada</option>
+          <option>Realizado</option><option>Anulada</option>
         </select>
         <input type="month" class="input" id="filtroMes" onchange="loadCotizaciones()" style="max-width:160px">
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtroEstado').value='';document.getElementById('filtroMes').value='';loadCotizaciones()">Limpiar</button>
@@ -193,8 +204,13 @@
           <table class="table">
             <thead>
               <tr>
-                <th>No.</th><th>Cliente</th><th>Fecha evento</th>
-                <th>Temática</th><th>Total</th><th>Estado</th><th>Acciones</th>
+                <th class="sortable" onclick="sortCotizaciones('numero')">No. <span class="sort-arrow">↕</span></th>
+                <th class="sortable" onclick="sortCotizaciones('cliente_nombre')">Cliente <span class="sort-arrow">↕</span></th>
+                <th class="sortable" onclick="sortCotizaciones('fecha_evento')">Fecha evento <span class="sort-arrow">↕</span></th>
+                <th class="sortable" onclick="sortCotizaciones('tematica')">Temática <span class="sort-arrow">↕</span></th>
+                <th class="sortable" onclick="sortCotizaciones('total')">Total <span class="sort-arrow">↕</span></th>
+                <th class="sortable" onclick="sortCotizaciones('estado')">Estado <span class="sort-arrow">↕</span></th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="cotizacionesTbody">
@@ -271,8 +287,8 @@
       <div class="card">
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Monto</th><th>Acciones</th></tr></thead>
-            <tbody id="gastosTbody"><tr><td colspan="4" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr></tbody>
+            <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cotización / Evento</th><th>Monto</th><th>Acciones</th></tr></thead>
+            <tbody id="gastosTbody"><tr><td colspan="6" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -287,6 +303,36 @@
         </button>
       </div>
       <div id="cierresContent"><div class="loading-page"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- ── GALERÍA (eventos realizados) ── -->
+    <div class="page" id="page-galeria">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Galería de eventos</div>
+          <div class="page-subtitle" id="galeriaSubtitle">Eventos marcados como “Realizado”</div>
+        </div>
+      </div>
+      <div id="galeriaContent"><div class="loading-page"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- ── REGISTROS / LOGS ── -->
+    <div class="page" id="page-logs">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Registros de actividad</div>
+          <div class="page-subtitle" id="logsSubtitle">Cambios hechos en el sistema</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadLogs()">Actualizar</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead>
+            <tbody id="logsTbody"><tr><td colspan="4" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- ── CONFIG ── -->
@@ -462,7 +508,8 @@
             <label>Estado</label>
             <select class="input" id="cotEstado">
               <option>Cotización</option><option>Pendiente</option>
-              <option>Reservado</option><option>Pagada</option><option>Anulada</option>
+              <option>Reservado</option><option>Pagada</option>
+              <option>Realizado</option><option>Anulada</option>
             </select>
           </div>
           <div class="form-group">
@@ -498,8 +545,10 @@ import { getAuth, onAuthStateChanged, GoogleAuthProvider, signOut }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
   getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc,
-  updateDoc, deleteDoc, query, where, orderBy, serverTimestamp, runTransaction
+  updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, runTransaction
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 // ── Firebase config ──
 const firebaseConfig = {
@@ -513,9 +562,23 @@ const firebaseConfig = {
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
+const storage = getStorage(app);
 
 const WHITELIST = ['kayrafullparty@gmail.com','kayravale14@gmail.com','oliverjunior071914@gmail.com'];
 const COT_PREFIX = 'KFP';
+
+// Mapa de correo → nombre para los registros/logs
+const USUARIOS = {
+  'oliverjunior071914@gmail.com': 'Oliver',
+  'kayravale14@gmail.com':        'Kayra',
+  'kayrafullparty@gmail.com':     'Kayra Full Party',
+};
+function nombreUsuario(email) { return USUARIOS[email] || (email ? email.split('@')[0] : 'Desconocido'); }
+
+// Estados de una cotización (orden lógico del flujo)
+const ESTADOS = ['Cotización','Pendiente','Reservado','Pagada','Realizado','Anulada'];
+// Una cotización cobrada cuenta el dinero como ingresado (Pagada o ya Realizado)
+function esCobrada(estado) { return estado === 'Pagada' || estado === 'Realizado'; }
 
 // ── State ──
 let currentUser = null;
@@ -524,6 +587,8 @@ let clientes    = [];
 let catalogo    = [];
 let editingCotId = null;
 let afterClienteSave = null; // callback para cotización
+let cotizacionesActuales = [];         // última lista cargada (para ordenar en la tabla)
+let cotSort = { campo:null, dir:'asc' }; // estado de ordenamiento de la tabla
 
 // ── Auth guard ──
 const unsubApp = onAuthStateChanged(auth, user => {
@@ -563,7 +628,8 @@ window.navTo = function(page) {
   document.getElementById(`page-${page}`).classList.add('active');
   document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
   const titles = { dashboard:'Dashboard', cotizaciones:'Cotizaciones', clientes:'Clientes',
-    catalogo:'Catálogo', gastos:'Gastos', cierres:'Cierres', config:'Configuración' };
+    catalogo:'Catálogo', gastos:'Gastos', cierres:'Cierres', galeria:'Galería',
+    logs:'Registros', config:'Configuración' };
   document.getElementById('topbarTitle').textContent = titles[page] || page;
   closeSidebar();
 
@@ -573,6 +639,8 @@ window.navTo = function(page) {
   if (page === 'catalogo')     loadCatalogo(true);
   if (page === 'gastos')       loadGastos();
   if (page === 'cierres')      loadCierres();
+  if (page === 'galeria')      loadGaleria();
+  if (page === 'logs')         loadLogs();
   if (page === 'config')       loadConfigForm();
 };
 
@@ -605,8 +673,29 @@ function mesAnioStr(v) {
   return `${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
 function badgeHtml(estado) {
-  const map = { 'Cotización':'cotizacion','Pendiente':'pendiente','Reservado':'reservado','Pagada':'pagada','Anulada':'anulada' };
+  const map = { 'Cotización':'cotizacion','Pendiente':'pendiente','Reservado':'reservado','Pagada':'pagada','Realizado':'realizado','Anulada':'anulada' };
   return `<span class="badge badge-${map[estado]||'cotizacion'}">${estado||'Cotización'}</span>`;
+}
+function escapeHtml(s) {
+  return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// Normaliza un teléfono a solo dígitos (para comparar clientes por número)
+function normalizarTel(t) { return String(t||'').replace(/\D/g,''); }
+
+// ============================================================
+// LOGS / REGISTROS  — registra cada acción hecha en el sistema
+// ============================================================
+async function logAccion(accion, entidad, detalle) {
+  try {
+    await addDoc(collection(db,'logs'), {
+      accion,                                   // 'Creó' | 'Editó' | 'Eliminó' | 'Cerró mes' ...
+      entidad,                                  // 'Cliente' | 'Cotización' | 'Gasto' ...
+      detalle: detalle || '',                   // texto legible
+      usuario: nombreUsuario(currentUser?.email),
+      usuario_email: currentUser?.email || '',
+      fecha: serverTimestamp(),
+    });
+  } catch(e) { console.warn('No se pudo registrar el log:', e); }
 }
 
 // ============================================================
@@ -648,6 +737,7 @@ window.saveConfig = async function(e) {
   };
   await setDoc(doc(db,'config','principal'), data, { merge:true });
   appConfig = data;
+  logAccion('Editó', 'Configuración', 'Actualizó los datos del negocio');
   toast('Configuración guardada ✓');
 };
 
@@ -717,14 +807,32 @@ window.openClienteModal = function(fromCot = false, editId = null) {
 window.saveCliente = async function(editId) {
   const nombre = document.getElementById('fClienteNombre').value.trim();
   if (!nombre) { toast('El nombre es requerido','error'); return; }
+  const telefono = document.getElementById('fClienteTelefono').value.trim();
+  const telNorm  = normalizarTel(telefono);
+
+  // ── Validación por NÚMERO (no por nombre) ──
+  // El teléfono actúa como clave única del cliente. Se permite vacío,
+  // pero si el número ya existe en otro cliente, se avisa y se bloquea.
+  if (telNorm) {
+    const dup = clientes.find(c => c.id !== editId && normalizarTel(c.telefono) === telNorm);
+    if (dup) {
+      toast(`⚠️ El cliente “${dup.nombre}” ya está registrado con el número ${dup.telefono || telefono}. Cambia el número o déjalo vacío.`, 'error');
+      const inp = document.getElementById('fClienteTelefono');
+      inp?.focus(); inp?.select();
+      return;
+    }
+  }
+
   const data = {
     nombre,
-    telefono: document.getElementById('fClienteTelefono').value.trim(),
+    telefono,
+    telefono_norm: telNorm,     // normalizado, para búsquedas/validaciones
     direccion: document.getElementById('fClienteDireccion').value.trim(),
     notas: document.getElementById('fClienteNotas').value.trim(),
   };
   if (editId) { await updateDoc(doc(db,'clientes',editId), { ...data, actualizado_en: serverTimestamp() }); }
   else        { await addDoc(collection(db,'clientes'), { ...data, creado_en: serverTimestamp() }); }
+  logAccion(editId ? 'Editó' : 'Creó', 'Cliente', `${nombre}${telefono ? ' · '+telefono : ''}`);
   toast(editId ? 'Cliente actualizado ✓' : 'Cliente creado ✓');
   closeModal();
   await loadClientes(document.getElementById('page-clientes').classList.contains('active'));
@@ -733,6 +841,7 @@ window.saveCliente = async function(editId) {
 window.deleteCliente = async function(id, nombre) {
   if (!confirm(`¿Eliminar a ${nombre}? Esta acción no se puede deshacer.`)) return;
   await deleteDoc(doc(db,'clientes',id));
+  logAccion('Eliminó', 'Cliente', nombre);
   await loadClientes(true);
   toast('Cliente eliminado');
 };
@@ -831,6 +940,7 @@ window.saveServicio = async function(editId) {
   };
   if (editId) await updateDoc(doc(db,'catalogo',editId), data);
   else        await addDoc(collection(db,'catalogo'), data);
+  logAccion(editId ? 'Editó' : 'Creó', 'Servicio', `${nombre} · ${formatMoney(data.precio_final)}`);
   toast(editId ? 'Servicio actualizado ✓' : 'Servicio creado ✓');
   closeModal();
   await loadCatalogo(true);
@@ -838,6 +948,7 @@ window.saveServicio = async function(editId) {
 window.deleteServicio = async function(id, nombre) {
   if (!confirm(`¿Eliminar "${nombre}"?`)) return;
   await deleteDoc(doc(db,'catalogo',id));
+  logAccion('Eliminó', 'Servicio', nombre);
   await loadCatalogo(true);
   toast('Servicio eliminado');
 };
@@ -858,13 +969,63 @@ window.loadCotizaciones = async function() {
   }
   const q = query(collection(db,'cotizaciones'), ...constraints);
   const snap = await getDocs(q);
-  const cots = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-  document.getElementById('cotSubtitle').textContent = `${cots.length} cotizaciones`;
+  cotizacionesActuales = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+  document.getElementById('cotSubtitle').textContent = `${cotizacionesActuales.length} cotizaciones`;
   // Badge de pendientes en sidebar
-  const pend = cots.filter(c => c.estado === 'Pendiente' || c.estado === 'Reservado').length;
+  const pend = cotizacionesActuales.filter(c => c.estado === 'Pendiente' || c.estado === 'Reservado').length;
   const badge = document.getElementById('badgePendientes');
   badge.style.display = pend ? 'inline-flex' : 'none';
   badge.textContent = pend;
+  renderCotizaciones();
+};
+
+// Convierte cualquier fecha (Timestamp/Date/string) a milisegundos, para ordenar
+function fechaMs(v) {
+  if (!v) return 0;
+  const d = v?.toDate ? v.toDate() : new Date(v);
+  return isNaN(d) ? 0 : d.getTime();
+}
+
+// Ordena la tabla por la columna indicada (alterna asc/desc al reclicar)
+window.sortCotizaciones = function(campo) {
+  if (cotSort.campo === campo) {
+    cotSort.dir = cotSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    cotSort.campo = campo;
+    cotSort.dir = 'asc';
+  }
+  renderCotizaciones();
+};
+
+function renderCotizaciones() {
+  const tbody = document.getElementById('cotizacionesTbody');
+
+  // Actualiza flechitas de las cabeceras
+  document.querySelectorAll('#page-cotizaciones th.sortable').forEach(th => {
+    const arrow = th.querySelector('.sort-arrow');
+    const campo = (th.getAttribute('onclick').match(/sortCotizaciones\('(.+?)'\)/)||[])[1];
+    if (campo === cotSort.campo) {
+      th.classList.add('sort-active');
+      if (arrow) arrow.textContent = cotSort.dir === 'asc' ? '▲' : '▼';
+    } else {
+      th.classList.remove('sort-active');
+      if (arrow) arrow.textContent = '↕';
+    }
+  });
+
+  let cots = [...cotizacionesActuales];
+  if (cotSort.campo) {
+    const campo = cotSort.campo, dir = cotSort.dir === 'asc' ? 1 : -1;
+    cots.sort((a,b) => {
+      let va, vb;
+      if (campo === 'fecha_evento')      { va = fechaMs(a.fecha_evento); vb = fechaMs(b.fecha_evento); }
+      else if (campo === 'total')        { va = Number(a.total)||0; vb = Number(b.total)||0; }
+      else { va = String(a[campo]||'').toLowerCase(); vb = String(b[campo]||'').toLowerCase(); }
+      if (va < vb) return -1*dir;
+      if (va > vb) return  1*dir;
+      return 0;
+    });
+  }
 
   if (!cots.length) {
     tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><h3>Sin cotizaciones</h3><p>Crea tu primera cotización</p></div></td></tr>`;
@@ -872,11 +1033,12 @@ window.loadCotizaciones = async function() {
   }
   tbody.innerHTML = cots.map(c => {
     const fe = c.fecha_evento ? formatDate(c.fecha_evento) : '—';
+    const esRealizado = c.estado === 'Realizado';
     return `<tr>
       <td><strong style="color:var(--morado)">${c.numero}</strong></td>
-      <td>${c.cliente_nombre||'—'}</td>
-      <td>${fe}${c.hora_evento?`<br><small style="color:var(--text-secondary)">${c.hora_evento}</small>`:''}</td>
-      <td>${c.tematica||'—'}</td>
+      <td>${escapeHtml(c.cliente_nombre)||'—'}</td>
+      <td>${fe}${c.hora_evento?`<br><small style="color:var(--text-secondary)">${escapeHtml(c.hora_evento)}</small>`:''}</td>
+      <td>${escapeHtml(c.tematica)||'—'}</td>
       <td><strong>${formatMoney(c.total)}</strong></td>
       <td>${badgeHtml(c.estado)}</td>
       <td>
@@ -884,6 +1046,9 @@ window.loadCotizaciones = async function() {
           <button class="btn btn-ghost btn-icon" title="Editar" onclick="openEditCotizacion('${c.id}')">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
+          ${esRealizado ? `<button class="btn btn-ghost btn-icon" title="Foto del evento" style="color:#7C3AED" onclick="openFotoModal('${c.id}')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>` : ''}
           <button class="btn btn-ghost btn-icon" title="Generar PDF" onclick="descargarPDF('${c.id}')">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
           </button>
@@ -897,7 +1062,7 @@ window.loadCotizaciones = async function() {
       </td>
     </tr>`;
   }).join('');
-};
+}
 
 // ============================================================
 // COTIZACIONES — Formulario (Crear / Editar)
@@ -1067,12 +1232,32 @@ window.saveCotizacion = async function() {
     creado_por:   currentUser.email,
   };
 
+  // ── Detección de duplicados (solo al crear una nueva) ──
+  // Evalúa cliente + servicios seleccionados: si ya existe una cotización
+  // no anulada para el mismo cliente con el mismo conjunto de servicios, avisa.
+  if (!editingCotId) {
+    const firmaNueva = items.map(i => i.catalogo_id || i.nombre).filter(Boolean).sort().join('|');
+    try {
+      const dupSnap = await getDocs(query(collection(db,'cotizaciones'), where('cliente_id','==',clienteId)));
+      const similar = dupSnap.docs.map(d => ({ id:d.id, ...d.data() })).find(c => {
+        if (c.estado === 'Anulada') return false;
+        const firma = (c.items||[]).map(i => i.catalogo_id || i.nombre).filter(Boolean).sort().join('|');
+        return firma && firma === firmaNueva;
+      });
+      if (similar) {
+        const ok = confirm(`⚠️ Ya existe una cotización similar para ${cliente?.nombre||'este cliente'}:\n\n${similar.numero} — ${formatMoney(similar.total)} (${similar.estado})\ncon los mismos servicios.\n\n¿Quieres crearla de todos modos?`);
+        if (!ok) return;
+      }
+    } catch(e) { console.warn('No se pudo verificar duplicados de cotización:', e); }
+  }
+
   const btn = document.getElementById('cotSaveBtn');
   btn.disabled = true; btn.textContent = 'Guardando...';
 
   try {
     if (editingCotId) {
       await updateDoc(doc(db,'cotizaciones',editingCotId), { ...data, actualizado_en: serverTimestamp() });
+      logAccion('Editó', 'Cotización', `${document.getElementById('cotModalTitle').textContent.replace('Editar ','')} · ${cliente?.nombre||''} · ${formatMoney(total)}`);
       toast(`Cotización actualizada ✓`);
     } else {
       // Generar número
@@ -1088,6 +1273,7 @@ window.saveCotizacion = async function() {
       data.numero = numero;
       data.mes_anio = mesAnioStr(data.fecha_emision);
       await addDoc(collection(db,'cotizaciones'), { ...data, creado_en: serverTimestamp() });
+      logAccion('Creó', 'Cotización', `${numero} · ${cliente?.nombre||''} · ${formatMoney(total)}`);
       toast(`Cotización ${numero} creada ✓`);
     }
     closeCotModal();
@@ -1103,16 +1289,14 @@ window.saveCotizacion = async function() {
 window.deleteCotizacion = async function(id, numero) {
   if (!confirm(`¿Eliminar la cotización ${numero}?`)) return;
   await deleteDoc(doc(db,'cotizaciones',id));
+  logAccion('Eliminó', 'Cotización', numero);
   loadCotizaciones();
   toast('Cotización eliminada');
 };
 
 // ── PDF ──
-window.descargarPDF = async function(id) {
-  const snap = await getDoc(doc(db,'cotizaciones',id));
-  if (!snap.exists()) return;
-  const c = { id, ...snap.data() };
-  // Cargar jsPDF
+// Carga jsPDF una sola vez
+async function ensureJsPDF() {
   if (!window.jspdf) {
     await new Promise((res,rej) => {
       const s = document.createElement('script');
@@ -1121,7 +1305,16 @@ window.descargarPDF = async function(id) {
       document.head.appendChild(s);
     });
   }
-  const { jsPDF } = window.jspdf;
+  return window.jspdf.jsPDF;
+}
+function pdfFilename(c) {
+  return `${c.numero}_${(c.cliente_nombre||'cliente').replace(/\s+/g,'_')}.pdf`;
+}
+
+// Construye y devuelve el documento jsPDF (sin descargarlo), para poder
+// tanto descargarlo como compartirlo por WhatsApp.
+async function construirPDFDoc(c) {
+  const jsPDF = await ensureJsPDF();
   const pdoc = new jsPDF({ unit:'mm', format:'a4' });
   const W=210, M=14;
   const morado=[165,36,139], gris=[107,114,128], negro=[38,38,38], grisClaro=[232,234,240];
@@ -1205,33 +1398,83 @@ window.descargarPDF = async function(id) {
   pdoc.text(`${appConfig.nombre_negocio||'Kayra Full Party'}  ·  ${appConfig.instagram||'@kayrasfullparty'}  ·  ${appConfig.email||'kayrafullparty@gmail.com'}`, W/2, 287, {align:'center'});
   pdoc.setTextColor(109,186,223);
   pdoc.text('Creamos momentos inolvidables, celebramos cada detalle.', W/2, 292, {align:'center'});
-  pdoc.save(`${c.numero}_${(c.cliente_nombre||'cliente').replace(/\s+/g,'_')}.pdf`);
+  return pdoc;
+}
+
+window.descargarPDF = async function(id) {
+  const snap = await getDoc(doc(db,'cotizaciones',id));
+  if (!snap.exists()) return;
+  const c = { id, ...snap.data() };
+  const pdoc = await construirPDFDoc(c);
+  pdoc.save(pdfFilename(c));
   toast('PDF descargado ✓');
 };
 
 // ── WhatsApp ──
+// Filtra los items reales (descarta filas sin servicio elegido)
+function itemsReales(items) {
+  return (items||[]).filter(it => {
+    const n = String(it.nombre||'').trim();
+    return n && !/^—?\s*selecciona/i.test(n);
+  });
+}
+// Arma el mensaje de texto con el desglose de servicios (formato WhatsApp)
+function mensajeWA(c) {
+  const empresa = appConfig.nombre_negocio || 'Kayra Full Party';
+  const L = [];
+  L.push(`¡Hola ${c.cliente_nombre || ''}! 🎉`);
+  L.push(`Te comparto la *cotización ${c.numero}* de *${empresa}*.`);
+  L.push('');
+  if (c.fecha_evento) {
+    const fe = c.fecha_evento.toDate ? c.fecha_evento.toDate() : new Date(c.fecha_evento);
+    L.push(`*Fecha del evento:* ${fe.toLocaleDateString('es-DO')}${c.hora_evento ? ' - ' + c.hora_evento : ''}`);
+  }
+  if (c.tematica) L.push(`*Temática:* ${c.tematica}`);
+
+  const items = itemsReales(c.items);
+  if (items.length) {
+    L.push('');
+    L.push('*Detalle de servicios:*');
+    items.forEach(it => {
+      const cant = Number(it.cantidad)||1;
+      L.push(`- ${it.nombre} (x${cant}): RD$${Number(it.subtotal||0).toLocaleString('es-DO')}`);
+    });
+  }
+  L.push('');
+  if (Number(c.transporte) > 0) L.push(`Transporte: RD$${Number(c.transporte).toLocaleString('es-DO')}`);
+  L.push(`*TOTAL: ${formatMoney(c.total)}*`);
+  L.push('');
+  L.push('Cualquier pregunta, ¡aquí estamos! 💜');
+  return L.join('\n');
+}
+
 window.enviarWA = async function(id) {
   const snap = await getDoc(doc(db,'cotizaciones',id));
   if (!snap.exists()) return;
-  const c = snap.data();
-  const tel = (c.cliente_telefono||'').replace(/\D/g,'');
-  const lines = [];
-  lines.push(`¡Hola ${c.cliente_nombre}! 🎈✨`);
-  lines.push(`Te comparto la *cotización ${c.numero}* de *${appConfig.nombre_negocio||'Kayra Full Party'}*.\n`);
-  if (c.fecha_evento) {
-    const fe = c.fecha_evento.toDate ? c.fecha_evento.toDate() : new Date(c.fecha_evento);
-    lines.push(`🗓️ *Fecha del evento:* ${fe.toLocaleDateString('es-DO')}${c.hora_evento?' · '+c.hora_evento:''}`);
+  const c = { id, ...snap.data() };
+  const tel = normalizarTel(c.cliente_telefono);
+  const texto = mensajeWA(c);
+
+  // Intento 1: compartir el PDF directamente (Web Share API con archivos).
+  // Funciona en móvil (Android/iOS): abre el selector y el cliente recibe el PDF
+  // sin tener que adjuntarlo manualmente.
+  try {
+    const pdoc = await construirPDFDoc(c);
+    const blob = pdoc.output('blob');
+    const file = new File([blob], pdfFilename(c), { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], text: texto, title: `Cotización ${c.numero}` });
+      return;
+    }
+  } catch(e) {
+    if (e && e.name === 'AbortError') return; // el usuario canceló el compartir
+    console.warn('Web Share no disponible, uso enlace de WhatsApp:', e);
   }
-  if (c.tematica) lines.push(`🎨 *Temática:* ${c.tematica}`);
-  if ((c.items||[]).length) {
-    lines.push(`\n📋 *Servicios:*`);
-    c.items.slice(0,5).forEach(it => lines.push(`  • ${it.nombre} ×${it.cantidad}`));
-    if (c.items.length>5) lines.push(`  _(+ ${c.items.length-5} más)_`);
-  }
-  lines.push(`\n💰 *Total: ${formatMoney(c.total)}*`);
-  lines.push(`\nCualquier pregunta, ¡aquí estamos! 💜`);
-  const url = `https://wa.me/${tel}?text=${encodeURIComponent(lines.join('\n'))}`;
-  window.open(url,'_blank');
+
+  // Intento 2 (escritorio / sin soporte de archivos): abre WhatsApp con el
+  // mensaje de texto y descarga el PDF para adjuntarlo si lo desea.
+  const url = `https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
+  window.open(url, '_blank');
 };
 
 // ============================================================
@@ -1252,14 +1495,15 @@ window.loadGastos = async function() {
   document.getElementById('gastosSubtitle').textContent = mesVal || 'Todos';
   const tbody = document.getElementById('gastosTbody');
   if (!gastos.length) {
-    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><h3>Sin gastos registrados</h3></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><h3>Sin gastos registrados</h3></div></td></tr>`;
     return;
   }
   tbody.innerHTML = gastos.map(g => `
     <tr>
       <td>${g.fecha||'—'}</td>
-      <td>${g.descripcion||'—'}</td>
-      <td><span class="badge badge-cotizacion">${g.categoria||'General'}</span></td>
+      <td>${escapeHtml(g.descripcion)||'—'}</td>
+      <td><span class="badge badge-cotizacion">${escapeHtml(g.categoria)||'General'}</span></td>
+      <td>${g.cot_numero ? `<span style="color:var(--morado);font-weight:600">${escapeHtml(g.cot_numero)}</span>${g.cot_cliente?`<br><small style="color:var(--text-secondary)">${escapeHtml(g.cot_cliente)}</small>`:''}` : '<span style="color:var(--text-secondary)">— General —</span>'}</td>
       <td><strong style="color:#EF4444">${formatMoney(g.monto)}</strong></td>
       <td>
         <div class="table-actions">
@@ -1273,14 +1517,23 @@ window.loadGastos = async function() {
       </td>
     </tr>`).join('');
 };
+// Trae una lista ligera de cotizaciones (más recientes primero) para el selector de gastos
+async function cotizacionesParaSelect() {
+  const snap = await getDocs(query(collection(db,'cotizaciones'), orderBy('creado_en','desc'), limit(300)));
+  return snap.docs.map(d => { const c = d.data(); return { id:d.id, numero:c.numero, cliente:c.cliente_nombre, tematica:c.tematica }; });
+}
 window.openGastoModal = async function(editId = null) {
   let g = null;
   if (editId) { const s = await getDoc(doc(db,'gastos',editId)); g = s.data(); }
   const CATS = ['Decoración','Compras','Transporte','Publicidad','Suministros','Personal','Servicios','Otro'];
+  const lista = await cotizacionesParaSelect();
+  const opciones = lista.map(c =>
+    `<option value="${c.id}" ${g?.cot_id===c.id?'selected':''}>${escapeHtml(c.numero)} — ${escapeHtml(c.cliente||'')}${c.tematica?' ('+escapeHtml(c.tematica)+')':''}</option>`
+  ).join('');
   document.getElementById('modalTitle').textContent = g ? 'Editar gasto' : 'Registrar gasto';
   document.getElementById('modalBody').innerHTML = `
     <div class="form-group"><label>Descripción *</label>
-      <input class="input" id="fGastoDesc" value="${g?.descripcion||''}" required></div>
+      <input class="input" id="fGastoDesc" value="${escapeHtml(g?.descripcion)}" required></div>
     <div class="form-row">
       <div class="form-group"><label>Monto (RD$) *</label>
         <input class="input" type="number" id="fGastoMonto" value="${g?.monto||''}" min="0" required></div>
@@ -1288,7 +1541,13 @@ window.openGastoModal = async function(editId = null) {
         <input class="input" type="date" id="fGastoFecha" value="${g?.fecha||new Date().toISOString().split('T')[0]}" required></div>
     </div>
     <div class="form-group"><label>Categoría</label>
-      <select class="input" id="fGastoCat">${CATS.map(c=>`<option${g?.categoria===c?' selected':''}>${c}</option>`).join('')}</select></div>`;
+      <select class="input" id="fGastoCat">${CATS.map(c=>`<option${g?.categoria===c?' selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Cotización / Evento relacionado</label>
+      <select class="input" id="fGastoCot">
+        <option value="">— Gasto general (sin cotización) —</option>
+        ${opciones}
+      </select>
+      <small style="color:var(--text-secondary)">Vincula el gasto al evento para el que se hizo (ej: el bizcocho de una cotización).</small></div>`;
   document.getElementById('modalFooter').innerHTML = `
     <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-primary" onclick="saveGasto(${editId?`'${editId}'`:'null'})">Guardar</button>`;
@@ -1300,9 +1559,40 @@ window.saveGasto = async function(editId) {
   const fecha = document.getElementById('fGastoFecha').value;
   if (!desc || !monto || !fecha) { toast('Completa todos los campos','error'); return; }
   const [y,m] = fecha.split('-');
-  const data  = { descripcion:desc, monto, fecha, categoria: document.getElementById('fGastoCat').value, mes_anio:`${m}-${y}` };
+
+  // Cotización vinculada (opcional)
+  const cotSel = document.getElementById('fGastoCot');
+  const cotId  = cotSel.value || '';
+  const cotTxt = cotId ? cotSel.options[cotSel.selectedIndex].text : '';
+  const cotNumero = cotTxt ? cotTxt.split(' — ')[0] : '';
+  const cotCliente = cotTxt && cotTxt.includes(' — ') ? cotTxt.split(' — ')[1].replace(/\s*\(.*\)$/,'') : '';
+
+  const data  = {
+    descripcion:desc, monto, fecha,
+    categoria: document.getElementById('fGastoCat').value,
+    mes_anio:`${m}-${y}`,
+    cot_id: cotId, cot_numero: cotNumero, cot_cliente: cotCliente,
+  };
+
+  // ── Detección de duplicados (solo al crear) ──
+  // Evalúa monto + cotización vinculada: si ya hay un gasto igual, avisa.
+  if (!editId) {
+    try {
+      const dupSnap = await getDocs(query(collection(db,'gastos'), where('mes_anio','==',`${m}-${y}`)));
+      const dup = dupSnap.docs.map(d=>d.data()).find(x =>
+        Number(x.monto) === Number(monto) && (x.cot_id||'') === cotId
+      );
+      if (dup) {
+        const ref = cotNumero ? `la cotización ${cotNumero}` : 'un gasto general';
+        const ok = confirm(`⚠️ Ya existe un gasto de ${formatMoney(monto)} para ${ref} este mes ("${dup.descripcion}").\n\n¿Registrarlo de todos modos?`);
+        if (!ok) return;
+      }
+    } catch(e) { console.warn('No se pudo verificar duplicados de gasto:', e); }
+  }
+
   if (editId) await updateDoc(doc(db,'gastos',editId), data);
   else        await addDoc(collection(db,'gastos'), { ...data, creado_en: serverTimestamp() });
+  logAccion(editId ? 'Editó' : 'Creó', 'Gasto', `${desc} · ${formatMoney(monto)}${cotNumero ? ' · '+cotNumero : ''}`);
   toast(editId ? 'Gasto actualizado ✓' : 'Gasto registrado ✓');
   closeModal();
   loadGastos();
@@ -1310,6 +1600,7 @@ window.saveGasto = async function(editId) {
 window.deleteGasto = async function(id) {
   if (!confirm('¿Eliminar este gasto?')) return;
   await deleteDoc(doc(db,'gastos',id));
+  logAccion('Eliminó', 'Gasto', '');
   loadGastos();
   toast('Gasto eliminado');
 };
@@ -1352,7 +1643,7 @@ window.cerrarMesActual = async function() {
     ]);
     const cotsData   = cots.docs.map(d => d.data());
     const gastosData = gastos.docs.map(d => d.data());
-    const pagadas    = cotsData.filter(c => c.estado === 'Pagada');
+    const pagadas    = cotsData.filter(c => esCobrada(c.estado));
     const cierre     = {
       mes, anio, mes_anio: mesAnio,
       n_cotizaciones: cotsData.length,
@@ -1364,9 +1655,126 @@ window.cerrarMesActual = async function() {
       cerrado_en:     serverTimestamp(),
     };
     await setDoc(doc(db,'cierres',mesAnio), cierre);
+    logAccion('Cerró mes', 'Cierre', `${mes}/${anio} · Beneficio ${formatMoney(cierre.beneficio_neto)}`);
     toast(`Cierre de ${mes}/${anio} calculado ✓`);
     loadCierres();
   } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ============================================================
+// REGISTROS / LOGS  —  vista
+// ============================================================
+window.loadLogs = async function() {
+  const tbody = document.getElementById('logsTbody');
+  tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr>`;
+  try {
+    const snap = await getDocs(query(collection(db,'logs'), orderBy('fecha','desc'), limit(300)));
+    const logs = snap.docs.map(d => d.data());
+    document.getElementById('logsSubtitle').textContent = `${logs.length} registros`;
+    if (!logs.length) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><h3>Sin registros aún</h3><p>Aquí aparecerán los cambios hechos en el sistema</p></div></td></tr>`;
+      return;
+    }
+    const colorAccion = { 'Creó':'#16A34A','Editó':'#D97706','Eliminó':'#EF4444','Cerró mes':'var(--morado)' };
+    tbody.innerHTML = logs.map(l => {
+      const f = l.fecha?.toDate ? l.fecha.toDate() : null;
+      const fStr = f ? f.toLocaleString('es-DO',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+      return `<tr>
+        <td style="white-space:nowrap">${fStr}</td>
+        <td><strong>${escapeHtml(l.usuario)||'—'}</strong></td>
+        <td><span style="font-weight:600;color:${colorAccion[l.accion]||'var(--text-secondary)'}">${escapeHtml(l.accion)}</span> ${escapeHtml(l.entidad)||''}</td>
+        <td style="color:var(--text-secondary)">${escapeHtml(l.detalle)||''}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:30px;color:#EF4444">No se pudieron cargar los registros: ${escapeHtml(e.message)}</td></tr>`;
+  }
+};
+
+// ============================================================
+// GALERÍA  —  fotos de eventos realizados
+// ============================================================
+window.loadGaleria = async function() {
+  const cont = document.getElementById('galeriaContent');
+  cont.innerHTML = `<div class="loading-page"><div class="spinner"></div></div>`;
+  try {
+    const snap = await getDocs(query(collection(db,'cotizaciones'), where('estado','==','Realizado')));
+    let cots = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    cots.sort((a,b) => fechaMs(b.fecha_evento) - fechaMs(a.fecha_evento));
+    document.getElementById('galeriaSubtitle').textContent = `${cots.length} eventos realizados`;
+    if (!cots.length) {
+      cont.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state"><h3>Sin eventos realizados</h3><p>Marca una cotización como “Realizado” y sube su foto</p></div></div></div>`;
+      return;
+    }
+    cont.innerHTML = `<div class="galeria-grid">${cots.map(c => `
+      <div class="galeria-card card">
+        <div class="galeria-foto" onclick="openFotoModal('${c.id}')">
+          ${c.foto_url
+            ? `<img src="${escapeHtml(c.foto_url)}" alt="${escapeHtml(c.tematica||c.cliente_nombre)}" loading="lazy">`
+            : `<div class="galeria-sinfoto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Subir foto</span></div>`}
+        </div>
+        <div class="card-body" style="padding:12px 14px">
+          <div style="font-weight:700;font-size:0.9rem">${escapeHtml(c.tematica)||'Sin temática'}</div>
+          <div style="font-size:0.8rem;color:var(--text-secondary)">${escapeHtml(c.cliente_nombre)||''}</div>
+          <div style="font-size:0.75rem;color:var(--morado);margin-top:2px">${escapeHtml(c.numero)} · ${formatDate(c.fecha_evento)}</div>
+        </div>
+      </div>`).join('')}</div>`;
+  } catch(e) {
+    cont.innerHTML = `<div class="card"><div class="card-body" style="color:#EF4444">No se pudo cargar la galería: ${escapeHtml(e.message)}</div></div>`;
+  }
+};
+
+// Modal para subir / ver la foto del evento realizado
+window.openFotoModal = async function(id) {
+  const snap = await getDoc(doc(db,'cotizaciones',id));
+  if (!snap.exists()) return;
+  const c = snap.data();
+  document.getElementById('modalTitle').textContent = `Foto del evento · ${c.numero}`;
+  document.getElementById('modalBody').innerHTML = `
+    <div style="text-align:center">
+      <div id="fotoPreview" style="margin-bottom:14px">
+        ${c.foto_url ? `<img src="${escapeHtml(c.foto_url)}" style="max-width:100%;max-height:320px;border-radius:var(--radius-sm)">` : `<div style="color:var(--text-secondary);padding:30px">Aún no hay foto para este evento</div>`}
+      </div>
+      <div class="form-group" style="text-align:left"><label>Subir imagen desde el dispositivo</label>
+        <input class="input" type="file" id="fFotoArchivo" accept="image/*"></div>
+      <div style="text-align:center;color:var(--text-secondary);font-size:0.8rem;margin:6px 0">— o —</div>
+      <div class="form-group" style="text-align:left"><label>Pegar URL de una imagen</label>
+        <input class="input" id="fFotoUrl" value="${escapeHtml(c.foto_url)}" placeholder="https://..."></div>
+    </div>`;
+  document.getElementById('modalFooter').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+    <button class="btn btn-primary" id="fotoSaveBtn" onclick="saveFoto('${id}')">Guardar foto</button>`;
+  document.getElementById('modalOverlay').classList.add('open');
+};
+
+window.saveFoto = async function(id) {
+  const btn = document.getElementById('fotoSaveBtn');
+  const file = document.getElementById('fFotoArchivo').files[0];
+  let url = document.getElementById('fFotoUrl').value.trim();
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    if (file) {
+      // Subir a Firebase Storage
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const refImg = storageRef(storage, `eventos/${id}/foto_${Date.now()}.${ext}`);
+      await uploadBytes(refImg, file);
+      url = await getDownloadURL(refImg);
+    }
+    if (!url) { toast('Elige un archivo o pega una URL','error'); btn.disabled=false; btn.textContent='Guardar foto'; return; }
+    await updateDoc(doc(db,'cotizaciones',id), { foto_url: url, foto_en: serverTimestamp() });
+    logAccion('Editó', 'Cotización', `Subió foto del evento`);
+    toast('Foto guardada ✓');
+    closeModal();
+    if (document.getElementById('page-galeria').classList.contains('active')) loadGaleria();
+  } catch(e) {
+    console.error(e);
+    // Mensaje amable si Storage no está habilitado
+    const msg = /storage|CORS|unauthorized|bucket/i.test(e.message)
+      ? 'No se pudo subir el archivo (¿Firebase Storage habilitado?). Prueba pegando una URL de imagen.'
+      : 'Error al guardar la foto: ' + e.message;
+    toast(msg, 'error');
+    btn.disabled = false; btn.textContent = 'Guardar foto';
+  }
 };
 
 // ============================================================
@@ -1385,7 +1793,7 @@ async function loadDashboard() {
   ]);
   const cots   = cotSnap.docs.map(d=>({id:d.id,...d.data()}));
   const gastos = gastoSnap.docs.map(d=>d.data());
-  const pagadas = cots.filter(c=>c.estado==='Pagada');
+  const pagadas = cots.filter(c=>esCobrada(c.estado));
   const cobrado = pagadas.reduce((s,c)=>s+(c.total||0),0);
   const gastoTotal = gastos.reduce((s,g)=>s+(g.monto||0),0);
   const beneficio  = cobrado - gastoTotal;

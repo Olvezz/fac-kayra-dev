@@ -446,7 +446,24 @@ p  { line-height: 1.6; }
 .badge-pendiente  { background:#FFFBEB; color:#D97706; }
 .badge-reservado  { background:rgba(109,186,223,0.15); color:var(--turquesa-dark); }
 .badge-pagada     { background:#F0FDF4; color:#16A34A; }
+.badge-realizado  { background:#F5F3FF; color:#7C3AED; }
 .badge-anulada    { background:#FEF2F2; color:#DC2626; }
+
+/* ── Galería de eventos realizados ── */
+.galeria-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }
+.galeria-card { overflow:hidden; }
+.galeria-foto { aspect-ratio:4/3; background:var(--bg); cursor:pointer; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.galeria-foto img { width:100%; height:100%; object-fit:cover; transition:transform .2s; }
+.galeria-foto:hover img { transform:scale(1.04); }
+.galeria-sinfoto { display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--text-secondary); }
+.galeria-sinfoto svg { width:38px; height:38px; }
+.galeria-sinfoto span { font-size:0.8rem; font-weight:600; }
+
+/* ── Cabeceras de tabla ordenables ── */
+th.sortable { cursor:pointer; user-select:none; white-space:nowrap; }
+th.sortable:hover { color:var(--morado); }
+th.sortable .sort-arrow { opacity:0.35; margin-left:4px; font-size:0.7em; }
+th.sortable.sort-active .sort-arrow { opacity:1; color:var(--morado); }
 
 /* ── Forms ── */
 .form-group { margin-bottom: 16px; }
