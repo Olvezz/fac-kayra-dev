@@ -485,7 +485,14 @@ p  { line-height: 1.6; }
   transition:width .22s ease, opacity .18s ease, padding .22s ease;
 }
 .search-box.open { border-color:var(--morado); box-shadow:0 0 0 3px var(--morado-ghost); }
-.search-box.open .search-input { width:210px; opacity:1; padding-right:12px; }
+.search-box.open .search-input { width:210px; opacity:1; padding-right:6px; }
+.search-box .search-clear {
+  display:flex; align-items:center; justify-content:center;
+  width:22px; height:22px; margin-right:6px; flex-shrink:0;
+  border:none; background:var(--bg); color:var(--text-secondary); cursor:pointer; border-radius:50%;
+}
+.search-box .search-clear svg { width:12px; height:12px; }
+.search-box .search-clear:hover { background:var(--morado-ghost); color:var(--morado); }
 
 /* ── Galería de eventos realizados ── */
 .galeria-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }

@@ -145,7 +145,7 @@
       </div>
 
       <div class="filters-bar">
-        <input type="month" class="input" id="filtroDashMes" onchange="loadDashboard()" style="max-width:180px">
+        <input type="month" class="input" id="filtroDashMes" oninput="loadDashboard()" style="max-width:180px">
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtroDashMes').value=new Date().toISOString().slice(0,7);loadDashboard()">Mes actual</button>
       </div>
 
@@ -201,7 +201,7 @@
           <option>Reservado</option><option>Pagada</option>
           <option>Realizado</option><option>Anulada</option>
         </select>
-        <input type="month" class="input" id="filtroMes" onchange="loadCotizaciones()" style="max-width:160px">
+        <input type="month" class="input" id="filtroMes" oninput="loadCotizaciones()" style="max-width:160px">
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtroEstado').value='';document.getElementById('filtroMes').value='';loadCotizaciones()">Limpiar</button>
       </div>
 
@@ -285,7 +285,7 @@
       </div>
       <div class="filters-bar">
         <div id="buscadorGastos"></div>
-        <input type="month" class="input" id="filtroGastoMes" onchange="loadGastos()" style="max-width:200px">
+        <input type="month" class="input" id="filtroGastoMes" oninput="loadGastos()" style="max-width:200px">
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtroGastoMes').value='';loadGastos()">Limpiar</button>
       </div>
       <div class="grid-2" style="margin-bottom:16px">
@@ -826,20 +826,30 @@ function comboAttach(root, { items, getLabel, getSub, getId, onSelect, hiddenSel
 // sin volver a consultar Firestore.
 // ============================================================
 function initBuscador(id, onFiltrar) {
-  const wrap  = document.getElementById(id);
+  const wrap   = document.getElementById(id);
   if (!wrap) return;
-  const btn   = wrap.querySelector('.search-btn');
-  const input = wrap.querySelector('.search-input');
+  const btn    = wrap.querySelector('.search-btn');
+  const input  = wrap.querySelector('.search-input');
+  const clearBtn = wrap.querySelector('.search-clear');
+  function actualizarClear() { clearBtn.style.display = input.value ? 'flex' : 'none'; }
   function cerrar() {
     wrap.classList.remove('open');
     input.value = '';
+    actualizarClear();
+    onFiltrar('');
+  }
+  function limpiar() {
+    input.value = '';
+    actualizarClear();
+    input.focus();
     onFiltrar('');
   }
   btn.addEventListener('click', () => {
     if (wrap.classList.contains('open') && !input.value) { cerrar(); }
     else { wrap.classList.add('open'); input.focus(); }
   });
-  input.addEventListener('input', () => onFiltrar(input.value));
+  clearBtn.addEventListener('click', limpiar);
+  input.addEventListener('input', () => { actualizarClear(); onFiltrar(input.value); });
   input.addEventListener('keydown', e => { if (e.key === 'Escape') cerrar(); });
   input.addEventListener('blur', () => { if (!input.value) wrap.classList.remove('open'); });
 }
@@ -849,6 +859,9 @@ function buscadorHtml(id, placeholder) {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </button>
     <input type="text" class="search-input" placeholder="${placeholder}">
+    <button type="button" class="search-clear" title="Limpiar" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
   </div>`;
 }
 
@@ -1728,14 +1741,12 @@ async function cotizacionesParaSelect() {
   const snap = await getDocs(query(collection(db,'cotizaciones'), orderBy('creado_en','desc'), limit(300)));
   return snap.docs.map(d => { const c = d.data(); return { id:d.id, numero:c.numero, cliente:c.cliente_nombre, tematica:c.tematica }; });
 }
+let gastoCotOpciones = []; // última lista de cotizaciones ofrecida en el modal de gasto (para leerla al guardar)
 window.openGastoModal = async function(editId = null) {
   let g = null;
   if (editId) { const s = await getDoc(doc(db,'gastos',editId)); g = s.data(); }
   const CATS = ['Decoración','Compras','Transporte','Publicidad','Suministros','Personal','Servicios','Otro'];
-  const lista = await cotizacionesParaSelect();
-  const opciones = lista.map(c =>
-    `<option value="${c.id}" ${g?.cot_id===c.id?'selected':''}>${escapeHtml(c.numero)} — ${escapeHtml(c.cliente||'')}${c.tematica?' ('+escapeHtml(c.tematica)+')':''}</option>`
-  ).join('');
+  gastoCotOpciones = await cotizacionesParaSelect();
   document.getElementById('modalTitle').textContent = g ? 'Editar gasto' : 'Registrar gasto';
   document.getElementById('modalBody').innerHTML = `
     <div class="form-group"><label>Descripción *</label>
@@ -1748,15 +1759,29 @@ window.openGastoModal = async function(editId = null) {
     </div>
     <div class="form-group"><label>Categoría</label>
       <select class="input" id="fGastoCat">${CATS.map(c=>`<option${g?.categoria===c?' selected':''}>${c}</option>`).join('')}</select></div>
-    <div class="form-group"><label>Cotización / Evento relacionado</label>
-      <select class="input" id="fGastoCot">
-        <option value="">— Gasto general (sin cotización) —</option>
-        ${opciones}
-      </select>
+    <div class="form-group">
+      <label>Cotización / Evento relacionado
+        <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:0.72rem" onclick="document.getElementById('comboGastoCot')._ctl.clear()">Quitar</button>
+      </label>
+      <div class="combo" id="comboGastoCot">
+        <input type="text" class="input combo-input" placeholder="— Gasto general — o busca por número, cliente, temática..." autocomplete="off">
+        <input type="hidden" class="combo-hidden" id="fGastoCot">
+        <div class="combo-list"></div>
+      </div>
       <small style="color:var(--text-secondary)">Vincula el gasto al evento para el que se hizo (ej: el bizcocho de una cotización).</small></div>`;
   document.getElementById('modalFooter').innerHTML = `
     <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-primary" onclick="saveGasto(${editId?`'${editId}'`:'null'})">Guardar</button>`;
+
+  const comboRoot = document.getElementById('comboGastoCot');
+  const ctl = comboAttach(comboRoot, {
+    items: gastoCotOpciones,
+    getLabel: c => c.numero,
+    getSub:   c => `${c.cliente||''}${c.tematica?' · '+c.tematica:''}`,
+  });
+  comboRoot._ctl = ctl;
+  if (g?.cot_id) ctl.setValue(g.cot_id, { silent:true });
+
   document.getElementById('modalOverlay').classList.add('open');
 };
 window.saveGasto = async function(editId) {
@@ -1767,11 +1792,10 @@ window.saveGasto = async function(editId) {
   const [y,m] = fecha.split('-');
 
   // Cotización vinculada (opcional)
-  const cotSel = document.getElementById('fGastoCot');
-  const cotId  = cotSel.value || '';
-  const cotTxt = cotId ? cotSel.options[cotSel.selectedIndex].text : '';
-  const cotNumero = cotTxt ? cotTxt.split(' — ')[0] : '';
-  const cotCliente = cotTxt && cotTxt.includes(' — ') ? cotTxt.split(' — ')[1].replace(/\s*\(.*\)$/,'') : '';
+  const cotId  = document.getElementById('fGastoCot').value || '';
+  const cotObj = cotId ? gastoCotOpciones.find(c => c.id === cotId) : null;
+  const cotNumero  = cotObj?.numero  || '';
+  const cotCliente = cotObj?.cliente || '';
 
   const data  = {
     descripcion:desc, monto, fecha,
@@ -2031,9 +2055,16 @@ async function loadDashboard() {
   const mesAnio = `${String(mesSel).padStart(2,'0')}-${anioSel}`;
   document.getElementById('dashSubtitle').textContent = `${NOMBRES_MES[mesSel-1]} ${anioSel}`;
 
-  const [cotSnap, gastoSnap] = await Promise.all([
+  // "mes_anio" es el mes de EMISIÓN de la cotización (para las cifras financieras).
+  // Los eventos, en cambio, se buscan por FECHA DEL EVENTO — una cotización emitida
+  // en un mes puede tener el evento en otro mes distinto.
+  const inicioMes = new Date(anioSel, mesSel-1, 1);
+  const finMes    = new Date(anioSel, mesSel, 1);
+
+  const [cotSnap, gastoSnap, eventosSnap] = await Promise.all([
     getDocs(query(collection(db,'cotizaciones'), where('mes_anio','==',mesAnio))),
     getDocs(query(collection(db,'gastos'), where('mes_anio','==',mesAnio))),
+    getDocs(query(collection(db,'cotizaciones'), where('fecha_evento','>=',inicioMes), where('fecha_evento','<',finMes))),
   ]);
   const cots   = cotSnap.docs.map(d=>({id:d.id,...d.data()}));
   const gastos = gastoSnap.docs.map(d=>d.data());
@@ -2049,8 +2080,9 @@ async function loadDashboard() {
 
   // Próximos eventos (mes actual) / Eventos del mes (mes pasado o futuro elegido)
   document.getElementById('dashProximosTitulo').textContent = esMesActual ? '🎈 Próximos eventos' : `🎈 Eventos de ${NOMBRES_MES[mesSel-1]}`;
-  let proximos = cots
-    .filter(c => c.fecha_evento && (c.estado==='Reservado'||c.estado==='Pagada'||c.estado==='Realizado'))
+  let proximos = eventosSnap.docs
+    .map(d => ({ id:d.id, ...d.data() }))
+    .filter(c => c.estado==='Reservado'||c.estado==='Pagada'||c.estado==='Realizado')
     .map(c => ({ ...c, _fe: c.fecha_evento?.toDate ? c.fecha_evento.toDate() : new Date(c.fecha_evento) }));
   if (esMesActual) proximos = proximos.filter(c => c._fe >= hoy);
   proximos = proximos.sort((a,b) => a._fe - b._fe).slice(0,5);
