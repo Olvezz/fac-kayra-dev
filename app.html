@@ -197,7 +197,7 @@
         <div id="buscadorCot"></div>
         <select class="input" id="filtroEstado" onchange="loadCotizaciones()" style="max-width:160px">
           <option value="">Todos los estados</option>
-          <option>Cotización</option><option>Pendiente</option>
+          <option>Cotización</option>
           <option>Reservado</option><option>Pagada</option>
           <option>Realizado</option><option>Anulada</option>
         </select>
@@ -215,12 +215,13 @@
                 <th class="sortable" onclick="sortCotizaciones('fecha_evento')">Fecha evento <span class="sort-arrow">↕</span></th>
                 <th class="sortable" onclick="sortCotizaciones('tematica')">Temática <span class="sort-arrow">↕</span></th>
                 <th class="sortable" onclick="sortCotizaciones('total')">Total <span class="sort-arrow">↕</span></th>
+                <th class="sortable" onclick="sortCotizaciones('abono')">Abono <span class="sort-arrow">↕</span></th>
                 <th class="sortable" onclick="sortCotizaciones('estado')">Estado <span class="sort-arrow">↕</span></th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="cotizacionesTbody">
-              <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary)"><div class="spinner" style="margin:auto"></div></td></tr>
+              <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary)"><div class="spinner" style="margin:auto"></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -526,7 +527,7 @@
           <div class="form-group">
             <label>Estado</label>
             <select class="input" id="cotEstado">
-              <option>Cotización</option><option>Pendiente</option>
+              <option>Cotización</option>
               <option>Reservado</option><option>Pagada</option>
               <option>Realizado</option><option>Anulada</option>
             </select>
@@ -537,6 +538,17 @@
               <option>Transferencia</option><option>Efectivo</option>
               <option>Tarjeta</option><option>Depósito</option><option>Otro</option>
             </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Abono recibido (RD$) <small style="color:var(--text-secondary);font-weight:400">— uso interno, no aparece en el PDF</small></label>
+            <input class="input" type="number" id="cotAbono" value="0" min="0" oninput="recalcTotales()">
+          </div>
+          <div class="form-group">
+            <label>Saldo pendiente</label>
+            <input class="input" id="cotSaldo" value="RD$0.00" readonly style="background:var(--bg);font-weight:700">
           </div>
         </div>
 
@@ -592,7 +604,7 @@ const USUARIOS = {
 function nombreUsuario(email) { return USUARIOS[email] || (email ? email.split('@')[0] : 'Desconocido'); }
 
 // Estados de una cotización (orden lógico del flujo)
-const ESTADOS = ['Cotización','Pendiente','Reservado','Pagada','Realizado','Anulada'];
+const ESTADOS = ['Cotización','Reservado','Pagada','Realizado','Anulada'];
 // Una cotización cobrada cuenta el dinero como ingresado (Pagada o ya Realizado)
 function esCobrada(estado) { return estado === 'Pagada' || estado === 'Realizado'; }
 
@@ -633,6 +645,7 @@ window.logout = () => signOut(auth).then(() => { window.location.href = 'index.h
 async function init() {
   appConfig = await loadConfig();
   await Promise.all([loadClientes(), loadCatalogo()]);
+  await autoAnularVencidas();
 
   // Set mes actual en filtros
   const mesActual = new Date().toISOString().slice(0,7);
@@ -727,7 +740,7 @@ function mesAnioStr(v) {
   return `${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
 function badgeHtml(estado) {
-  const map = { 'Cotización':'cotizacion','Pendiente':'pendiente','Reservado':'reservado','Pagada':'pagada','Realizado':'realizado','Anulada':'anulada' };
+  const map = { 'Cotización':'cotizacion','Reservado':'reservado','Pagada':'pagada','Realizado':'realizado','Anulada':'anulada' };
   return `<span class="badge badge-${map[estado]||'cotizacion'}">${estado||'Cotización'}</span>`;
 }
 function escapeHtml(s) {
@@ -868,17 +881,41 @@ function buscadorHtml(id, placeholder) {
 // ============================================================
 // LOGS / REGISTROS  — registra cada acción hecha en el sistema
 // ============================================================
-async function logAccion(accion, entidad, detalle) {
+async function logAccion(accion, entidad, detalle, usuarioOverride) {
   try {
     await addDoc(collection(db,'logs'), {
       accion,                                   // 'Creó' | 'Editó' | 'Eliminó' | 'Cerró mes' ...
       entidad,                                  // 'Cliente' | 'Cotización' | 'Gasto' ...
       detalle: detalle || '',                   // texto legible
-      usuario: nombreUsuario(currentUser?.email),
+      usuario: usuarioOverride || nombreUsuario(currentUser?.email),
       usuario_email: currentUser?.email || '',
       fecha: serverTimestamp(),
     });
   } catch(e) { console.warn('No se pudo registrar el log:', e); }
+}
+
+// ============================================================
+// AUTO-ANULADO — cotizaciones que llevan 30+ días en "Cotización"
+// sin ningún cambio pasan a "Anulada" automáticamente al abrir la app.
+// ============================================================
+async function autoAnularVencidas() {
+  const LIMITE_DIAS = 30;
+  const limiteMs = LIMITE_DIAS * 86400000;
+  try {
+    const snap = await getDocs(query(collection(db,'cotizaciones'), where('estado','==','Cotización')));
+    const vencidas = snap.docs.filter(d => {
+      const c = d.data();
+      const ultima = c.actualizado_en?.toDate ? c.actualizado_en.toDate()
+                   : c.creado_en?.toDate ? c.creado_en.toDate() : null;
+      return ultima && (Date.now() - ultima.getTime()) > limiteMs;
+    });
+    for (const d of vencidas) {
+      const c = d.data();
+      await updateDoc(doc(db,'cotizaciones',d.id), { estado:'Anulada', actualizado_en: serverTimestamp() });
+      await logAccion('Anuló', 'Cotización', `${c.numero} · auto-anulada tras ${LIMITE_DIAS} días sin cambios`, 'Sistema');
+    }
+    if (vencidas.length) toast(`${vencidas.length} cotización(es) vencida(s) se anularon automáticamente`, 'info');
+  } catch(e) { console.warn('No se pudo revisar cotizaciones vencidas:', e); }
 }
 
 // ============================================================
@@ -1159,8 +1196,8 @@ window.loadCotizaciones = async function() {
   const snap = await getDocs(q);
   cotizacionesActuales = snap.docs.map(d => ({ id:d.id, ...d.data() }));
   document.getElementById('cotSubtitle').textContent = `${cotizacionesActuales.length} cotizaciones`;
-  // Badge de pendientes en sidebar
-  const pend = cotizacionesActuales.filter(c => c.estado === 'Pendiente' || c.estado === 'Reservado').length;
+  // Badge de pendientes en sidebar (cotizaciones sin confirmar o eventos ya reservados)
+  const pend = cotizacionesActuales.filter(c => c.estado === 'Cotización' || c.estado === 'Reservado').length;
   const badge = document.getElementById('badgePendientes');
   badge.style.display = pend ? 'inline-flex' : 'none';
   badge.textContent = pend;
@@ -1211,7 +1248,7 @@ function renderCotizaciones() {
     cots.sort((a,b) => {
       let va, vb;
       if (campo === 'fecha_evento')      { va = fechaMs(a.fecha_evento); vb = fechaMs(b.fecha_evento); }
-      else if (campo === 'total')        { va = Number(a.total)||0; vb = Number(b.total)||0; }
+      else if (campo === 'total' || campo === 'abono') { va = Number(a[campo])||0; vb = Number(b[campo])||0; }
       else { va = String(a[campo]||'').toLowerCase(); vb = String(b[campo]||'').toLowerCase(); }
       if (va < vb) return -1*dir;
       if (va > vb) return  1*dir;
@@ -1221,19 +1258,21 @@ function renderCotizaciones() {
 
   if (!cots.length) {
     tbody.innerHTML = cotFiltroTexto
-      ? `<tr><td colspan="7"><div class="empty-state"><h3>Sin resultados</h3><p>Ninguna cotización coincide con “${escapeHtml(cotFiltroTexto)}”</p></div></td></tr>`
-      : `<tr><td colspan="7"><div class="empty-state"><h3>Sin cotizaciones</h3><p>Crea tu primera cotización</p></div></td></tr>`;
+      ? `<tr><td colspan="8"><div class="empty-state"><h3>Sin resultados</h3><p>Ninguna cotización coincide con “${escapeHtml(cotFiltroTexto)}”</p></div></td></tr>`
+      : `<tr><td colspan="8"><div class="empty-state"><h3>Sin cotizaciones</h3><p>Crea tu primera cotización</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = cots.map(c => {
     const fe = c.fecha_evento ? formatDate(c.fecha_evento) : '—';
     const esRealizado = c.estado === 'Realizado';
+    const saldo = Math.max((c.total||0) - (c.abono||0), 0);
     return `<tr>
       <td><strong style="color:var(--morado)">${c.numero}</strong></td>
       <td>${escapeHtml(c.cliente_nombre)||'—'}</td>
       <td>${fe}${c.hora_evento?`<br><small style="color:var(--text-secondary)">${escapeHtml(c.hora_evento)}</small>`:''}</td>
       <td>${escapeHtml(c.tematica)||'—'}</td>
       <td><strong>${formatMoney(c.total)}</strong></td>
+      <td>${c.abono ? `${formatMoney(c.abono)}<br><small style="color:var(--text-secondary)">Saldo: ${formatMoney(saldo)}</small>` : '<span style="color:var(--text-secondary)">—</span>'}</td>
       <td>${badgeHtml(c.estado)}</td>
       <td>
         <div class="table-actions">
@@ -1288,6 +1327,7 @@ window.openEditCotizacion = async function(id) {
   document.getElementById('cotEstado').value      = c.estado || 'Cotización';
   document.getElementById('cotMetodoPago').value  = c.metodo_pago || 'Transferencia';
   document.getElementById('cotTransporte').value  = c.transporte || 0;
+  document.getElementById('cotAbono').value       = c.abono || 0;
   document.getElementById('cotNotas').value       = c.notas || '';
   // Items
   document.getElementById('cotItems').innerHTML = '';
@@ -1395,6 +1435,10 @@ window.recalcTotales = function() {
   document.getElementById('totItbisLabel').textContent  = `ITBIS (${itbisPct}%)`;
   document.getElementById('totItbis').textContent       = formatMoney(itbisMonto);
   document.getElementById('totTotal').textContent       = formatMoney(total);
+
+  const abono = parseFloat(document.getElementById('cotAbono')?.value) || 0;
+  const saldoEl = document.getElementById('cotSaldo');
+  if (saldoEl) saldoEl.value = formatMoney(Math.max(total - abono, 0));
 };
 
 // ── Guardar cotización ──
@@ -1421,6 +1465,7 @@ window.saveCotizacion = async function() {
   const itbis_monto= subtotal * itbisPct / 100;
   const transporte = parseFloat(document.getElementById('cotTransporte').value) || 0;
   const total      = subtotal + itbis_monto + transporte;
+  const abono      = parseFloat(document.getElementById('cotAbono').value) || 0;
 
   const fechaEvStr = document.getElementById('cotFechaEvento').value;
   const data = {
@@ -1434,7 +1479,7 @@ window.saveCotizacion = async function() {
     hora_evento:      document.getElementById('cotHoraEvento').value || '',
     tematica:         document.getElementById('cotTematica').value.trim(),
     items,
-    subtotal, itbis_pct: itbisPct, itbis_monto, transporte, total,
+    subtotal, itbis_pct: itbisPct, itbis_monto, transporte, total, abono,
     estado:       document.getElementById('cotEstado').value,
     metodo_pago:  document.getElementById('cotMetodoPago').value,
     notas:        document.getElementById('cotNotas').value.trim(),
