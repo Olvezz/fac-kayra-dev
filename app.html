@@ -640,6 +640,7 @@ let clientes    = [];
 let catalogo    = [];
 let editingCotId = null;
 let cotAbonosActuales = []; // abonos de la cotización que se está creando/editando: [{fecha, monto}]
+let editingCotAntes = null; // snapshot de la cotización antes de editarla (para el detalle del log)
 let afterClienteSave = null; // callback para cotización
 let comboCliente = null; // controlador del buscador de cliente en el modal de cotización
 let cotizacionesActuales = [];         // última lista cargada (para ordenar en la tabla)
@@ -925,18 +926,80 @@ function buscadorHtml(id, placeholder) {
 // ============================================================
 // LOGS / REGISTROS  — registra cada acción hecha en el sistema
 // ============================================================
-async function logAccion(accion, entidad, detalle, usuarioOverride) {
+async function logAccion(accion, entidad, detalle, usuarioOverride, cambios) {
   try {
     await addDoc(collection(db,'logs'), {
       accion,                                   // 'Creó' | 'Editó' | 'Eliminó' | 'Cerró mes' ...
       entidad,                                  // 'Cliente' | 'Cotización' | 'Gasto' ...
-      detalle: detalle || '',                   // texto legible
+      detalle: detalle || '',                   // texto legible (resumen corto)
+      cambios: (cambios && cambios.length) ? cambios : null, // [{campo,antes,despues}] — detalle campo a campo
       usuario: usuarioOverride || nombreUsuario(currentUser?.email),
       usuario_email: currentUser?.email || '',
       fecha: serverTimestamp(),
     });
   } catch(e) { console.warn('No se pudo registrar el log:', e); }
 }
+
+// Compara "antes" y "después" campo por campo y arma la lista de cambios
+// REALES (solo los que de verdad cambiaron), con etiquetas legibles.
+// mapa: { clave: { etiqueta, formato?: fn(valor) => texto } }
+function diffCampos(antes, despues, mapa) {
+  const cambios = [];
+  Object.keys(mapa).forEach(clave => {
+    const { etiqueta, formato } = mapa[clave];
+    const fmt = formato || (v => (v===undefined||v===null||v==='') ? '—' : String(v));
+    const antesTxt = fmt(antes?.[clave]);
+    const despuesTxt = fmt(despues?.[clave]);
+    if (antesTxt !== despuesTxt) cambios.push({ campo: etiqueta, antes: antesTxt, despues: despuesTxt });
+  });
+  return cambios;
+}
+const CAMPOS_CLIENTE = {
+  nombre:    { etiqueta:'Nombre' },
+  telefono:  { etiqueta:'Teléfono' },
+  direccion: { etiqueta:'Dirección' },
+  notas:     { etiqueta:'Notas' },
+};
+const CAMPOS_SERVICIO = {
+  nombre:       { etiqueta:'Nombre' },
+  descripcion:  { etiqueta:'Descripción' },
+  categoria:    { etiqueta:'Categoría' },
+  precio_base:  { etiqueta:'Precio base',  formato: v => formatMoney(v) },
+  margen:       { etiqueta:'Margen',       formato: v => `${((v||0)*100).toFixed(0)}%` },
+  precio_final: { etiqueta:'Precio final', formato: v => formatMoney(v) },
+};
+const CAMPOS_GASTO = {
+  descripcion: { etiqueta:'Descripción' },
+  monto:       { etiqueta:'Monto',    formato: v => formatMoney(v) },
+  fecha:       { etiqueta:'Fecha' },
+  categoria:   { etiqueta:'Categoría' },
+  cot_numero:  { etiqueta:'Cotización vinculada', formato: v => v || '— Sin vincular —' },
+};
+const CAMPOS_COTIZACION = {
+  cliente_nombre: { etiqueta:'Cliente' },
+  fecha_evento:   { etiqueta:'Fecha del evento', formato: v => v ? formatDate(v) : '—' },
+  hora_evento:    { etiqueta:'Hora del evento' },
+  tematica:       { etiqueta:'Temática' },
+  festejado:      { etiqueta:'Festejado/a' },
+  estado:         { etiqueta:'Estado' },
+  metodo_pago:    { etiqueta:'Método de pago' },
+  transporte:     { etiqueta:'Transporte', formato: v => formatMoney(v) },
+  total:          { etiqueta:'Total',      formato: v => formatMoney(v) },
+  abono:          { etiqueta:'Abono total',formato: v => formatMoney(v) },
+  notas:          { etiqueta:'Notas internas' },
+  items:          { etiqueta:'Servicios',  formato: items => (items||[]).map(i=>`${i.nombre} x${i.cantidad}`).join(', ') || '—' },
+};
+const CAMPOS_CONFIG = {
+  nombre_negocio: { etiqueta:'Nombre del negocio' },
+  telefono:       { etiqueta:'Teléfono' },
+  whatsapp:       { etiqueta:'WhatsApp' },
+  email:          { etiqueta:'Email' },
+  instagram:      { etiqueta:'Instagram' },
+  itbis:          { etiqueta:'ITBIS', formato: v => `${v||0}%` },
+  metodo_pago_default: { etiqueta:'Método de pago por defecto' },
+  logo_url:       { etiqueta:'URL del logo' },
+  anticipo:       { etiqueta:'Anticipo requerido', formato: v => formatMoney(v) },
+};
 
 // ============================================================
 // MIGRACIÓN — agrega/actualiza "mes_anio_evento" (mes del EVENTO, con el
@@ -1056,6 +1119,7 @@ function loadConfigForm() {
 }
 window.saveConfig = async function(e) {
   e.preventDefault();
+  const antes = { ...appConfig };
   const data = {
     nombre_negocio: document.getElementById('cfgNombre').value,
     telefono:        document.getElementById('cfgTelefono').value,
@@ -1069,7 +1133,8 @@ window.saveConfig = async function(e) {
   };
   await setDoc(doc(db,'config','principal'), data, { merge:true });
   appConfig = data;
-  logAccion('Editó', 'Configuración', 'Actualizó los datos del negocio');
+  const cambios = diffCampos(antes, data, CAMPOS_CONFIG);
+  logAccion('Editó', 'Configuración', 'Actualizó los datos del negocio', null, cambios);
   toast('Configuración guardada ✓');
 };
 
@@ -1153,6 +1218,7 @@ window.saveCliente = async function(editId) {
     }
   }
 
+  const antes = editId ? clientes.find(c => c.id === editId) : null;
   const data = {
     nombre,
     telefono,
@@ -1162,7 +1228,8 @@ window.saveCliente = async function(editId) {
   };
   if (editId) { await updateDoc(doc(db,'clientes',editId), { ...data, actualizado_en: serverTimestamp() }); }
   else        { await addDoc(collection(db,'clientes'), { ...data, creado_en: serverTimestamp() }); }
-  logAccion(editId ? 'Editó' : 'Creó', 'Cliente', `${nombre}${telefono ? ' · '+telefono : ''}`);
+  const cambios = editId ? diffCampos(antes, data, CAMPOS_CLIENTE) : null;
+  logAccion(editId ? 'Editó' : 'Creó', 'Cliente', `${nombre}${telefono ? ' · '+telefono : ''}`, null, cambios);
   toast(editId ? 'Cliente actualizado ✓' : 'Cliente creado ✓');
   closeModal();
   await loadClientes(document.getElementById('page-clientes').classList.contains('active'));
@@ -1268,6 +1335,7 @@ window.saveServicio = async function(editId) {
   if (!nombre) { toast('El nombre es requerido','error'); return; }
   const base   = parseFloat(document.getElementById('fSvcBase').value)   || 0;
   const margen = parseFloat(document.getElementById('fSvcMargen').value) / 100 || 0;
+  const antes  = editId ? catalogo.find(s => s.id === editId) : null;
   const data   = {
     nombre,
     descripcion: document.getElementById('fSvcDescripcion').value.trim(),
@@ -1277,7 +1345,8 @@ window.saveServicio = async function(editId) {
   };
   if (editId) await updateDoc(doc(db,'catalogo',editId), data);
   else        await addDoc(collection(db,'catalogo'), data);
-  logAccion(editId ? 'Editó' : 'Creó', 'Servicio', `${nombre} · ${formatMoney(data.precio_final)}`);
+  const cambios = editId ? diffCampos(antes, data, CAMPOS_SERVICIO) : null;
+  logAccion(editId ? 'Editó' : 'Creó', 'Servicio', `${nombre} · ${formatMoney(data.precio_final)}`, null, cambios);
   toast(editId ? 'Servicio actualizado ✓' : 'Servicio creado ✓');
   closeModal();
   await loadCatalogo(true);
@@ -1431,6 +1500,7 @@ window.openEditCotizacion = async function(id) {
   const snap = await getDoc(doc(db,'cotizaciones',id));
   if (!snap.exists()) return;
   const c = snap.data();
+  editingCotAntes = c; // se usa al guardar, para armar el detalle de qué cambió
   document.getElementById('cotModalTitle').textContent = `Editar ${c.numero}`;
   comboCliente?.setValue(c.cliente_id || '');
   document.getElementById('cotFechaEvento').value = c.fecha_evento
@@ -1716,7 +1786,8 @@ window.saveCotizacion = async function() {
   try {
     if (editingCotId) {
       await updateDoc(doc(db,'cotizaciones',editingCotId), { ...data, actualizado_en: serverTimestamp() });
-      logAccion('Editó', 'Cotización', `${document.getElementById('cotModalTitle').textContent.replace('Editar ','')} · ${cliente?.nombre||''} · ${formatMoney(total)}`);
+      const cambios = diffCampos(editingCotAntes, data, CAMPOS_COTIZACION);
+      logAccion('Editó', 'Cotización', `${document.getElementById('cotModalTitle').textContent.replace('Editar ','')} · ${cliente?.nombre||''} · ${formatMoney(total)}`, null, cambios);
       toast(`Cotización actualizada ✓`);
     } else {
       // Generar número
@@ -2078,9 +2149,11 @@ async function cotizacionesParaSelect() {
   });
 }
 let gastoCotOpciones = []; // última lista de cotizaciones ofrecida en el modal de gasto (para leerla al guardar)
+let editingGastoAntes = null; // snapshot del gasto antes de editarlo (para el detalle del log)
 window.openGastoModal = async function(editId = null) {
   let g = null;
   if (editId) { const s = await getDoc(doc(db,'gastos',editId)); g = s.data(); }
+  editingGastoAntes = g; // se usa al guardar, para armar el detalle de qué cambió
   const CATS = ['Mobiliario','Decoración','Comida','Transporte','Insumos','Ayudante','Gastos de casa','Otro'];
   gastoCotOpciones = await cotizacionesParaSelect();
   document.getElementById('modalTitle').textContent = g ? 'Editar gasto' : 'Registrar gasto';
@@ -2161,7 +2234,8 @@ window.saveGasto = async function(editId) {
 
   if (editId) await updateDoc(doc(db,'gastos',editId), data);
   else        await addDoc(collection(db,'gastos'), { ...data, creado_en: serverTimestamp() });
-  logAccion(editId ? 'Editó' : 'Creó', 'Gasto', `${desc} · ${formatMoney(monto)}${cotNumero ? ' · '+cotNumero : ''}`);
+  const cambios = editId ? diffCampos(editingGastoAntes, data, CAMPOS_GASTO) : null;
+  logAccion(editId ? 'Editó' : 'Creó', 'Gasto', `${desc} · ${formatMoney(monto)}${cotNumero ? ' · '+cotNumero : ''}`, null, cambios);
   toast(editId ? 'Gasto actualizado ✓' : 'Gasto registrado ✓');
   closeModal();
   loadGastos();
@@ -2413,11 +2487,21 @@ window.loadLogs = async function() {
     tbody.innerHTML = logs.map(l => {
       const f = l.fecha?.toDate ? l.fecha.toDate() : null;
       const fStr = f ? f.toLocaleString('es-DO',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+      // Desglose campo a campo: qué cambió, qué había antes y qué hay ahora.
+      const cambiosHtml = (l.cambios && l.cambios.length)
+        ? `<div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)">${l.cambios.map(c => `
+            <div style="font-size:0.76rem;line-height:1.6">
+              <strong>${escapeHtml(c.campo)}:</strong>
+              <span style="text-decoration:line-through;color:#9CA3AF">${escapeHtml(c.antes)}</span>
+              <span style="color:var(--text-secondary)"> → </span>
+              <span style="color:var(--morado);font-weight:600">${escapeHtml(c.despues)}</span>
+            </div>`).join('')}</div>`
+        : '';
       return `<tr>
         <td style="white-space:nowrap">${fStr}</td>
         <td><strong>${escapeHtml(l.usuario)||'—'}</strong></td>
         <td><span style="font-weight:600;color:${colorAccion[l.accion]||'var(--text-secondary)'}">${escapeHtml(l.accion)}</span> ${escapeHtml(l.entidad)||''}</td>
-        <td style="color:var(--text-secondary)">${escapeHtml(l.detalle)||''}</td>
+        <td style="color:var(--text-secondary)">${escapeHtml(l.detalle)||''}${cambiosHtml}</td>
       </tr>`;
     }).join('');
   } catch(e) {
