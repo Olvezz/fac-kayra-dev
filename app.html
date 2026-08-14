@@ -1562,6 +1562,18 @@ window.recalcTotales = function() {
   document.getElementById('totTotal').textContent       = formatMoney(total);
 
   renderCotAbonos(total);
+
+  // Auto-avanzar el estado según el abono: el primer abono confirma la
+  // reserva (Cotización → Reservado); cubrir el total la marca Pagada.
+  // Nunca retrocede el estado ni toca Realizado/Anulada.
+  const estadoSel = document.getElementById('cotEstado');
+  if (estadoSel) {
+    const anterior = estadoSel.value;
+    const abonoActual = sumaAbonos();
+    if (abonoActual > 0 && estadoSel.value === 'Cotización') estadoSel.value = 'Reservado';
+    if (total > 0 && abonoActual >= total && estadoSel.value !== 'Realizado' && estadoSel.value !== 'Anulada') estadoSel.value = 'Pagada';
+    if (estadoSel.value !== anterior) toast(`Estado actualizado a "${estadoSel.value}" por el abono ✓`, 'info');
+  }
 };
 
 // ============================================================
@@ -2007,6 +2019,7 @@ window.toggleAgruparGastos = function() {
   document.getElementById('btnAgruparGastos').textContent = gastosAgrupado ? 'Ver como lista' : 'Agrupar por cotización';
   document.getElementById('gastosFlatWrap').style.display    = gastosAgrupado ? 'none' : '';
   document.getElementById('gastosGroupedWrap').style.display = gastosAgrupado ? '' : 'none';
+  renderGastos(); // vuelve a dibujar con el nuevo modo (lista o agrupado)
 };
 function renderGastosAgrupados(lista) {
   const wrap = document.getElementById('gastosGroupedWrap');
@@ -2068,7 +2081,7 @@ let gastoCotOpciones = []; // última lista de cotizaciones ofrecida en el modal
 window.openGastoModal = async function(editId = null) {
   let g = null;
   if (editId) { const s = await getDoc(doc(db,'gastos',editId)); g = s.data(); }
-  const CATS = ['Decoración','Compras','Transporte','Publicidad','Suministros','Personal','Servicios','Otro'];
+  const CATS = ['Mobiliario','Decoración','Comida','Transporte','Insumos','Ayudante','Gastos de casa','Otro'];
   gastoCotOpciones = await cotizacionesParaSelect();
   document.getElementById('modalTitle').textContent = g ? 'Editar gasto' : 'Registrar gasto';
   document.getElementById('modalBody').innerHTML = `
@@ -2242,13 +2255,23 @@ window.descargarPDFCierre = async function(mesAnio, mesLabel) {
       getDocs(query(collection(db,'cotizaciones'), where('mes_anio_evento','==',mesAnio))),
       getDocs(query(collection(db,'gastos'), where('mes_anio_evento','==',mesAnio))),
     ]);
-    const cots   = cotSnap.docs.map(d=>({id:d.id,...d.data()})).filter(c=>esCobrada(c.estado));
+    const todasCots = cotSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const cots   = todasCots.filter(c=>esCobrada(c.estado));
+    const cotsCobradasIds = new Set(cots.map(c=>c.id));
     const gastos = gastoSnap.docs.map(d=>d.data());
+    // Los gastos se agrupan en 3 baldes para que el total del PDF SIEMPRE
+    // coincida con "Gastos en el mes" del dashboard (que suma TODOS los
+    // gastos del mes, sin importar si su cotización ya se cobró):
+    //  - gastosPorCot: ligados a una cotización YA cobrada (Pagada/Realizado)
+    //  - gastosNoCobradas: ligados a una cotización que aún no se ha cobrado
+    //  - gastosGenerales: sin cotización vinculada
     const gastosPorCot = {};
+    const gastosNoCobradas = {};
     const gastosGenerales = [];
     gastos.forEach(g => {
-      if (g.cot_id) { (gastosPorCot[g.cot_id] = gastosPorCot[g.cot_id] || []).push(g); }
-      else gastosGenerales.push(g);
+      if (!g.cot_id) { gastosGenerales.push(g); return; }
+      if (cotsCobradasIds.has(g.cot_id)) (gastosPorCot[g.cot_id] = gastosPorCot[g.cot_id] || []).push(g);
+      else (gastosNoCobradas[g.cot_id] = gastosNoCobradas[g.cot_id] || []).push(g);
     });
 
     const jsPDF = await ensureJsPDF();
@@ -2321,6 +2344,26 @@ window.descargarPDFCierre = async function(mesAnio, mesLabel) {
         ['Beneficio neto', formatMoney(beneficioCot), beneficioCot>=0?morado:rojo, true],
       ]);
     });
+
+    const idsNoCobradas = Object.keys(gastosNoCobradas);
+    if (idsNoCobradas.length) {
+      chequearEspacio(14);
+      pdoc.setFont('helvetica','bold'); pdoc.setFontSize(9); pdoc.setTextColor(...gris);
+      pdoc.text('GASTOS DE COTIZACIONES AÚN NO COBRADAS ESE MES', M, y); y += 7;
+      idsNoCobradas.forEach(cotId => {
+        const gastosCot = gastosNoCobradas[cotId];
+        const ref = gastosCot[0];
+        chequearEspacio(11);
+        pdoc.setFillColor(...gris); pdoc.rect(M, y, W-M*2, 7, 'F');
+        pdoc.setFont('helvetica','bold'); pdoc.setFontSize(8.5); pdoc.setTextColor(255,255,255);
+        pdoc.text(`${ref.cot_numero||''}  ·  ${ref.cot_cliente||''}`, M+3, y+4.8);
+        y += 9;
+        gastosCot.forEach(filaGasto);
+        const subtotal = gastosCot.reduce((s,g)=>s+(g.monto||0), 0);
+        totalGastadoGlobal += subtotal;
+        bloqueTotales([['Gastado (cotización sin cobrar aún)', formatMoney(subtotal), rojo, true]]);
+      });
+    }
 
     if (gastosGenerales.length) {
       chequearEspacio(14);
