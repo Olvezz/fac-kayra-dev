@@ -1595,7 +1595,7 @@ function renderCotAbonos(total) {
   const abonoTotal = sumaAbonos();
   document.getElementById('cotAbonoTotal').value = formatMoney(abonoTotal);
   // Si aún no se han tocado los items (total=0 al abrir "Nueva cotización"), usa el total mostrado en pantalla
-  const totalActual = total ?? parseFloat((document.getElementById('totTotal')?.textContent||'').replace(/[^\d.-]/g,'')) || 0;
+  const totalActual = total ?? (parseFloat((document.getElementById('totTotal')?.textContent||'').replace(/[^\d.-]/g,'')) || 0);
   document.getElementById('cotSaldo').value = formatMoney(Math.max(totalActual - abonoTotal, 0));
 }
 // Abre el mini-formulario (modal compartido, apilado sobre el de cotización) para
