@@ -292,6 +292,7 @@
         <div id="buscadorGastos"></div>
         <input type="month" class="input" id="filtroGastoMes" oninput="loadGastos()" style="max-width:200px">
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtroGastoMes').value='';loadGastos()">Limpiar</button>
+        <button class="btn btn-secondary btn-sm" id="btnAgruparGastos" onclick="toggleAgruparGastos()">Agrupar por cotización</button>
       </div>
       <div class="grid-2" style="margin-bottom:16px">
         <div class="metric-card">
@@ -303,7 +304,7 @@
           <div class="metric-value turquesa" id="gastosCount">—</div>
         </div>
       </div>
-      <div class="card">
+      <div class="card" id="gastosFlatWrap">
         <div class="table-wrap">
           <table class="table">
             <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cotización / Evento</th><th>Monto</th><th>Acciones</th></tr></thead>
@@ -311,6 +312,7 @@
           </table>
         </div>
       </div>
+      <div id="gastosGroupedWrap" style="display:none"></div>
     </div>
 
     <!-- ── CIERRES ── -->
@@ -334,6 +336,9 @@
           <div class="page-title">Galería de eventos</div>
           <div class="page-subtitle" id="galeriaSubtitle">Eventos marcados como “Realizado”</div>
         </div>
+      </div>
+      <div class="filters-bar">
+        <div id="buscadorGaleria"></div>
       </div>
       <div id="galeriaContent"><div class="loading-page"><div class="spinner"></div></div></div>
     </div>
@@ -485,6 +490,11 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label>Festejado/a <small style="color:var(--text-secondary);font-weight:400">— opcional, aparece en el PDF/WhatsApp solo si se llena</small></label>
+          <input type="text" class="input" id="cotFestejado" placeholder="Ej: nombre del cumpleañero/a (si es distinto al cliente)">
+        </div>
+
         <hr class="divider">
 
         <!-- Items -->
@@ -545,10 +555,21 @@
           </div>
         </div>
 
-        <div class="form-row">
+        <hr class="divider">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary)">💰 Abonos recibidos <small style="text-transform:none;font-weight:400">— uso interno, en el PDF/WhatsApp solo se ve el total</small></span>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="openAbonoModal()">+ Agregar abono</button>
+        </div>
+        <div class="items-table">
+          <table class="table">
+            <thead><tr><th>Fecha</th><th>Monto</th><th style="width:70px"></th></tr></thead>
+            <tbody id="cotAbonosTbody"><tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:14px">Sin abonos registrados</td></tr></tbody>
+          </table>
+        </div>
+        <div class="form-row" style="margin-top:12px">
           <div class="form-group">
-            <label>Abono recibido (RD$) <small style="color:var(--text-secondary);font-weight:400">— se incluye en el PDF y WhatsApp si es mayor a 0</small></label>
-            <input class="input" type="number" id="cotAbono" value="0" min="0" oninput="recalcTotales()">
+            <label>Abono total</label>
+            <input class="input" id="cotAbonoTotal" value="RD$0.00" readonly style="background:var(--bg);font-weight:700;color:var(--morado)">
           </div>
           <div class="form-group">
             <label>Saldo pendiente</label>
@@ -618,11 +639,15 @@ let appConfig   = {};
 let clientes    = [];
 let catalogo    = [];
 let editingCotId = null;
+let cotAbonosActuales = []; // abonos de la cotización que se está creando/editando: [{fecha, monto}]
 let afterClienteSave = null; // callback para cotización
 let comboCliente = null; // controlador del buscador de cliente en el modal de cotización
 let cotizacionesActuales = [];         // última lista cargada (para ordenar en la tabla)
 let cotSort = { campo:null, dir:'asc' }; // estado de ordenamiento de la tabla
 let gastosActuales = [];               // última lista de gastos cargada (para filtrar en la tabla)
+let gastosAgrupado = false;            // true = ver Gastos agrupados por cotización
+let galeriaActuales = [];              // última lista de la galería cargada (para filtrar por temática)
+let galeriaFiltroTexto = '';
 // Texto de búsqueda activo por página (filtran las listas ya cargadas en memoria)
 let cotFiltroTexto = '', clienteFiltroTexto = '', catalogoFiltroTexto = '', gastoFiltroTexto = '';
 
@@ -649,7 +674,9 @@ window.logout = () => signOut(auth).then(() => { window.location.href = 'index.h
 async function init() {
   appConfig = await loadConfig();
   await Promise.all([loadClientes(), loadCatalogo()]);
+  await migrarMesAnioEvento();
   await autoAnularVencidas();
+  await autoGestionarEventosVencidos();
 
   // Set mes actual en filtros
   const mesActual = new Date().toISOString().slice(0,7);
@@ -664,6 +691,7 @@ async function init() {
   document.getElementById('buscadorClientes').outerHTML = buscadorHtml('buscadorClientes', 'Buscar por nombre, teléfono, dirección...');
   document.getElementById('buscadorCatalogo').outerHTML = buscadorHtml('buscadorCatalogo', 'Buscar servicio, categoría...');
   document.getElementById('buscadorGastos').outerHTML   = buscadorHtml('buscadorGastos', 'Buscar descripción, categoría, cotización...');
+  document.getElementById('buscadorGaleria').outerHTML  = buscadorHtml('buscadorGaleria', 'Buscar por temática...');
   // Al escribir en el buscador, se ignoran los filtros de estado/mes y se
   // recarga sin restricciones para poder buscar en TODAS las cotizaciones/gastos,
   // no solo en los que ya estaban visibles por el filtro activo.
@@ -690,6 +718,7 @@ async function init() {
       renderGastos();
     }
   });
+  initBuscador('buscadorGaleria', val => { galeriaFiltroTexto = val; renderGaleria(); });
 }
 
 // ── Navigation ──
@@ -743,6 +772,12 @@ function mesAnioStr(v) {
   const d = v ? (v?.toDate ? v.toDate() : new Date(v)) : new Date();
   return `${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
+// Mes/año que se usa para TODO lo financiero (dashboard, cierres, filtro de
+// cotizaciones): el mes del EVENTO si existe, si no el de emisión. Así una
+// cotización hecha en julio para un evento en agosto se contabiliza en agosto.
+function mesAnioEventoCotizacion(c) {
+  return mesAnioStr(c.fecha_evento || c.fecha_emision);
+}
 function badgeHtml(estado) {
   const map = { 'Cotización':'cotizacion','Reservado':'reservado','Pagada':'pagada','Realizado':'realizado','Anulada':'anulada' };
   return `<span class="badge badge-${map[estado]||'cotizacion'}">${estado||'Cotización'}</span>`;
@@ -767,6 +802,11 @@ window.formatTelefonoInput = function(input) {
 const RE_DIACRITICOS = new RegExp('[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']', 'g');
 function normalizarTexto(s) {
   return String(s||'').normalize('NFD').replace(RE_DIACRITICOS,'').toLowerCase();
+}
+// Igual que normalizarTexto, pero además ignora los espacios: "Spider Man",
+// "spider man" y "Spiderman" quedan como el mismo texto para comparar.
+function normalizarSinEspacios(s) {
+  return normalizarTexto(s).replace(/\s+/g, '');
 }
 
 // ============================================================
@@ -899,6 +939,39 @@ async function logAccion(accion, entidad, detalle, usuarioOverride) {
 }
 
 // ============================================================
+// MIGRACIÓN — agrega/actualiza "mes_anio_evento" (mes del EVENTO, con el
+// que se calculan dashboard/cierres) en cotizaciones y gastos existentes
+// que aún no lo tengan o que quedó desactualizado. Corre en cada inicio;
+// es barata cuando ya está todo al día (no escribe nada si no hay cambios).
+// ============================================================
+async function migrarMesAnioEvento() {
+  try {
+    const cotSnap = await getDocs(collection(db,'cotizaciones'));
+    const mapaCot = {}; // id -> mes_anio_evento correcto
+    let actualizadas = 0;
+    for (const d of cotSnap.docs) {
+      const c = d.data();
+      const correcto = mesAnioEventoCotizacion(c);
+      mapaCot[d.id] = correcto;
+      if (c.mes_anio_evento !== correcto) {
+        await updateDoc(doc(db,'cotizaciones',d.id), { mes_anio_evento: correcto });
+        actualizadas++;
+      }
+    }
+    const gastoSnap = await getDocs(collection(db,'gastos'));
+    for (const d of gastoSnap.docs) {
+      const g = d.data();
+      const correcto = (g.cot_id && mapaCot[g.cot_id]) ? mapaCot[g.cot_id] : (g.mes_anio || '');
+      if (g.mes_anio_evento !== correcto) {
+        await updateDoc(doc(db,'gastos',d.id), { mes_anio_evento: correcto });
+        actualizadas++;
+      }
+    }
+    if (actualizadas) console.log(`Migración: ${actualizadas} documento(s) actualizados con mes_anio_evento.`);
+  } catch(e) { console.warn('No se pudo migrar mes_anio_evento:', e); }
+}
+
+// ============================================================
 // AUTO-ANULADO — cotizaciones que llevan 30+ días en "Cotización"
 // sin ningún cambio pasan a "Anulada" automáticamente al abrir la app.
 // ============================================================
@@ -920,6 +993,41 @@ async function autoAnularVencidas() {
     }
     if (vencidas.length) toast(`${vencidas.length} cotización(es) vencida(s) se anularon automáticamente`, 'info');
   } catch(e) { console.warn('No se pudo revisar cotizaciones vencidas:', e); }
+}
+
+// ============================================================
+// AUTO-ANULADO/ELIMINADO POR EVENTO VENCIDO
+// Si el evento de una cotización "Reservado" ya pasó y nunca se marcó como
+// Pagada/Realizado, se anula sola. Si pasan 30 días desde el evento sin
+// completarse, se elimina — pero SOLO si fue el propio sistema quien la
+// anuló por esta regla (se marca con auto_anulada_por_evento). Una
+// cotización anulada manualmente por el equipo nunca se borra sola.
+// ============================================================
+async function autoGestionarEventosVencidos() {
+  const LIMITE_DIAS = 30;
+  const hoy = new Date();
+  try {
+    const snap = await getDocs(query(collection(db,'cotizaciones'), where('estado','in',['Reservado','Anulada'])));
+    for (const d of snap.docs) {
+      const c = d.data();
+      if (!c.fecha_evento) continue;
+      const fe = c.fecha_evento.toDate ? c.fecha_evento.toDate() : new Date(c.fecha_evento);
+      const diasPasados = (hoy - fe) / 86400000;
+      if (diasPasados < 0) continue; // el evento todavía no ha pasado
+
+      if (c.estado === 'Reservado') {
+        await updateDoc(doc(db,'cotizaciones',d.id), { estado:'Anulada', auto_anulada_por_evento:true, actualizado_en: serverTimestamp() });
+        await logAccion('Anuló', 'Cotización', `${c.numero} · el evento ya pasó sin marcarse como realizado/pagado`, 'Sistema');
+        if (diasPasados > LIMITE_DIAS) {
+          await deleteDoc(doc(db,'cotizaciones',d.id));
+          await logAccion('Eliminó', 'Cotización', `${c.numero} · ${LIMITE_DIAS} días desde el evento sin completarse`, 'Sistema');
+        }
+      } else if (c.estado === 'Anulada' && c.auto_anulada_por_evento && diasPasados > LIMITE_DIAS) {
+        await deleteDoc(doc(db,'cotizaciones',d.id));
+        await logAccion('Eliminó', 'Cotización', `${c.numero} · ${LIMITE_DIAS} días desde el evento sin completarse`, 'Sistema');
+      }
+    }
+  } catch(e) { console.warn('No se pudo revisar eventos vencidos:', e); }
 }
 
 // ============================================================
@@ -1194,7 +1302,8 @@ window.loadCotizaciones = async function() {
   if (estado)  constraints.unshift(where('estado','==',estado));
   if (mesVal) {
     const [y,m] = mesVal.split('-');
-    constraints.unshift(where('mes_anio','==',`${m}-${y}`));
+    // Filtra por el mes del EVENTO, no por el mes en que se emitió la cotización.
+    constraints.unshift(where('mes_anio_evento','==',`${m}-${y}`));
   }
   const q = query(collection(db,'cotizaciones'), ...constraints);
   const snap = await getDocs(q);
@@ -1306,6 +1415,7 @@ function renderCotizaciones() {
 // ============================================================
 window.openNuevaCotizacion = function() {
   editingCotId = null;
+  cotAbonosActuales = [];
   document.getElementById('cotModalTitle').textContent = 'Nueva cotización';
   document.getElementById('cotForm').reset();
   document.getElementById('cotItems').innerHTML = '';
@@ -1328,10 +1438,21 @@ window.openEditCotizacion = async function(id) {
     : '';
   document.getElementById('cotHoraEvento').value = c.hora_evento || '';
   document.getElementById('cotTematica').value    = c.tematica || '';
+  document.getElementById('cotFestejado').value   = c.festejado || '';
   document.getElementById('cotEstado').value      = c.estado || 'Cotización';
   document.getElementById('cotMetodoPago').value  = c.metodo_pago || 'Transferencia';
   document.getElementById('cotTransporte').value  = c.transporte || 0;
-  document.getElementById('cotAbono').value       = c.abono || 0;
+  // Historial de abonos: si ya existe el arreglo, se usa tal cual; si es una
+  // cotización vieja que solo tenía el campo "abono" plano, se muestra como
+  // un único abono histórico (con la fecha de emisión como referencia).
+  if (Array.isArray(c.abonos)) {
+    cotAbonosActuales = c.abonos.map(a => ({ fecha: a.fecha, monto: Number(a.monto)||0 }));
+  } else if (c.abono > 0) {
+    const fe = c.fecha_emision?.toDate ? c.fecha_emision.toDate() : new Date(c.fecha_emision || Date.now());
+    cotAbonosActuales = [{ fecha: fe.toISOString().split('T')[0], monto: Number(c.abono) }];
+  } else {
+    cotAbonosActuales = [];
+  }
   document.getElementById('cotNotas').value       = c.notas || '';
   // Items
   document.getElementById('cotItems').innerHTML = '';
@@ -1440,9 +1561,74 @@ window.recalcTotales = function() {
   document.getElementById('totItbis').textContent       = formatMoney(itbisMonto);
   document.getElementById('totTotal').textContent       = formatMoney(total);
 
-  const abono = parseFloat(document.getElementById('cotAbono')?.value) || 0;
-  const saldoEl = document.getElementById('cotSaldo');
-  if (saldoEl) saldoEl.value = formatMoney(Math.max(total - abono, 0));
+  renderCotAbonos(total);
+};
+
+// ============================================================
+// ABONOS — historial de pagos parciales de la cotización actual
+// ============================================================
+function sumaAbonos() {
+  return cotAbonosActuales.reduce((s,a) => s + (Number(a.monto)||0), 0);
+}
+function renderCotAbonos(total) {
+  const tbody = document.getElementById('cotAbonosTbody');
+  if (!tbody) return;
+  if (!cotAbonosActuales.length) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:14px">Sin abonos registrados</td></tr>`;
+  } else {
+    tbody.innerHTML = cotAbonosActuales.map((a, idx) => `
+      <tr>
+        <td>${formatDate(a.fecha ? a.fecha + 'T12:00:00' : '')}</td>
+        <td style="font-weight:600;color:var(--morado)">${formatMoney(a.monto)}</td>
+        <td>
+          <div class="table-actions">
+            <button type="button" class="btn btn-ghost btn-icon" title="Editar" onclick="openAbonoModal(${idx})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button type="button" class="btn btn-ghost btn-icon" style="color:#EF4444" title="Eliminar" onclick="eliminarAbono(${idx})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+  const abonoTotal = sumaAbonos();
+  document.getElementById('cotAbonoTotal').value = formatMoney(abonoTotal);
+  // Si aún no se han tocado los items (total=0 al abrir "Nueva cotización"), usa el total mostrado en pantalla
+  const totalActual = total ?? parseFloat((document.getElementById('totTotal')?.textContent||'').replace(/[^\d.-]/g,'')) || 0;
+  document.getElementById('cotSaldo').value = formatMoney(Math.max(totalActual - abonoTotal, 0));
+}
+// Abre el mini-formulario (modal compartido, apilado sobre el de cotización) para
+// agregar un abono nuevo (idx=null) o editar uno existente (idx = posición en el arreglo).
+window.openAbonoModal = function(idx = null) {
+  const a = idx !== null ? cotAbonosActuales[idx] : null;
+  document.getElementById('modalTitle').textContent = a ? 'Editar abono' : 'Agregar abono';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="form-group"><label>Fecha del abono *</label>
+      <input class="input" type="date" id="fAbonoFecha" value="${a?.fecha || new Date().toISOString().split('T')[0]}" required></div>
+    <div class="form-group"><label>Monto (RD$) *</label>
+      <input class="input" type="number" id="fAbonoMonto" value="${a?.monto || ''}" min="0" required></div>`;
+  document.getElementById('modalFooter').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="guardarAbono(${idx})">Guardar</button>`;
+  const overlay = document.getElementById('modalOverlay');
+  overlay.style.zIndex = '300'; // se apila arriba del modal de cotización
+  overlay.classList.add('open');
+};
+window.guardarAbono = function(idx) {
+  const fecha = document.getElementById('fAbonoFecha').value;
+  const monto = parseFloat(document.getElementById('fAbonoMonto').value);
+  if (!fecha || !monto || monto <= 0) { toast('Completa fecha y monto','error'); return; }
+  const entrada = { fecha, monto };
+  if (idx === null || idx === undefined || Number.isNaN(idx)) cotAbonosActuales.push(entrada);
+  else cotAbonosActuales[idx] = entrada;
+  closeModal();
+  recalcTotales();
+};
+window.eliminarAbono = function(idx) {
+  if (!confirm('¿Eliminar este abono?')) return;
+  cotAbonosActuales.splice(idx, 1);
+  recalcTotales();
 };
 
 // ── Guardar cotización ──
@@ -1469,7 +1655,8 @@ window.saveCotizacion = async function() {
   const itbis_monto= subtotal * itbisPct / 100;
   const transporte = parseFloat(document.getElementById('cotTransporte').value) || 0;
   const total      = subtotal + itbis_monto + transporte;
-  const abono      = parseFloat(document.getElementById('cotAbono').value) || 0;
+  const abonos     = cotAbonosActuales.map(a => ({ fecha: a.fecha, monto: Number(a.monto)||0 }));
+  const abono      = sumaAbonos();
 
   const fechaEvStr = document.getElementById('cotFechaEvento').value;
   const data = {
@@ -1482,13 +1669,15 @@ window.saveCotizacion = async function() {
     fecha_evento:     fechaEvStr ? new Date(fechaEvStr + 'T12:00:00') : null,
     hora_evento:      document.getElementById('cotHoraEvento').value || '',
     tematica:         document.getElementById('cotTematica').value.trim(),
+    festejado:        document.getElementById('cotFestejado').value.trim(),
     items,
-    subtotal, itbis_pct: itbisPct, itbis_monto, transporte, total, abono,
+    subtotal, itbis_pct: itbisPct, itbis_monto, transporte, total, abono, abonos,
     estado:       document.getElementById('cotEstado').value,
     metodo_pago:  document.getElementById('cotMetodoPago').value,
     notas:        document.getElementById('cotNotas').value.trim(),
     creado_por:   currentUser.email,
   };
+  data.mes_anio_evento = mesAnioEventoCotizacion(data);
 
   // ── Detección de duplicados (solo al crear una nueva) ──
   // Evalúa cliente + servicios seleccionados: si ya existe una cotización
@@ -1608,6 +1797,12 @@ async function construirPDFDoc(c) {
     if (c.tematica)    pdoc.text(String(c.tematica), 100, y);
     y+=10;
   }
+  if (c.festejado) {
+    pdoc.setFont('helvetica','bold'); pdoc.setFontSize(7.5); pdoc.setTextColor(...gris);
+    pdoc.text('FESTEJADO/A', M, y); y+=4.5;
+    pdoc.setFont('helvetica','bold'); pdoc.setFontSize(9.5); pdoc.setTextColor(...morado);
+    pdoc.text(String(c.festejado), M, y); y+=10;
+  }
   pdoc.setDrawColor(...grisClaro); pdoc.setLineWidth(0.3); pdoc.line(M, y, W-M, y); y+=8;
   // Cliente
   pdoc.setFont('helvetica','bold'); pdoc.setFontSize(7.5); pdoc.setTextColor(...gris);
@@ -1700,6 +1895,7 @@ function mensajeWA(c) {
     L.push(`*Fecha del evento:* ${fe.toLocaleDateString('es-DO')}${c.hora_evento ? ' - ' + c.hora_evento : ''}`);
   }
   if (c.tematica) L.push(`*Temática:* ${c.tematica}`);
+  if (c.festejado) L.push(`*Festejado/a:* ${c.festejado}`);
 
   const items = itemsReales(c.items);
   if (items.length) {
@@ -1781,31 +1977,92 @@ function renderGastos() {
     tbody.innerHTML = gastoFiltroTexto
       ? `<tr><td colspan="6"><div class="empty-state"><h3>Sin resultados</h3><p>Ningún gasto coincide con “${escapeHtml(gastoFiltroTexto)}”</p></div></td></tr>`
       : `<tr><td colspan="6"><div class="empty-state"><h3>Sin gastos registrados</h3></div></td></tr>`;
+  } else {
+    tbody.innerHTML = lista.map(g => `
+      <tr>
+        <td>${g.fecha||'—'}</td>
+        <td>${escapeHtml(g.descripcion)||'—'}</td>
+        <td><span class="badge badge-cotizacion">${escapeHtml(g.categoria)||'General'}</span></td>
+        <td>${g.cot_numero ? `<span style="color:var(--morado);font-weight:600">${escapeHtml(g.cot_numero)}</span>${g.cot_cliente?`<br><small style="color:var(--text-secondary)">${escapeHtml(g.cot_cliente)}</small>`:''}` : '<span style="color:var(--text-secondary)">— General —</span>'}</td>
+        <td><strong style="color:#EF4444">${formatMoney(g.monto)}</strong></td>
+        <td>
+          <div class="table-actions">
+            <button class="btn btn-ghost btn-icon" onclick="openGastoModal('${g.id}')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn btn-ghost btn-icon" style="color:#EF4444" onclick="deleteGasto('${g.id}')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+
+  renderGastosAgrupados(lista);
+}
+
+// Vista alternable: gastos agrupados por cotización/evento, con subtotal por grupo.
+window.toggleAgruparGastos = function() {
+  gastosAgrupado = !gastosAgrupado;
+  document.getElementById('btnAgruparGastos').textContent = gastosAgrupado ? 'Ver como lista' : 'Agrupar por cotización';
+  document.getElementById('gastosFlatWrap').style.display    = gastosAgrupado ? 'none' : '';
+  document.getElementById('gastosGroupedWrap').style.display = gastosAgrupado ? '' : 'none';
+};
+function renderGastosAgrupados(lista) {
+  const wrap = document.getElementById('gastosGroupedWrap');
+  if (!gastosAgrupado) { wrap.innerHTML = ''; return; }
+  if (!lista.length) {
+    wrap.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state"><h3>Sin gastos</h3></div></div></div>`;
     return;
   }
-  tbody.innerHTML = lista.map(g => `
-    <tr>
-      <td>${g.fecha||'—'}</td>
-      <td>${escapeHtml(g.descripcion)||'—'}</td>
-      <td><span class="badge badge-cotizacion">${escapeHtml(g.categoria)||'General'}</span></td>
-      <td>${g.cot_numero ? `<span style="color:var(--morado);font-weight:600">${escapeHtml(g.cot_numero)}</span>${g.cot_cliente?`<br><small style="color:var(--text-secondary)">${escapeHtml(g.cot_cliente)}</small>`:''}` : '<span style="color:var(--text-secondary)">— General —</span>'}</td>
-      <td><strong style="color:#EF4444">${formatMoney(g.monto)}</strong></td>
-      <td>
-        <div class="table-actions">
-          <button class="btn btn-ghost btn-icon" onclick="openGastoModal('${g.id}')">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button class="btn btn-ghost btn-icon" style="color:#EF4444" onclick="deleteGasto('${g.id}')">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-          </button>
-        </div>
-      </td>
-    </tr>`).join('');
+  const grupos = {}; // clave: cot_id o '' para "General"
+  lista.forEach(g => {
+    const clave = g.cot_id || '';
+    if (!grupos[clave]) grupos[clave] = { numero: g.cot_numero||'', cliente: g.cot_cliente||'', gastos: [] };
+    grupos[clave].gastos.push(g);
+  });
+  // El grupo "General" (sin cotización) siempre al final
+  const claves = Object.keys(grupos).sort((a,b) => (a===''?1:0) - (b===''?1:0));
+  wrap.innerHTML = claves.map(clave => {
+    const grp = grupos[clave];
+    const subtotal = grp.gastos.reduce((s,g)=>s+(g.monto||0), 0);
+    const titulo = clave ? `${escapeHtml(grp.numero)} — ${escapeHtml(grp.cliente)}` : 'Gastos generales (sin cotización)';
+    return `<div class="card" style="margin-bottom:16px">
+      <div class="card-header"><span class="card-title">${titulo}</span><strong style="color:#EF4444">${formatMoney(subtotal)}</strong></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Monto</th><th>Acciones</th></tr></thead>
+          <tbody>${grp.gastos.map(g => `
+            <tr>
+              <td>${g.fecha||'—'}</td>
+              <td>${escapeHtml(g.descripcion)||'—'}</td>
+              <td><span class="badge badge-cotizacion">${escapeHtml(g.categoria)||'General'}</span></td>
+              <td><strong style="color:#EF4444">${formatMoney(g.monto)}</strong></td>
+              <td>
+                <div class="table-actions">
+                  <button class="btn btn-ghost btn-icon" onclick="openGastoModal('${g.id}')">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button class="btn btn-ghost btn-icon" style="color:#EF4444" onclick="deleteGasto('${g.id}')">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
 }
 // Trae una lista ligera de cotizaciones (más recientes primero) para el selector de gastos
 async function cotizacionesParaSelect() {
   const snap = await getDocs(query(collection(db,'cotizaciones'), orderBy('creado_en','desc'), limit(300)));
-  return snap.docs.map(d => { const c = d.data(); return { id:d.id, numero:c.numero, cliente:c.cliente_nombre, tematica:c.tematica }; });
+  return snap.docs.map(d => {
+    const c = d.data();
+    return { id:d.id, numero:c.numero, cliente:c.cliente_nombre, tematica:c.tematica,
+             mes_anio_evento: c.mes_anio_evento || mesAnioEventoCotizacion(c) };
+  });
 }
 let gastoCotOpciones = []; // última lista de cotizaciones ofrecida en el modal de gasto (para leerla al guardar)
 window.openGastoModal = async function(editId = null) {
@@ -1867,6 +2124,9 @@ window.saveGasto = async function(editId) {
     descripcion:desc, monto, fecha,
     categoria: document.getElementById('fGastoCat').value,
     mes_anio:`${m}-${y}`,
+    // Si el gasto está vinculado a una cotización, se contabiliza en el mes del
+    // EVENTO de esa cotización (no en el mes en que se pagó el gasto).
+    mes_anio_evento: cotObj?.mes_anio_evento || `${m}-${y}`,
     cot_id: cotId, cot_numero: cotNumero, cot_cliente: cotCliente,
   };
 
@@ -1914,15 +2174,21 @@ async function loadCierres() {
     return;
   }
   container.innerHTML = `<div class="card"><div class="table-wrap"><table class="table">
-    <thead><tr><th>Mes</th><th>Cotizaciones</th><th>Pagadas</th><th>Cobrado</th><th>Gastos</th><th>Beneficio neto</th></tr></thead>
+    <thead><tr><th>Mes</th><th>Cotizaciones</th><th>Pagadas</th><th>Anuladas</th><th>Cobrado</th><th>Gastos</th><th>Beneficio neto</th><th>Detalle</th></tr></thead>
     <tbody>${cierres.map(c=>`
       <tr>
         <td><strong>${String(c.mes).padStart(2,'0')}/${c.anio}</strong></td>
         <td>${c.n_cotizaciones||0}</td>
         <td>${c.n_pagadas||0}</td>
+        <td>${c.n_anuladas||0}</td>
         <td style="color:#16A34A;font-weight:600">${formatMoney(c.total_cobrado)}</td>
         <td style="color:#EF4444;font-weight:600">${formatMoney(c.total_gastos)}</td>
         <td style="font-weight:700;color:${(c.beneficio_neto||0)>=0?'var(--morado)':'#EF4444'}">${formatMoney(c.beneficio_neto)}</td>
+        <td>
+          <button class="btn btn-ghost btn-icon" title="Descargar PDF detallado" onclick="descargarPDFCierre('${c.mes_anio}','${String(c.mes).padStart(2,'0')}/${c.anio}')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+          </button>
+        </td>
       </tr>`).join('')}
     </tbody></table></div></div>`;
 }
@@ -1942,16 +2208,18 @@ window.calcularCierreMes = async function() {
   if (!confirm(mensaje)) return;
   try {
     const [cots, gastos] = await Promise.all([
-      getDocs(query(collection(db,'cotizaciones'), where('mes_anio','==',mesAnio))),
-      getDocs(query(collection(db,'gastos'), where('mes_anio','==',mesAnio))),
+      getDocs(query(collection(db,'cotizaciones'), where('mes_anio_evento','==',mesAnio))),
+      getDocs(query(collection(db,'gastos'), where('mes_anio_evento','==',mesAnio))),
     ]);
     const cotsData   = cots.docs.map(d => d.data());
     const gastosData = gastos.docs.map(d => d.data());
     const pagadas    = cotsData.filter(c => esCobrada(c.estado));
+    const anuladas   = cotsData.filter(c => c.estado === 'Anulada');
     const cierre     = {
       mes, anio, mes_anio: mesAnio,
       n_cotizaciones: cotsData.length,
       n_pagadas:      pagadas.length,
+      n_anuladas:     anuladas.length,
       total_cobrado:  pagadas.reduce((s,c) => s+(c.total||0), 0),
       total_cotizado: cotsData.reduce((s,c) => s+(c.total||0), 0),
       total_gastos:   gastosData.reduce((s,g) => s+(g.monto||0), 0),
@@ -1963,6 +2231,125 @@ window.calcularCierreMes = async function() {
     toast(`Cierre de ${mes}/${anio} calculado ✓`);
     loadCierres();
   } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// PDF de desglose detallado de un cierre: por cada cotización cobrada ese mes
+// (mes del EVENTO), lista sus gastos vinculados y el beneficio neto de esa
+// cotización, más un bloque de gastos generales y el total global al final.
+window.descargarPDFCierre = async function(mesAnio, mesLabel) {
+  try {
+    const [cotSnap, gastoSnap] = await Promise.all([
+      getDocs(query(collection(db,'cotizaciones'), where('mes_anio_evento','==',mesAnio))),
+      getDocs(query(collection(db,'gastos'), where('mes_anio_evento','==',mesAnio))),
+    ]);
+    const cots   = cotSnap.docs.map(d=>({id:d.id,...d.data()})).filter(c=>esCobrada(c.estado));
+    const gastos = gastoSnap.docs.map(d=>d.data());
+    const gastosPorCot = {};
+    const gastosGenerales = [];
+    gastos.forEach(g => {
+      if (g.cot_id) { (gastosPorCot[g.cot_id] = gastosPorCot[g.cot_id] || []).push(g); }
+      else gastosGenerales.push(g);
+    });
+
+    const jsPDF = await ensureJsPDF();
+    const pdoc = new jsPDF({ unit:'mm', format:'a4' });
+    const W=210, M=14;
+    const morado=[165,36,139], gris=[107,114,128], negro=[38,38,38], grisClaro=[232,234,240], rojo=[239,68,68];
+    let y = 34;
+
+    pdoc.setFillColor(...morado); pdoc.rect(0,0,W,24,'F');
+    pdoc.setFont('helvetica','bold'); pdoc.setFontSize(15); pdoc.setTextColor(255,255,255);
+    pdoc.text(`Cierre detallado — ${mesLabel}`, M, 15);
+    pdoc.setFont('helvetica','normal'); pdoc.setFontSize(9);
+    pdoc.text(appConfig.nombre_negocio || 'Kayra Full Party', W-M, 15, {align:'right'});
+
+    function chequearEspacio(alto) { if (y + alto > 280) { pdoc.addPage(); y = 20; } }
+    function filaGasto(g) {
+      chequearEspacio(7);
+      pdoc.setFont('helvetica','normal'); pdoc.setFontSize(8); pdoc.setTextColor(...negro);
+      pdoc.text(`${g.fecha||''}  ${String(g.descripcion||'').substring(0,40)}`, M+3, y);
+      pdoc.setTextColor(...gris);
+      pdoc.text(String(g.categoria||''), 128, y);
+      pdoc.setFont('helvetica','bold'); pdoc.setTextColor(...negro);
+      pdoc.text(formatMoney(g.monto), W-M-3, y, {align:'right'});
+      y += 5.5;
+    }
+    function bloqueTotales(filas) {
+      chequearEspacio(6 * filas.length + 8);
+      pdoc.setDrawColor(...grisClaro); pdoc.line(M, y, W-M, y); y += 6;
+      const tx = W-M-70;
+      filas.forEach(([label,val,color,negrita]) => {
+        pdoc.setFont('helvetica', negrita?'bold':'normal'); pdoc.setFontSize(negrita?9:8.5);
+        pdoc.setTextColor(...gris); pdoc.text(label, tx, y);
+        pdoc.setTextColor(...color); pdoc.text(val, W-M, y, {align:'right'});
+        y += 6;
+      });
+      y += 6;
+    }
+
+    let totalCobradoGlobal = 0, totalGastadoGlobal = 0;
+
+    if (!cots.length) {
+      pdoc.setFont('helvetica','normal'); pdoc.setFontSize(10); pdoc.setTextColor(...gris);
+      pdoc.text('No hubo cotizaciones cobradas (Pagada/Realizado) ese mes.', M, y); y += 10;
+    }
+
+    cots.forEach(c => {
+      const gastosCot   = gastosPorCot[c.id] || [];
+      const gastadoCot  = gastosCot.reduce((s,g)=>s+(g.monto||0), 0);
+      const cobradoCot  = c.total || 0;
+      const beneficioCot= cobradoCot - gastadoCot;
+      totalCobradoGlobal += cobradoCot;
+      totalGastadoGlobal += gastadoCot;
+
+      chequearEspacio(14);
+      pdoc.setFillColor(...morado); pdoc.rect(M, y, W-M*2, 8, 'F');
+      pdoc.setFont('helvetica','bold'); pdoc.setFontSize(9.5); pdoc.setTextColor(255,255,255);
+      pdoc.text(`${c.numero}  ·  ${c.cliente_nombre||''}`, M+3, y+5.5);
+      pdoc.text(formatMoney(cobradoCot), W-M-3, y+5.5, {align:'right'});
+      y += 11;
+
+      if (!gastosCot.length) {
+        pdoc.setFont('helvetica','normal'); pdoc.setFontSize(8.5); pdoc.setTextColor(...gris);
+        pdoc.text('Sin gastos registrados para esta cotización.', M+3, y); y += 6;
+      } else {
+        gastosCot.forEach(filaGasto);
+      }
+      bloqueTotales([
+        ['Cobrado',        formatMoney(cobradoCot),  negro, false],
+        ['Gastado',        formatMoney(gastadoCot),  rojo,  false],
+        ['Beneficio neto', formatMoney(beneficioCot), beneficioCot>=0?morado:rojo, true],
+      ]);
+    });
+
+    if (gastosGenerales.length) {
+      chequearEspacio(14);
+      pdoc.setFillColor(...negro); pdoc.rect(M, y, W-M*2, 8, 'F');
+      pdoc.setFont('helvetica','bold'); pdoc.setFontSize(9.5); pdoc.setTextColor(255,255,255);
+      pdoc.text('Gastos generales (sin cotización)', M+3, y+5.5);
+      y += 11;
+      gastosGenerales.forEach(filaGasto);
+      const totalGeneral = gastosGenerales.reduce((s,g)=>s+(g.monto||0), 0);
+      totalGastadoGlobal += totalGeneral;
+      bloqueTotales([['Total gastos generales', formatMoney(totalGeneral), rojo, true]]);
+    }
+
+    // Totales globales del mes
+    const beneficioGlobal = totalCobradoGlobal - totalGastadoGlobal;
+    chequearEspacio(28);
+    pdoc.setFillColor(...morado); pdoc.rect(M, y, W-M*2, 24, 'F');
+    pdoc.setFont('helvetica','bold'); pdoc.setFontSize(9); pdoc.setTextColor(255,255,255);
+    pdoc.text('TOTAL COBRADO', M+4, y+7);       pdoc.text(formatMoney(totalCobradoGlobal), W-M-4, y+7, {align:'right'});
+    pdoc.text('TOTAL GASTADO', M+4, y+14);      pdoc.text(formatMoney(totalGastadoGlobal), W-M-4, y+14, {align:'right'});
+    pdoc.setFontSize(11);
+    pdoc.text('BENEFICIO NETO', M+4, y+21);     pdoc.text(formatMoney(beneficioGlobal), W-M-4, y+21, {align:'right'});
+
+    pdoc.save(`Cierre_${mesLabel.replace('/','-')}.pdf`);
+    toast('PDF de cierre descargado ✓');
+  } catch(e) {
+    console.error(e);
+    toast('Error al generar el PDF del cierre: ' + e.message, 'error');
+  }
 };
 
 // ============================================================
@@ -2003,30 +2390,41 @@ window.loadGaleria = async function() {
   cont.innerHTML = `<div class="loading-page"><div class="spinner"></div></div>`;
   try {
     const snap = await getDocs(query(collection(db,'cotizaciones'), where('estado','==','Realizado')));
-    let cots = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-    cots.sort((a,b) => fechaMs(b.fecha_evento) - fechaMs(a.fecha_evento));
-    document.getElementById('galeriaSubtitle').textContent = `${cots.length} eventos realizados`;
-    if (!cots.length) {
-      cont.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state"><h3>Sin eventos realizados</h3><p>Marca una cotización como “Realizado” y sube su foto</p></div></div></div>`;
-      return;
-    }
-    cont.innerHTML = `<div class="galeria-grid">${cots.map(c => `
-      <div class="galeria-card card">
-        <div class="galeria-foto" onclick="openFotoModal('${c.id}')">
-          ${c.foto_url
-            ? `<img src="${escapeHtml(c.foto_url)}" alt="${escapeHtml(c.tematica||c.cliente_nombre)}" loading="lazy">`
-            : `<div class="galeria-sinfoto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Subir foto</span></div>`}
-        </div>
-        <div class="card-body" style="padding:12px 14px">
-          <div style="font-weight:700;font-size:0.9rem">${escapeHtml(c.tematica)||'Sin temática'}</div>
-          <div style="font-size:0.8rem;color:var(--text-secondary)">${escapeHtml(c.cliente_nombre)||''}</div>
-          <div style="font-size:0.75rem;color:var(--morado);margin-top:2px">${escapeHtml(c.numero)} · ${formatDate(c.fecha_evento)}</div>
-        </div>
-      </div>`).join('')}</div>`;
+    galeriaActuales = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    galeriaActuales.sort((a,b) => fechaMs(b.fecha_evento) - fechaMs(a.fecha_evento));
+    renderGaleria();
   } catch(e) {
     cont.innerHTML = `<div class="card"><div class="card-body" style="color:#EF4444">No se pudo cargar la galería: ${escapeHtml(e.message)}</div></div>`;
   }
 };
+function renderGaleria() {
+  const cont = document.getElementById('galeriaContent');
+  let cots = galeriaActuales;
+  if (galeriaFiltroTexto) {
+    const q = normalizarSinEspacios(galeriaFiltroTexto);
+    cots = cots.filter(c => normalizarSinEspacios(c.tematica).includes(q));
+  }
+  document.getElementById('galeriaSubtitle').textContent = `${cots.length} eventos realizados`;
+  if (!cots.length) {
+    cont.innerHTML = galeriaFiltroTexto
+      ? `<div class="card"><div class="card-body"><div class="empty-state"><h3>Sin resultados</h3><p>Ninguna temática coincide con “${escapeHtml(galeriaFiltroTexto)}”</p></div></div></div>`
+      : `<div class="card"><div class="card-body"><div class="empty-state"><h3>Sin eventos realizados</h3><p>Marca una cotización como “Realizado” y sube su foto</p></div></div></div>`;
+    return;
+  }
+  cont.innerHTML = `<div class="galeria-grid">${cots.map(c => `
+    <div class="galeria-card card">
+      <div class="galeria-foto" onclick="openFotoModal('${c.id}')">
+        ${c.foto_url
+          ? `<img src="${escapeHtml(c.foto_url)}" alt="${escapeHtml(c.tematica||c.cliente_nombre)}" loading="lazy">`
+          : `<div class="galeria-sinfoto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Subir foto</span></div>`}
+      </div>
+      <div class="card-body" style="padding:12px 14px">
+        <div style="font-weight:700;font-size:0.9rem">${escapeHtml(c.tematica)||'Sin temática'}</div>
+        <div style="font-size:0.8rem;color:var(--text-secondary)">${escapeHtml(c.cliente_nombre)||''}</div>
+        <div style="font-size:0.75rem;color:var(--morado);margin-top:2px">${escapeHtml(c.numero)} · ${formatDate(c.fecha_evento)}</div>
+      </div>
+    </div>`).join('')}</div>`;
+}
 
 // Modal para subir / ver la foto del evento realizado
 window.openFotoModal = async function(id) {
@@ -2121,9 +2519,8 @@ window.loadDashboard = async function() {
   const mesAnio = `${String(mesSel).padStart(2,'0')}-${anioSel}`;
   document.getElementById('dashSubtitle').textContent = `${NOMBRES_MES[mesSel-1]} ${anioSel}`;
 
-  // "mes_anio" es el mes de EMISIÓN de la cotización (para las cifras financieras).
-  // Los eventos, en cambio, se buscan por FECHA DEL EVENTO — una cotización emitida
-  // en un mes puede tener el evento en otro mes distinto.
+  // Las cifras financieras (cobrado, gastos) se contabilizan por el mes del
+  // EVENTO, no por el mes en que se emitió la cotización.
   const inicioMes = new Date(anioSel, mesSel-1, 1);
   const finMes    = new Date(anioSel, mesSel, 1);
 
@@ -2135,8 +2532,8 @@ window.loadDashboard = async function() {
     : query(collection(db,'cotizaciones'), where('fecha_evento','>=',inicioMes), where('fecha_evento','<',finMes));
 
   const [cotSnap, gastoSnap, eventosSnap] = await Promise.all([
-    getDocs(query(collection(db,'cotizaciones'), where('mes_anio','==',mesAnio))),
-    getDocs(query(collection(db,'gastos'), where('mes_anio','==',mesAnio))),
+    getDocs(query(collection(db,'cotizaciones'), where('mes_anio_evento','==',mesAnio))),
+    getDocs(query(collection(db,'gastos'), where('mes_anio_evento','==',mesAnio))),
     getDocs(eventosQuery),
   ]);
   const cots   = cotSnap.docs.map(d=>({id:d.id,...d.data()}));

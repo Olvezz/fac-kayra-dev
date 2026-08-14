@@ -229,7 +229,11 @@ p  { line-height: 1.6; }
   top: 0;
   z-index: 50;
 }
-.topbar-hamburger {
+button.topbar-hamburger {
+  /* button.topbar-hamburger (no solo .topbar-hamburger) para ganarle en
+     especificidad a ".btn { display: inline-flex }" — si no, el botón queda
+     visible en escritorio pero sin ningún efecto (el toggle del sidebar
+     solo tiene estilos dentro de la media query de pantallas angostas). */
   display: none;
   background: none;
   border: none;
@@ -729,7 +733,7 @@ textarea.input { resize: vertical; min-height: 80px; }
     box-shadow: var(--shadow-lg);
   }
   .main-content { margin-left: 0; }
-  .topbar-hamburger { display: flex; }
+  button.topbar-hamburger { display: flex; }
   .topbar-search { max-width: none; }
   .page { padding: 16px; }
   .grid-4 { grid-template-columns: 1fr 1fr; }
