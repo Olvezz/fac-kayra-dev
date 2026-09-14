@@ -749,4 +749,40 @@ textarea.input { resize: vertical; min-height: 80px; }
   h1 { font-size: 1.35rem; }
   .metric-value { font-size: 1.5rem; }
   .btn-lg { width: 100%; justify-content: center; }
+
+  /* Fila de servicios de la cotización: en vez de una tabla apretada de
+     6 columnas, cada servicio pasa a una tarjeta con el nombre arriba y
+     cantidad/precio/descuento/subtotal en pares de 2 debajo. */
+  .items-table .table thead { display: none; }
+  .items-table .table, .items-table .table tbody { display: block; width: 100%; }
+  .items-table .table tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 34px 10px 10px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .items-table .table td { display: block; border-bottom: none; padding: 0; }
+  .items-table .table td:nth-child(1) { grid-column: 1 / -1; }
+  .items-table .table td:nth-child(6) { position: absolute; top: 8px; right: 8px; }
+  .items-table .table td:nth-child(2)::before { content: "Cant."; }
+  .items-table .table td:nth-child(3)::before { content: "P. Unitario"; }
+  .items-table .table td:nth-child(4)::before { content: "Desc.%"; }
+  .items-table .table td:nth-child(5)::before { content: "Subtotal"; }
+  .items-table .table td:nth-child(2)::before,
+  .items-table .table td:nth-child(3)::before,
+  .items-table .table td:nth-child(4)::before,
+  .items-table .table td:nth-child(5)::before {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+  }
+  .items-table .table td .input, .items-table .table td .input-group { width: 100%; }
 }
