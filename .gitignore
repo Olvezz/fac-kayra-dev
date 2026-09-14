@@ -1,0 +1,17 @@
+# Firebase
+.firebase/
+
+# Claude local settings (machine-specific)
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+
+# Dependencies
+node_modules/
