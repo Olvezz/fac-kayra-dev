@@ -182,6 +182,20 @@
           </div>
         </div>
       </div>
+
+      <!-- Resumen de cotizaciones por estado -->
+      <div class="card" style="margin-top:20px">
+        <div class="card-header">
+          <span class="card-title">📊 Resumen de cotizaciones</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" id="dashResumenBtnMes" onclick="setDashResumenAlcance('mes')">Mes elegido</button>
+            <button class="btn btn-secondary btn-sm" id="dashResumenBtnTodas" onclick="setDashResumenAlcance('todas')">Todas</button>
+          </div>
+        </div>
+        <div class="card-body" id="dashResumen">
+          <div class="loading-page"><div class="spinner"></div></div>
+        </div>
+      </div>
     </div>
 
     <!-- ── COTIZACIONES ── -->
@@ -648,6 +662,14 @@ let cotSort = { campo:null, dir:'asc' }; // estado de ordenamiento de la tabla
 let gastosActuales = [];               // última lista de gastos cargada (para filtrar en la tabla)
 let gastosAgrupado = false;            // true = ver Gastos agrupados por cotización
 let galeriaActuales = [];              // última lista de la galería cargada (para filtrar por temática)
+const ESTADO_COLOR = { 'Cotización':'#9CA3AF', 'Reservado':'#4A9DC4', 'Pagada':'#16A34A', 'Realizado':'#7C3AED', 'Anulada':'#DC2626' };
+// Cuenta cotizaciones por estado y agrega los totales derivados (en proceso, etc.)
+function contarEstados(lista) {
+  const n = { total: lista.length };
+  ESTADOS.forEach(e => { n[e] = 0; });
+  lista.forEach(c => { const e = ESTADOS.includes(c.estado) ? c.estado : 'Cotización'; n[e]++; });
+  return n;
+}
 let galeriaFiltroTexto = '';
 // Texto de búsqueda activo por página (filtran las listas ya cargadas en memoria)
 let cotFiltroTexto = '', clienteFiltroTexto = '', catalogoFiltroTexto = '', gastoFiltroTexto = '';
@@ -1060,10 +1082,12 @@ async function autoAnularVencidas() {
 
 // ============================================================
 // AUTO-ANULADO/ELIMINADO POR EVENTO VENCIDO
-// Si el evento de una cotización "Reservado" ya pasó y nunca se marcó como
-// Pagada/Realizado, se anula sola. Si pasan 30 días desde el evento sin
-// completarse, se elimina — pero SOLO si fue el propio sistema quien la
-// anuló por esta regla (se marca con auto_anulada_por_evento). Una
+// Una cotización "Reservado" NO se anula el mismo día del evento: se le dan
+// DIAS_GRACIA días después de la fecha para que el equipo la marque como
+// Pagada/Realizado. Si pasado ese plazo sigue en Reservado, se anula sola.
+// (Pagada y Realizado nunca se anulan automáticamente.) Si pasan 30 días desde
+// el evento sin completarse, se elimina — pero SOLO si fue el propio sistema
+// quien la anuló por esta regla (se marca con auto_anulada_por_evento). Una
 // cotización anulada manualmente por el equipo nunca se borra sola.
 // ============================================================
 async function autoGestionarEventosVencidos() {
@@ -1080,12 +1104,13 @@ async function autoGestionarEventosVencidos() {
 
       if (c.estado === 'Reservado') {
         await updateDoc(doc(db,'cotizaciones',d.id), { estado:'Anulada', auto_anulada_por_evento:true, actualizado_en: serverTimestamp() });
-        await logAccion('Anuló', 'Cotización', `${c.numero} · el evento ya pasó sin marcarse como realizado/pagado`, 'Sistema');
+        await logAccion('Anuló', 'Cotización', `${c.numero} · pasaron ${DIAS_GRACIA}+ días del evento sin marcarse como realizado/pagado`, 'Sistema');
         if (diasPasados > LIMITE_DIAS) {
           await deleteDoc(doc(db,'cotizaciones',d.id));
           await logAccion('Eliminó', 'Cotización', `${c.numero} · ${LIMITE_DIAS} días desde el evento sin completarse`, 'Sistema');
         }
       } else if (c.estado === 'Anulada' && c.auto_anulada_por_evento && diasPasados > LIMITE_DIAS) {
+  const DIAS_GRACIA = 2;
         await deleteDoc(doc(db,'cotizaciones',d.id));
         await logAccion('Eliminó', 'Cotización', `${c.numero} · ${LIMITE_DIAS} días desde el evento sin completarse`, 'Sistema');
       }
@@ -1097,6 +1122,7 @@ async function autoGestionarEventosVencidos() {
 // CONFIG
 // ============================================================
 async function loadConfig() {
+        if (diasPasados < DIAS_GRACIA) continue; // plazo de gracia: todavía se puede marcar como pagada/realizada
   try {
     const snap = await getDoc(doc(db,'config','principal'));
     return snap.exists() ? snap.data() : {
@@ -2261,7 +2287,7 @@ async function loadCierres() {
     return;
   }
   container.innerHTML = `<div class="card"><div class="table-wrap"><table class="table">
-    <thead><tr><th>Mes</th><th>Cotizaciones</th><th>Pagadas</th><th>Anuladas</th><th>Cobrado</th><th>Gastos</th><th>Beneficio neto</th><th>Detalle</th></tr></thead>
+    <thead><tr><th>Mes</th><th>Cotizaciones</th><th>Cotización</th><th>Reservadas</th><th>Pagadas</th><th>Anuladas</th><th>Cobrado</th><th>Gastos</th><th>Beneficio neto</th><th>Detalle</th></tr></thead>
     <tbody>${cierres.map(c=>`
       <tr>
         <td><strong>${String(c.mes).padStart(2,'0')}/${c.anio}</strong></td>
@@ -2335,6 +2361,8 @@ window.descargarPDFCierre = async function(mesAnio, mesLabel) {
     const gastos = gastoSnap.docs.map(d=>d.data());
     // Los gastos se agrupan en 3 baldes para que el total del PDF SIEMPRE
     // coincida con "Gastos en el mes" del dashboard (que suma TODOS los
+        <td>${c.n_solo_cotizadas ?? '—'}</td>
+        <td>${c.n_reservadas ?? '—'}</td>
     // gastos del mes, sin importar si su cotización ya se cobró):
     //  - gastosPorCot: ligados a una cotización YA cobrada (Pagada/Realizado)
     //  - gastosNoCobradas: ligados a una cotización que aún no se ha cobrado
@@ -2371,9 +2399,13 @@ window.descargarPDFCierre = async function(mesAnio, mesLabel) {
       pdoc.text(formatMoney(g.monto), W-M-3, y, {align:'right'});
       y += 5.5;
     }
+    const conteo     = contarEstados(cotsData);
     function bloqueTotales(filas) {
       chequearEspacio(6 * filas.length + 8);
       pdoc.setDrawColor(...grisClaro); pdoc.line(M, y, W-M, y); y += 6;
+      n_realizadas:   conteo['Realizado'],
+      n_reservadas:   conteo['Reservado'],
+      n_solo_cotizadas: conteo['Cotización'],
       const tx = W-M-70;
       filas.forEach(([label,val,color,negrita]) => {
         pdoc.setFont('helvetica', negrita?'bold':'normal'); pdoc.setFontSize(negrita?9:8.5);
@@ -2743,8 +2775,98 @@ document.getElementById('cotModal').addEventListener('click', e => {
   if (e.target === document.getElementById('cotModal')) closeCotModal();
 });
 
+  dashCotsMes = cots;
+  cargarResumenCotizaciones();
 
 
 </script>
 </body>
 </html>
+// ── Resumen interactivo de cotizaciones por estado (dashboard) ──
+let dashCotsMes = [];          // cotizaciones del mes elegido (ya cargadas por loadDashboard)
+let dashCotsTodas = null;      // cache de todas las cotizaciones (solo si se pide el alcance "Todas")
+let dashResumenAlcance = 'mes'; // 'mes' | 'todas'
+let dashResumenFiltro = '';     // '' | estado
+
+async function cargarResumenCotizaciones() {
+  if (dashResumenAlcance === 'todas') {
+    try {
+      const snap = await getDocs(collection(db,'cotizaciones'));
+      dashCotsTodas = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    } catch(e) { console.warn('No se pudieron cargar todas las cotizaciones:', e); dashCotsTodas = dashCotsMes; }
+  }
+  renderResumenCotizaciones();
+}
+window.setDashResumenAlcance = function(alcance) {
+  dashResumenAlcance = alcance;
+  dashResumenFiltro = '';
+  cargarResumenCotizaciones();
+};
+window.setDashResumenFiltro = function(f) {
+  dashResumenFiltro = (dashResumenFiltro === f) ? '' : f; // segundo clic = quitar filtro
+  renderResumenCotizaciones();
+};
+
+function renderResumenCotizaciones() {
+  const lista = dashResumenAlcance === 'todas' ? (dashCotsTodas || []) : dashCotsMes;
+  const n = contarEstados(lista);
+  const div = document.getElementById('dashResumen');
+  const esTodas = dashResumenAlcance === 'todas';
+  const btnMes = document.getElementById('dashResumenBtnMes');
+  const btnTodas = document.getElementById('dashResumenBtnTodas');
+  btnMes.className   = 'btn btn-sm ' + (esTodas ? 'btn-secondary' : 'btn-primary');
+  btnTodas.className = 'btn btn-sm ' + (esTodas ? 'btn-primary' : 'btn-secondary');
+
+  if (!n.total) {
+    div.innerHTML = `<div class="empty-state" style="padding:30px 0"><p>Sin cotizaciones ${esTodas ? 'registradas' : 'ese mes'}</p></div>`;
+    return;
+  }
+  const pct = v => Math.round(v / n.total * 100);
+  const sel = dashResumenFiltro;
+
+  // Tarjetas principales (clicables)
+  const tarjeta = (clave, label, valor, color, sub) => `
+    <button type="button" onclick="setDashResumenFiltro('${clave}')" style="text-align:left;cursor:pointer;font:inherit;background:${sel===clave?'var(--morado-ghost)':'#fff'};border:1px solid ${sel===clave?color:'var(--border)'};border-radius:var(--radius-sm);padding:12px 14px;transition:border-color .15s,background .15s">
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary)">${label}</div>
+      <div style="font-size:1.6rem;font-weight:700;color:${color};line-height:1.2">${valor}</div>
+      <div style="font-size:0.75rem;color:var(--text-secondary)">${sub}</div>
+    </button>`;
+  const tarjetas = [
+    tarjeta('', 'Total', n.total, 'var(--text)', esTodas ? 'todas las cotizaciones' : 'del mes elegido'),
+    ...ESTADOS.map(e => tarjeta(e, e, n[e], ESTADO_COLOR[e], `${pct(n[e])}% del total`)),
+  ].join('');
+
+  // Barra apilada por estado (cada tramo es clicable)
+  const barra = ESTADOS.filter(e => n[e]).map(e => `
+    <div role="button" tabindex="0" title="${e}: ${n[e]} (${pct(n[e])}%)" onclick="setDashResumenFiltro('${e}')"
+      style="flex:${n[e]};background:${ESTADO_COLOR[e]};cursor:pointer;opacity:${!sel||sel===e?1:.3};transition:opacity .15s"></div>`).join('');
+
+  // Lista filtrada
+  let detalle = '';
+  if (sel) {
+    const filtradas = lista
+      .filter(c => (c.estado || 'Cotización') === sel)
+      .map(c => ({ ...c, _fe: c.fecha_evento?.toDate ? c.fecha_evento.toDate() : (c.fecha_evento ? new Date(c.fecha_evento) : null) }))
+      .sort((a,b) => (b._fe?.getTime()||0) - (a._fe?.getTime()||0));
+    detalle = `<div style="margin-top:16px">
+      <div style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px">${sel} ·${filtradas.length}</div>
+      ${filtradas.slice(0,15).map(c => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)">
+          <div style="min-width:0">
+            <span style="font-size:0.82rem;font-weight:700;color:var(--morado)">${escapeHtml(c.numero)}</span>
+            <span style="font-size:0.8rem;color:var(--text-secondary)"> · ${escapeHtml(c.cliente_nombre||'—')}${c._fe ? ' · ' + formatDate(c._fe) : ''}</span>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <span style="font-weight:600;font-size:0.85rem;margin-right:8px">${formatMoney(c.total)}</span>${badgeHtml(c.estado)}
+          </div>
+        </div>`).join('')}
+      ${filtradas.length > 15 ? `<div style="padding-top:8px;font-size:0.78rem;color:var(--text-secondary)">Mostrando 15 de ${filtradas.length}. <a href="#" onclick="event.preventDefault();navTo('cotizaciones')" style="color:var(--morado)">Ver todas en Cotizaciones</a></div>` : ''}
+    </div>`;
+  }
+
+  div.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px">${tarjetas}</div>
+    <div style="display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px;background:var(--border)">${barra}</div>
+    ${detalle}`;
+}
+
