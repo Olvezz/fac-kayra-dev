@@ -646,6 +646,14 @@ function nombreUsuario(email) { return USUARIOS[email] || (email ? email.split('
 const ESTADOS = ['Cotización','Reservado','Pagada','Realizado','Anulada'];
 // Una cotización cobrada cuenta el dinero como ingresado (Pagada o ya Realizado)
 function esCobrada(estado) { return estado === 'Pagada' || estado === 'Realizado'; }
+const ESTADO_COLOR = { 'Cotización':'#9CA3AF', 'Reservado':'#4A9DC4', 'Pagada':'#16A34A', 'Realizado':'#7C3AED', 'Anulada':'#DC2626' };
+// Cuenta cotizaciones por estado y agrega los totales derivados (en proceso, etc.)
+function contarEstados(lista) {
+  const n = { total: lista.length };
+  ESTADOS.forEach(e => { n[e] = 0; });
+  lista.forEach(c => { const e = ESTADOS.includes(c.estado) ? c.estado : 'Cotización'; n[e]++; });
+  return n;
+}
 
 // ── State ──
 let currentUser = null;
@@ -662,14 +670,6 @@ let cotSort = { campo:null, dir:'asc' }; // estado de ordenamiento de la tabla
 let gastosActuales = [];               // última lista de gastos cargada (para filtrar en la tabla)
 let gastosAgrupado = false;            // true = ver Gastos agrupados por cotización
 let galeriaActuales = [];              // última lista de la galería cargada (para filtrar por temática)
-const ESTADO_COLOR = { 'Cotización':'#9CA3AF', 'Reservado':'#4A9DC4', 'Pagada':'#16A34A', 'Realizado':'#7C3AED', 'Anulada':'#DC2626' };
-// Cuenta cotizaciones por estado y agrega los totales derivados (en proceso, etc.)
-function contarEstados(lista) {
-  const n = { total: lista.length };
-  ESTADOS.forEach(e => { n[e] = 0; });
-  lista.forEach(c => { const e = ESTADOS.includes(c.estado) ? c.estado : 'Cotización'; n[e]++; });
-  return n;
-}
 let galeriaFiltroTexto = '';
 // Texto de búsqueda activo por página (filtran las listas ya cargadas en memoria)
 let cotFiltroTexto = '', clienteFiltroTexto = '', catalogoFiltroTexto = '', gastoFiltroTexto = '';
@@ -1092,6 +1092,7 @@ async function autoAnularVencidas() {
 // ============================================================
 async function autoGestionarEventosVencidos() {
   const LIMITE_DIAS = 30;
+  const DIAS_GRACIA = 2;
   const hoy = new Date();
   try {
     const snap = await getDocs(query(collection(db,'cotizaciones'), where('estado','in',['Reservado','Anulada'])));
@@ -1103,6 +1104,7 @@ async function autoGestionarEventosVencidos() {
       if (diasPasados < 0) continue; // el evento todavía no ha pasado
 
       if (c.estado === 'Reservado') {
+        if (diasPasados < DIAS_GRACIA) continue; // plazo de gracia: todavía se puede marcar como pagada/realizada
         await updateDoc(doc(db,'cotizaciones',d.id), { estado:'Anulada', auto_anulada_por_evento:true, actualizado_en: serverTimestamp() });
         await logAccion('Anuló', 'Cotización', `${c.numero} · pasaron ${DIAS_GRACIA}+ días del evento sin marcarse como realizado/pagado`, 'Sistema');
         if (diasPasados > LIMITE_DIAS) {
@@ -1110,7 +1112,6 @@ async function autoGestionarEventosVencidos() {
           await logAccion('Eliminó', 'Cotización', `${c.numero} · ${LIMITE_DIAS} días desde el evento sin completarse`, 'Sistema');
         }
       } else if (c.estado === 'Anulada' && c.auto_anulada_por_evento && diasPasados > LIMITE_DIAS) {
-  const DIAS_GRACIA = 2;
         await deleteDoc(doc(db,'cotizaciones',d.id));
         await logAccion('Eliminó', 'Cotización', `${c.numero} · ${LIMITE_DIAS} días desde el evento sin completarse`, 'Sistema');
       }
@@ -1122,7 +1123,6 @@ async function autoGestionarEventosVencidos() {
 // CONFIG
 // ============================================================
 async function loadConfig() {
-        if (diasPasados < DIAS_GRACIA) continue; // plazo de gracia: todavía se puede marcar como pagada/realizada
   try {
     const snap = await getDoc(doc(db,'config','principal'));
     return snap.exists() ? snap.data() : {
@@ -2292,6 +2292,8 @@ async function loadCierres() {
       <tr>
         <td><strong>${String(c.mes).padStart(2,'0')}/${c.anio}</strong></td>
         <td>${c.n_cotizaciones||0}</td>
+        <td>${c.n_solo_cotizadas ?? '—'}</td>
+        <td>${c.n_reservadas ?? '—'}</td>
         <td>${c.n_pagadas||0}</td>
         <td>${c.n_anuladas||0}</td>
         <td style="color:#16A34A;font-weight:600">${formatMoney(c.total_cobrado)}</td>
@@ -2328,9 +2330,13 @@ window.calcularCierreMes = async function() {
     const gastosData = gastos.docs.map(d => d.data());
     const pagadas    = cotsData.filter(c => esCobrada(c.estado));
     const anuladas   = cotsData.filter(c => c.estado === 'Anulada');
+    const conteo     = contarEstados(cotsData);
     const cierre     = {
       mes, anio, mes_anio: mesAnio,
       n_cotizaciones: cotsData.length,
+      n_realizadas:   conteo['Realizado'],
+      n_reservadas:   conteo['Reservado'],
+      n_solo_cotizadas: conteo['Cotización'],
       n_pagadas:      pagadas.length,
       n_anuladas:     anuladas.length,
       total_cobrado:  pagadas.reduce((s,c) => s+(c.total||0), 0),
@@ -2361,8 +2367,6 @@ window.descargarPDFCierre = async function(mesAnio, mesLabel) {
     const gastos = gastoSnap.docs.map(d=>d.data());
     // Los gastos se agrupan en 3 baldes para que el total del PDF SIEMPRE
     // coincida con "Gastos en el mes" del dashboard (que suma TODOS los
-        <td>${c.n_solo_cotizadas ?? '—'}</td>
-        <td>${c.n_reservadas ?? '—'}</td>
     // gastos del mes, sin importar si su cotización ya se cobró):
     //  - gastosPorCot: ligados a una cotización YA cobrada (Pagada/Realizado)
     //  - gastosNoCobradas: ligados a una cotización que aún no se ha cobrado
@@ -2399,13 +2403,9 @@ window.descargarPDFCierre = async function(mesAnio, mesLabel) {
       pdoc.text(formatMoney(g.monto), W-M-3, y, {align:'right'});
       y += 5.5;
     }
-    const conteo     = contarEstados(cotsData);
     function bloqueTotales(filas) {
       chequearEspacio(6 * filas.length + 8);
       pdoc.setDrawColor(...grisClaro); pdoc.line(M, y, W-M, y); y += 6;
-      n_realizadas:   conteo['Realizado'],
-      n_reservadas:   conteo['Reservado'],
-      n_solo_cotizadas: conteo['Cotización'],
       const tx = W-M-70;
       filas.forEach(([label,val,color,negrita]) => {
         pdoc.setFont('helvetica', negrita?'bold':'normal'); pdoc.setFontSize(negrita?9:8.5);
@@ -2706,6 +2706,8 @@ window.loadDashboard = async function() {
   document.getElementById('mGastos').textContent      = formatMoney(gastoTotal);
   document.getElementById('mBeneficio').textContent   = formatMoney(beneficio);
   document.getElementById('mCotizaciones').textContent = cots.length;
+  dashCotsMes = cots;
+  cargarResumenCotizaciones();
 
   // Próximos eventos (mes actual) / Eventos del mes (mes pasado o futuro elegido)
   document.getElementById('dashProximosTitulo').textContent = esMesActual ? '🎈 Próximos eventos' : `🎈 Eventos de ${NOMBRES_MES[mesSel-1]}`;
@@ -2760,28 +2762,6 @@ window.loadDashboard = async function() {
   }
 };
 
-// ============================================================
-// GLOBAL: modal helpers, search
-// ============================================================
-window.closeModal = () => {
-  const overlay = document.getElementById('modalOverlay');
-  overlay.classList.remove('open');
-  overlay.style.zIndex = '';
-};
-document.getElementById('modalOverlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('modalOverlay')) closeModal();
-});
-document.getElementById('cotModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('cotModal')) closeCotModal();
-});
-
-  dashCotsMes = cots;
-  cargarResumenCotizaciones();
-
-
-</script>
-</body>
-</html>
 // ── Resumen interactivo de cotizaciones por estado (dashboard) ──
 let dashCotsMes = [];          // cotizaciones del mes elegido (ya cargadas por loadDashboard)
 let dashCotsTodas = null;      // cache de todas las cotizaciones (solo si se pide el alcance "Todas")
@@ -2870,3 +2850,23 @@ function renderResumenCotizaciones() {
     ${detalle}`;
 }
 
+// ============================================================
+// GLOBAL: modal helpers, search
+// ============================================================
+window.closeModal = () => {
+  const overlay = document.getElementById('modalOverlay');
+  overlay.classList.remove('open');
+  overlay.style.zIndex = '';
+};
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+document.getElementById('cotModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('cotModal')) closeCotModal();
+});
+
+
+
+</script>
+</body>
+</html>
