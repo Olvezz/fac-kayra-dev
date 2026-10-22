@@ -2026,6 +2026,8 @@ window.aplicarMetodoPago = function() {
   const efectivo = document.getElementById('cotMetodoPago').value === 'Efectivo';
   const sel = document.getElementById('cotCuentaCobro');
   document.getElementById('grpCuentaCobro').style.display = efectivo ? 'none' : '';
+  const opEf = sel.querySelector('option[value="Efectivo"]');
+  if (opEf) { opEf.disabled = !efectivo; opEf.hidden = !efectivo; }
   if (efectivo) sel.value = 'Efectivo';
   else if (sel.value === 'Efectivo') sel.value = '';
 };
