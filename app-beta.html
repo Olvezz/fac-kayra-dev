@@ -93,7 +93,7 @@
 
       <div class="sidebar-item" data-page="cuentas" onclick="navTo('cuentas')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-        Dinero recibido
+        Pagos recibidos
       </div>
 
       <div class="sidebar-item" data-page="cierres" onclick="navTo('cierres')">
@@ -356,7 +356,7 @@
     <div class="page" id="page-cuentas">
       <div class="page-header">
         <div>
-          <div class="page-title">Dinero recibido</div>
+          <div class="page-title">Pagos recibidos</div>
           <div class="page-subtitle" id="cuentasSubtitle">Cuánto debería haber en cada cuenta</div>
         </div>
       </div>
@@ -635,7 +635,7 @@
               <option value="">— Por definir —</option>
               <option value="Efectivo">⚪ Efectivo</option><option value="BHD">🟢 BHD</option><option value="Banreservas">🔵 Banreservas</option><option value="Caribe">🟡 Caribe</option>
             </select>
-            <small style="color:var(--text-secondary)">Cuenta prevista; los abonos pueden ir a otra. Alimenta "Dinero recibido".</small>
+            <small style="color:var(--text-secondary)">Cuenta prevista; los abonos pueden ir a otra. Alimenta "Pagos recibidos".</small>
           </div>
         </div>
 
@@ -1021,7 +1021,7 @@ window.navTo = function(page) {
   document.getElementById(`page-${page}`).classList.add('active');
   document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
   const titles = { dashboard:'Dashboard', cotizaciones:'Cotizaciones', clientes:'Clientes',
-    catalogo:'Catálogo', gastos:'Gastos', cuentas:'Dinero recibido', cierres:'Cierres', galeria:'Galería',
+    catalogo:'Catálogo', gastos:'Gastos', cuentas:'Pagos recibidos', cierres:'Cierres', galeria:'Galería',
     logs:'Registros', config:'Configuración' };
   document.getElementById('topbarTitle').textContent = titles[page] || page;
   closeSidebar();
