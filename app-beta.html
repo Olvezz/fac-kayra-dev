@@ -633,7 +633,7 @@
             <label>Cuenta donde se cobrará</label>
             <select class="input" id="cotCuentaCobro">
               <option value="">— Por definir —</option>
-              <option value="Efectivo">⚪ Efectivo</option><option value="BHD">🟢 BHD</option><option value="Banreservas">🔵 Banreservas</option><option value="Caribe">🟠 Caribe</option>
+              <option value="Efectivo">⚪ Efectivo</option><option value="BHD">🟢 BHD</option><option value="Banreservas">🔵 Banreservas</option><option value="Caribe">🟡 Caribe</option>
             </select>
             <small style="color:var(--text-secondary)">Cuenta prevista; los abonos pueden ir a otra. Alimenta "Dinero recibido".</small>
           </div>
@@ -737,9 +737,9 @@ function contarEstados(lista) {
 // DINERO RECIBIDO — cuentas donde entra y sale el dinero
 // ============================================================
 const CUENTAS = ['Efectivo','BHD','Banreservas','Caribe'];
-// Un color por cuenta para no confundirlas (BHD verde, Banreservas azul, Caribe naranja, Efectivo gris)
-const CUENTA_COLOR = { Efectivo:'#6B7280', BHD:'#2E9E4F', Banreservas:'#1D4E9E', Caribe:'#E8731F' };
-const CUENTA_EMOJI = { Efectivo:'⚪', BHD:'🟢', Banreservas:'🔵', Caribe:'🟠' };
+// Un color por cuenta para no confundirlas (BHD verde, Banreservas azul, Caribe amarillo (logo verde y amarillo), Efectivo gris)
+const CUENTA_COLOR = { Efectivo:'#6B7280', BHD:'#2E9E4F', Banreservas:'#1D4E9E', Caribe:'#E6B800' };
+const CUENTA_EMOJI = { Efectivo:'⚪', BHD:'🟢', Banreservas:'🔵', Caribe:'🟡' };
 function chipCuenta(c) {
   if (!c) return '';
   return '<span style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:' + (CUENTA_COLOR[c] || '#9CA3AF') + '"></span>' + escapeHtml(c) + '</span>';
