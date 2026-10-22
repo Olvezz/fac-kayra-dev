@@ -373,7 +373,7 @@
         </div>
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Cuenta</th><th>Monto</th></tr></thead>
+            <thead id="cuentasThead"></thead>
             <tbody id="cuentasTbody"><tr><td colspan="5" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr></tbody>
           </table>
         </div>
@@ -2626,10 +2626,26 @@ window.loadCuentas = async function() {
   renderMovsCuentas();
 };
 window.filtrarCuenta = function(c) { cuentasFiltro = (cuentasFiltro === c) ? '' : c; renderMovsCuentas(); };
+let cuentasOrden = { campo:'fecha', dir:-1 }; // dir: 1 ascendente, -1 descendente
+const COLS_MOVS = [['fecha','Fecha'],['tipo','Tipo'],['detalle','Detalle'],['cuenta','Cuenta'],['monto','Monto']];
+window.ordenarCuentas = function(campo) {
+  // mismo campo = invertir; campo nuevo = monto/fecha arrancan de mayor a menor, el resto de A a Z
+  if (cuentasOrden.campo === campo) cuentasOrden.dir *= -1;
+  else cuentasOrden = { campo, dir: (campo === 'monto' || campo === 'fecha') ? -1 : 1 };
+  renderMovsCuentas();
+};
 function renderMovsCuentas() {
   document.getElementById('cuentasFiltros').innerHTML = ['', ...CUENTAS].map(c =>
     `<button class="btn ${cuentasFiltro===c?'btn-primary':'btn-secondary'} btn-sm" onclick="filtrarCuenta('${c}')">${c ? (CUENTA_EMOJI[c] + ' ' + c) : 'Todas'}</button>`).join('');
-  const lista = cuentasFiltro ? cuentasMovs.filter(x => x.cuenta === cuentasFiltro) : cuentasMovs;
+  const base = cuentasFiltro ? cuentasMovs.filter(x => x.cuenta === cuentasFiltro) : cuentasMovs;
+  const { campo, dir } = cuentasOrden;
+  const lista = [...base].sort((a, b) => {
+    const r = campo === 'monto' ? (a.monto - b.monto) : String(a[campo]||'').localeCompare(String(b[campo]||''), 'es', { sensitivity:'base' });
+    return (r || String(a.fecha).localeCompare(String(b.fecha))) * dir;
+  });
+  document.getElementById('cuentasThead').innerHTML = '<tr>' + COLS_MOVS.map(([k, nombre]) =>
+    '<th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="ordenarCuentas(\'' + k + '\')">' + nombre +
+    (campo === k ? (dir === 1 ? ' ▲' : ' ▼') : ' <span style="opacity:.3">↕</span>') + '</th>').join('') + '</tr>';
   document.getElementById('cuentasTbody').innerHTML = lista.length ? lista.map(x => `
     <tr>
       <td>${x.fecha ? formatDate(x.fecha + 'T12:00:00') : '—'}</td>
