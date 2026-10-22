@@ -7,6 +7,13 @@
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">  
   <link rel="stylesheet" href="main.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#A5248B">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Kayra">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 </head>
 <body>
 
@@ -80,6 +87,11 @@
       <div class="sidebar-item" data-page="gastos" onclick="navTo('gastos')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         Gastos
+      </div>
+
+      <div class="sidebar-item" data-page="cuentas" onclick="navTo('cuentas')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Pagos recibidos
       </div>
 
       <div class="sidebar-item" data-page="cierres" onclick="navTo('cierres')">
@@ -181,6 +193,15 @@
             <div class="loading-page"><div class="spinner"></div></div>
           </div>
         </div>
+      </div>
+
+      <!-- Dinero por cuenta -->
+      <div class="card" style="margin-top:20px">
+        <div class="card-header">
+          <span class="card-title">💰 Dinero por cuenta (mes elegido)</span>
+          <button class="btn btn-ghost btn-sm" onclick="navTo('cuentas')">Ver detalle</button>
+        </div>
+        <div class="card-body"><div class="grid-4" id="dashCuentas"></div></div>
       </div>
 
       <!-- Resumen de cotizaciones por estado -->
@@ -321,12 +342,40 @@
       <div class="card" id="gastosFlatWrap">
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cotización / Evento</th><th>Monto</th><th>Acciones</th></tr></thead>
-            <tbody id="gastosTbody"><tr><td colspan="6" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr></tbody>
+            <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Pagado desde</th><th>Cotización / Evento</th><th>Monto</th><th>Acciones</th></tr></thead>
+            <tbody id="gastosTbody"><tr><td colspan="7" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr></tbody>
           </table>
         </div>
       </div>
       <div id="gastosGroupedWrap" style="display:none"></div>
+    </div>
+
+    <!-- ── DINERO RECIBIDO ── -->
+    <div class="page" id="page-cuentas">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Pagos recibidos</div>
+          <div class="page-subtitle" id="cuentasSubtitle">Cuánto debería haber en cada cuenta</div>
+        </div>
+      </div>
+      <div class="filters-bar">
+        <input type="month" class="input" id="filtroCuentasMes" oninput="loadCuentas()" style="max-width:200px">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtroCuentasMes').value=new Date().toISOString().slice(0,7);loadCuentas()">Mes actual</button>
+      </div>
+      <div class="grid-4" id="cuentasCards" style="margin-bottom:12px"></div>
+      <div id="cuentasAviso" style="font-size:0.8rem;color:#D97706;margin-bottom:12px"></div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Movimientos del mes <small style="font-weight:400;color:var(--text-secondary)">(por mes del evento, igual que el cierre)</small></span>
+          <div id="cuentasFiltros" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead id="cuentasThead"></thead>
+            <tbody id="cuentasTbody"><tr><td colspan="5" style="text-align:center;padding:40px"><div class="spinner" style="margin:auto"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- ── CIERRES ── -->
@@ -562,10 +611,20 @@
           </div>
           <div class="form-group">
             <label>Método de pago</label>
-            <select class="input" id="cotMetodoPago">
+            <select class="input" id="cotMetodoPago" onchange="aplicarMetodoPago()">
               <option>Transferencia</option><option>Efectivo</option>
-              <option>Tarjeta</option><option>Depósito</option><option>Otro</option>
+              <option>Tarjeta</option><option>Depósito</option>
             </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" id="grpCuentaCobro">
+            <label>Cuenta donde se cobrará</label>
+            <select class="input" id="cotCuentaCobro">
+              <option value="">— Por definir —</option>
+              <option value="Efectivo">⚪ Efectivo</option><option value="BHD">🟢 BHD</option><option value="Banreservas">🔵 Banreservas</option><option value="Caribe">🟡 Caribe</option>
+            </select>
+            <small style="color:var(--text-secondary)">Cuenta prevista; los abonos pueden ir a otra. Alimenta "Pagos recibidos".</small>
           </div>
         </div>
 
@@ -576,8 +635,8 @@
         </div>
         <div class="items-table">
           <table class="table">
-            <thead><tr><th>Fecha</th><th>Monto</th><th style="width:70px"></th></tr></thead>
-            <tbody id="cotAbonosTbody"><tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:14px">Sin abonos registrados</td></tr></tbody>
+            <thead><tr><th>Fecha</th><th>Monto</th><th>Recibido en</th><th style="width:70px"></th></tr></thead>
+            <tbody id="cotAbonosTbody"><tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:14px">Sin abonos registrados</td></tr></tbody>
           </table>
         </div>
         <div class="form-row" style="margin-top:12px">
@@ -608,6 +667,7 @@
   </div>
 </div>
 
+<script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
 <!-- Scripts -->
 <script type="module">
 import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -653,6 +713,70 @@ function contarEstados(lista) {
   ESTADOS.forEach(e => { n[e] = 0; });
   lista.forEach(c => { const e = ESTADOS.includes(c.estado) ? c.estado : 'Cotización'; n[e]++; });
   return n;
+}
+
+
+// ============================================================
+// DINERO RECIBIDO — cuentas donde entra y sale el dinero
+// ============================================================
+const CUENTAS = ['Efectivo','BHD','Banreservas','Caribe'];
+// Un color por cuenta para no confundirlas (BHD verde, Banreservas azul, Caribe amarillo (logo verde y amarillo), Efectivo gris)
+const CUENTA_COLOR = { Efectivo:'#6B7280', BHD:'#2E9E4F', Banreservas:'#1D4E9E', Caribe:'#E6B800' };
+const CUENTA_EMOJI = { Efectivo:'⚪', BHD:'🟢', Banreservas:'🔵', Caribe:'🟡' };
+function chipCuenta(c) {
+  if (!c) return '';
+  return '<span style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:' + (CUENTA_COLOR[c] || '#9CA3AF') + '"></span>' + escapeHtml(c) + '</span>';
+}
+const CUENTA_OPTS = (sel, vacio) => `<option value="">${vacio}</option>` +
+  CUENTAS.map(c => `<option value="${c}"${sel===c?' selected':''}>${CUENTA_EMOJI[c]} ${c}</option>`).join('');
+function abonosDe(c) {
+  return Array.isArray(c.abonos) ? c.abonos.map(a => ({ fecha:a.fecha, monto:Number(a.monto)||0, cuenta:a.cuenta||'' })) : [];
+}
+// Solo las cotizaciones creadas/editadas desde que existen las cuentas entran al control
+// (tienen cuenta de cobro o algún abono con cuenta); las viejas no se tocan.
+function saldoSinAbonos(c) { return (c.total||0) - abonosDe(c).reduce((s,a) => s + a.monto, 0); }
+function usaCuentas(c) { return !!c.cuenta_cobro || abonosDe(c).some(a => a.cuenta); }
+// Por cuenta: recibido (abonos), gastos, lo que debería haber (recibido - gastos) y lo que falta por cobrar.
+// Los abonos de cotizaciones anuladas cuentan: el dinero entró; una devolución se registra como gasto.
+function resumenCuentas(cots, gastos) {
+  const cuentas = {};
+  CUENTAS.forEach(k => { cuentas[k] = { recibido:0, gastos:0, debe_tener:0, por_cobrar:0 }; });
+  const sin = { n_abonos:0, monto_abonos:0, n_gastos:0, monto_gastos:0, n_cots:0, monto_cots:0 };
+  cots.forEach(c => {
+    if (!usaCuentas(c)) return;
+    const abonos = abonosDe(c);
+    abonos.forEach(a => {
+      if (cuentas[a.cuenta]) cuentas[a.cuenta].recibido += a.monto;
+      else { sin.n_abonos++; sin.monto_abonos += a.monto; }
+    });
+    // Pagada/Realizado: lo que no tenga abono registrado se da por cobrado en la cuenta de cobro.
+    // Reservado: ese saldo queda "por cobrar" en la cuenta prevista.
+    const saldo = saldoSinAbonos(c);
+    if (saldo > 0 && esCobrada(c.estado)) {
+      if (cuentas[c.cuenta_cobro]) cuentas[c.cuenta_cobro].recibido += saldo;
+      else { sin.n_cots++; sin.monto_cots += saldo; }
+    } else if (saldo > 0 && c.estado === 'Reservado' && cuentas[c.cuenta_cobro]) {
+      cuentas[c.cuenta_cobro].por_cobrar += saldo;
+    }
+  });
+  gastos.forEach(g => {
+    if (cuentas[g.cuenta]) cuentas[g.cuenta].gastos += g.monto||0;
+    else { sin.n_gastos++; sin.monto_gastos += g.monto||0; }
+  });
+  const total = { recibido:0, gastos:0, debe_tener:0, por_cobrar:0 };
+  CUENTAS.forEach(k => {
+    const x = cuentas[k];
+    x.debe_tener = x.recibido - x.gastos;
+    Object.keys(total).forEach(f => { total[f] += x[f]; });
+  });
+  return { cuentas, total, sin };
+}
+function avisoSinCuenta(sin) {
+  const p = [];
+  if (sin.n_abonos) p.push(`${sin.n_abonos} abono(s) por ${formatMoney(sin.monto_abonos)}`);
+  if (sin.n_cots) p.push(sin.n_cots + ' cotización(es) cobrada(s) por ' + formatMoney(sin.monto_cots) + ' sin cuenta de cobro');
+  if (sin.n_gastos) p.push(`${sin.n_gastos} gasto(s) por ${formatMoney(sin.monto_gastos)}`);
+  return p.length ? `Sin cuenta asignada (no incluidos arriba): ${p.join(' y ')}. Anteriores a esta función o pendientes de asignar.` : '';
 }
 
 // ── State ──
@@ -751,7 +875,7 @@ window.navTo = function(page) {
   document.getElementById(`page-${page}`).classList.add('active');
   document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
   const titles = { dashboard:'Dashboard', cotizaciones:'Cotizaciones', clientes:'Clientes',
-    catalogo:'Catálogo', gastos:'Gastos', cierres:'Cierres', galeria:'Galería',
+    catalogo:'Catálogo', gastos:'Gastos', cuentas:'Pagos recibidos', cierres:'Cierres', galeria:'Galería',
     logs:'Registros', config:'Configuración' };
   document.getElementById('topbarTitle').textContent = titles[page] || page;
   closeSidebar();
@@ -761,6 +885,7 @@ window.navTo = function(page) {
   if (page === 'clientes')     loadClientes(true);
   if (page === 'catalogo')     loadCatalogo(true);
   if (page === 'gastos')       loadGastos();
+  if (page === 'cuentas')      loadCuentas();
   if (page === 'cierres')      loadCierres();
   if (page === 'galeria')      loadGaleria();
   if (page === 'logs')         loadLogs();
@@ -996,6 +1121,7 @@ const CAMPOS_GASTO = {
   fecha:       { etiqueta:'Fecha' },
   categoria:   { etiqueta:'Categoría' },
   cot_numero:  { etiqueta:'Cotización vinculada', formato: v => v || '— Sin vincular —' },
+  cuenta:      { etiqueta:'Pagado desde', formato: v => v || '— Sin asignar —' },
 };
 const CAMPOS_COTIZACION = {
   cliente_nombre: { etiqueta:'Cliente' },
@@ -1005,6 +1131,7 @@ const CAMPOS_COTIZACION = {
   festejado:      { etiqueta:'Festejado/a' },
   estado:         { etiqueta:'Estado' },
   metodo_pago:    { etiqueta:'Método de pago' },
+  cuenta_cobro:   { etiqueta:'Cuenta de cobro', formato: v => v || '— Por definir —' },
   transporte:     { etiqueta:'Transporte', formato: v => formatMoney(v) },
   total:          { etiqueta:'Total',      formato: v => formatMoney(v) },
   abono:          { etiqueta:'Abono total',formato: v => formatMoney(v) },
@@ -1517,6 +1644,8 @@ window.openNuevaCotizacion = function() {
   document.getElementById('cotClienteInfo').style.display = 'none';
   comboCliente?.clear();
   document.getElementById('cotMetodoPago').value = appConfig.metodo_pago_default || 'Transferencia';
+  document.getElementById('cotCuentaCobro').value = '';
+  aplicarMetodoPago();
   recalcTotales();
   addItemRow();
   document.getElementById('cotModal').classList.add('open');
@@ -1536,13 +1665,15 @@ window.openEditCotizacion = async function(id) {
   document.getElementById('cotTematica').value    = c.tematica || '';
   document.getElementById('cotFestejado').value   = c.festejado || '';
   document.getElementById('cotEstado').value      = c.estado || 'Cotización';
-  document.getElementById('cotMetodoPago').value  = c.metodo_pago || 'Transferencia';
+  document.getElementById('cotMetodoPago').value  = (c.metodo_pago && c.metodo_pago !== 'Otro') ? c.metodo_pago : 'Transferencia';
+  document.getElementById('cotCuentaCobro').value = c.cuenta_cobro || '';
+  aplicarMetodoPago();
   document.getElementById('cotTransporte').value  = c.transporte || 0;
   // Historial de abonos: si ya existe el arreglo, se usa tal cual; si es una
   // cotización vieja que solo tenía el campo "abono" plano, se muestra como
   // un único abono histórico (con la fecha de emisión como referencia).
   if (Array.isArray(c.abonos)) {
-    cotAbonosActuales = c.abonos.map(a => ({ fecha: a.fecha, monto: Number(a.monto)||0 }));
+    cotAbonosActuales = c.abonos.map(a => ({ fecha: a.fecha, monto: Number(a.monto)||0, cuenta: a.cuenta || '' }));
   } else if (c.abono > 0) {
     const fe = c.fecha_emision?.toDate ? c.fecha_emision.toDate() : new Date(c.fecha_emision || Date.now());
     cotAbonosActuales = [{ fecha: fe.toISOString().split('T')[0], monto: Number(c.abono) }];
@@ -1682,12 +1813,13 @@ function renderCotAbonos(total) {
   const tbody = document.getElementById('cotAbonosTbody');
   if (!tbody) return;
   if (!cotAbonosActuales.length) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:14px">Sin abonos registrados</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:14px">Sin abonos registrados</td></tr>`;
   } else {
     tbody.innerHTML = cotAbonosActuales.map((a, idx) => `
       <tr>
         <td>${formatDate(a.fecha ? a.fecha + 'T12:00:00' : '')}</td>
         <td style="font-weight:600;color:var(--morado)">${formatMoney(a.monto)}</td>
+        <td>${a.cuenta ? chipCuenta(a.cuenta) : '<span style="color:#D97706">⚠ Sin asignar</span>'}</td>
         <td>
           <div class="table-actions">
             <button type="button" class="btn btn-ghost btn-icon" title="Editar" onclick="openAbonoModal(${idx})">
@@ -1715,7 +1847,9 @@ window.openAbonoModal = function(idx = null) {
     <div class="form-group"><label>Fecha del abono *</label>
       <input class="input" type="date" id="fAbonoFecha" value="${a?.fecha || new Date().toISOString().split('T')[0]}" required></div>
     <div class="form-group"><label>Monto (RD$) *</label>
-      <input class="input" type="number" id="fAbonoMonto" value="${a?.monto || ''}" min="0" required></div>`;
+      <input class="input" type="number" id="fAbonoMonto" value="${a?.monto || ''}" min="0" required></div>
+    <div class="form-group"><label>Recibido en *</label>
+      <select class="input" id="fAbonoCuenta">${CUENTA_OPTS(a ? a.cuenta : document.getElementById('cotCuentaCobro').value, '— Elige cuenta —')}</select></div>`;
   document.getElementById('modalFooter').innerHTML = `
     <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-primary" onclick="guardarAbono(${idx})">Guardar</button>`;
@@ -1726,8 +1860,10 @@ window.openAbonoModal = function(idx = null) {
 window.guardarAbono = function(idx) {
   const fecha = document.getElementById('fAbonoFecha').value;
   const monto = parseFloat(document.getElementById('fAbonoMonto').value);
+  const cuenta = document.getElementById('fAbonoCuenta').value;
   if (!fecha || !monto || monto <= 0) { toast('Completa fecha y monto','error'); return; }
-  const entrada = { fecha, monto };
+  if (!cuenta) { toast('Elige en qué cuenta se recibió el abono','error'); return; }
+  const entrada = { fecha, monto, cuenta };
   if (idx === null || idx === undefined || Number.isNaN(idx)) cotAbonosActuales.push(entrada);
   else cotAbonosActuales[idx] = entrada;
   closeModal();
@@ -1737,6 +1873,17 @@ window.eliminarAbono = function(idx) {
   if (!confirm('¿Eliminar este abono?')) return;
   cotAbonosActuales.splice(idx, 1);
   recalcTotales();
+};
+
+// Efectivo = el dinero queda en efectivo: se oculta la cuenta de cobro y se fija en "Efectivo".
+window.aplicarMetodoPago = function() {
+  const efectivo = document.getElementById('cotMetodoPago').value === 'Efectivo';
+  const sel = document.getElementById('cotCuentaCobro');
+  document.getElementById('grpCuentaCobro').style.display = efectivo ? 'none' : '';
+  const opEf = sel.querySelector('option[value="Efectivo"]');
+  if (opEf) { opEf.disabled = !efectivo; opEf.hidden = !efectivo; }
+  if (efectivo) sel.value = 'Efectivo';
+  else if (sel.value === 'Efectivo') sel.value = '';
 };
 
 // ── Guardar cotización ──
@@ -1763,7 +1910,7 @@ window.saveCotizacion = async function() {
   const itbis_monto= subtotal * itbisPct / 100;
   const transporte = parseFloat(document.getElementById('cotTransporte').value) || 0;
   const total      = subtotal + itbis_monto + transporte;
-  const abonos     = cotAbonosActuales.map(a => ({ fecha: a.fecha, monto: Number(a.monto)||0 }));
+  const abonos     = cotAbonosActuales.map(a => ({ fecha: a.fecha, monto: Number(a.monto)||0, cuenta: a.cuenta || '' }));
   const abono      = sumaAbonos();
 
   const fechaEvStr = document.getElementById('cotFechaEvento').value;
@@ -1782,6 +1929,7 @@ window.saveCotizacion = async function() {
     subtotal, itbis_pct: itbisPct, itbis_monto, transporte, total, abono, abonos,
     estado:       document.getElementById('cotEstado').value,
     metodo_pago:  document.getElementById('cotMetodoPago').value,
+    cuenta_cobro: document.getElementById('cotCuentaCobro').value,
     notas:        document.getElementById('cotNotas').value.trim(),
     creado_por:   currentUser.email,
   };
@@ -2084,14 +2232,15 @@ function renderGastos() {
   const tbody = document.getElementById('gastosTbody');
   if (!lista.length) {
     tbody.innerHTML = gastoFiltroTexto
-      ? `<tr><td colspan="6"><div class="empty-state"><h3>Sin resultados</h3><p>Ningún gasto coincide con “${escapeHtml(gastoFiltroTexto)}”</p></div></td></tr>`
-      : `<tr><td colspan="6"><div class="empty-state"><h3>Sin gastos registrados</h3></div></td></tr>`;
+      ? `<tr><td colspan="7"><div class="empty-state"><h3>Sin resultados</h3><p>Ningún gasto coincide con “${escapeHtml(gastoFiltroTexto)}”</p></div></td></tr>`
+      : `<tr><td colspan="7"><div class="empty-state"><h3>Sin gastos registrados</h3></div></td></tr>`;
   } else {
     tbody.innerHTML = lista.map(g => `
       <tr>
         <td>${g.fecha||'—'}</td>
         <td>${escapeHtml(g.descripcion)||'—'}</td>
         <td><span class="badge badge-cotizacion">${escapeHtml(g.categoria)||'General'}</span></td>
+        <td>${g.cuenta ? chipCuenta(g.cuenta) : '<span style="color:var(--text-secondary)">—</span>'}</td>
         <td>${g.cot_numero ? `<span style="color:var(--morado);font-weight:600">${escapeHtml(g.cot_numero)}</span>${g.cot_cliente?`<br><small style="color:var(--text-secondary)">${escapeHtml(g.cot_cliente)}</small>`:''}` : '<span style="color:var(--text-secondary)">— General —</span>'}</td>
         <td><strong style="color:#EF4444">${formatMoney(g.monto)}</strong></td>
         <td>
@@ -2141,12 +2290,13 @@ function renderGastosAgrupados(lista) {
       <div class="card-header"><span class="card-title">${titulo}</span><strong style="color:#EF4444">${formatMoney(subtotal)}</strong></div>
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Monto</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Pagado desde</th><th>Monto</th><th>Acciones</th></tr></thead>
           <tbody>${grp.gastos.map(g => `
             <tr>
               <td>${g.fecha||'—'}</td>
               <td>${escapeHtml(g.descripcion)||'—'}</td>
               <td><span class="badge badge-cotizacion">${escapeHtml(g.categoria)||'General'}</span></td>
+              <td>${g.cuenta ? chipCuenta(g.cuenta) : '—'}</td>
               <td><strong style="color:#EF4444">${formatMoney(g.monto)}</strong></td>
               <td>
                 <div class="table-actions">
@@ -2180,7 +2330,7 @@ window.openGastoModal = async function(editId = null) {
   let g = null;
   if (editId) { const s = await getDoc(doc(db,'gastos',editId)); g = s.data(); }
   editingGastoAntes = g; // se usa al guardar, para armar el detalle de qué cambió
-  const CATS = ['Mobiliario','Decoración','Comida','Transporte','Insumos','Ayudante','Gastos de casa','Otro'];
+  const CATS = ['Mobiliario','Decoración','Comida','Transporte','Insumos','Ayudante','Gastos de casa','Devolución','Otro'];
   gastoCotOpciones = await cotizacionesParaSelect();
   document.getElementById('modalTitle').textContent = g ? 'Editar gasto' : 'Registrar gasto';
   document.getElementById('modalBody').innerHTML = `
@@ -2192,8 +2342,12 @@ window.openGastoModal = async function(editId = null) {
       <div class="form-group"><label>Fecha *</label>
         <input class="input" type="date" id="fGastoFecha" value="${g?.fecha||new Date().toISOString().split('T')[0]}" required></div>
     </div>
-    <div class="form-group"><label>Categoría</label>
-      <select class="input" id="fGastoCat">${CATS.map(c=>`<option${g?.categoria===c?' selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Categoría</label>
+        <select class="input" id="fGastoCat">${CATS.map(c=>`<option${g?.categoria===c?' selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="form-group"><label>Pagado desde *</label>
+        <select class="input" id="fGastoCuenta">${CUENTA_OPTS(g?.cuenta, '— Elige cuenta —')}</select></div>
+    </div>
     <div class="form-group">
       <label>Cotización / Evento relacionado
         <button type="button" class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:0.72rem" onclick="document.getElementById('comboGastoCot')._ctl.clear()">Quitar</button>
@@ -2223,7 +2377,9 @@ window.saveGasto = async function(editId) {
   const desc  = document.getElementById('fGastoDesc').value.trim();
   const monto = parseFloat(document.getElementById('fGastoMonto').value);
   const fecha = document.getElementById('fGastoFecha').value;
+  const cuenta = document.getElementById('fGastoCuenta').value;
   if (!desc || !monto || !fecha) { toast('Completa todos los campos','error'); return; }
+  if (!cuenta) { toast('Elige de qué cuenta salió el gasto','error'); return; }
   const [y,m] = fecha.split('-');
 
   // Cotización vinculada (opcional)
@@ -2235,6 +2391,7 @@ window.saveGasto = async function(editId) {
   const data  = {
     descripcion:desc, monto, fecha,
     categoria: document.getElementById('fGastoCat').value,
+    cuenta,
     mes_anio:`${m}-${y}`,
     // Si el gasto está vinculado a una cotización, se contabiliza en el mes del
     // EVENTO de esa cotización (no en el mes en que se pagó el gasto).
@@ -2275,6 +2432,88 @@ window.deleteGasto = async function(id) {
 };
 
 // ============================================================
+// DINERO RECIBIDO — página
+// ============================================================
+let cuentasMovs = [];
+let cuentasFiltro = '';
+function cardsCuentasHtml(res, onclickFn) {
+  const card = (nombre, x, extra) => `
+    <div class="metric-card" style="border-left:4px solid ${CUENTA_COLOR[nombre]};cursor:${onclickFn ? 'pointer' : 'default'}"${onclickFn ? ` onclick="${onclickFn}('${nombre}')"` : ''}>
+      <div class="metric-label">${chipCuenta(nombre)}</div>
+      <div class="metric-value ${x.debe_tener < 0 ? '' : 'morado'}"${x.debe_tener < 0 ? ' style="color:#EF4444"' : ''}>${formatMoney(x.debe_tener)}</div>
+      <div style="font-size:0.74rem;color:var(--text-secondary);line-height:1.5;margin-top:6px">
+        Recibido ${formatMoney(x.recibido)}<br>Gastado ${formatMoney(x.gastos)}${x.por_cobrar ? `<br>Por cobrar ${formatMoney(x.por_cobrar)}` : ''}${extra||''}
+      </div>
+    </div>`;
+  return CUENTAS.map(k => card(k, res.cuentas[k])).join('') +
+    `<div class="metric-card" style="grid-column:1/-1"><div class="metric-label">Total — debería haber entre todas las cuentas</div>
+      <div class="metric-value verde">${formatMoney(res.total.debe_tener)}</div>
+      <div style="font-size:0.74rem;color:var(--text-secondary);margin-top:6px">Recibido ${formatMoney(res.total.recibido)} · Gastado ${formatMoney(res.total.gastos)}${res.total.por_cobrar ? ` · Por cobrar ${formatMoney(res.total.por_cobrar)}` : ''}</div></div>`;
+}
+window.loadCuentas = async function() {
+  const inp = document.getElementById('filtroCuentasMes');
+  if (!inp.value) inp.value = new Date().toISOString().slice(0,7);
+  const [y, m] = inp.value.split('-');
+  const mesAnio = `${m}-${y}`;
+  document.getElementById('cuentasSubtitle').textContent = `${m}/${y} · cuánto debería haber en cada cuenta`;
+  const [cs, gs] = await Promise.all([
+    getDocs(query(collection(db,'cotizaciones'), where('mes_anio_evento','==',mesAnio))),
+    getDocs(query(collection(db,'gastos'), where('mes_anio_evento','==',mesAnio))),
+  ]);
+  const cots   = cs.docs.map(d => ({ id:d.id, ...d.data() }));
+  const gastos = gs.docs.map(d => ({ id:d.id, ...d.data() }));
+  const res = resumenCuentas(cots, gastos);
+  document.getElementById('cuentasCards').innerHTML = cardsCuentasHtml(res, 'filtrarCuenta');
+  document.getElementById('cuentasAviso').textContent = avisoSinCuenta(res.sin);
+
+  cuentasMovs = [];
+  cots.filter(usaCuentas).forEach(c => abonosDe(c).forEach(a => {
+    cuentasMovs.push({ fecha:a.fecha||'', tipo:'Ingreso', detalle:`${c.numero||''} · ${c.cliente_nombre||''}`, cuenta:a.cuenta, monto:a.monto });
+  }));
+  cots.filter(usaCuentas).forEach(c => {
+    const saldo = saldoSinAbonos(c);
+    if (saldo > 0 && esCobrada(c.estado) && CUENTAS.includes(c.cuenta_cobro)) {
+      const fe = c.fecha_evento && c.fecha_evento.toDate ? c.fecha_evento.toDate() : null;
+      cuentasMovs.push({ fecha: fe ? fe.toISOString().slice(0,10) : '', tipo:'Ingreso', detalle:(c.numero||'') + ' · ' + (c.cliente_nombre||'') + ' (saldo cobrado, sin abono registrado)', cuenta:c.cuenta_cobro, monto:saldo });
+    }
+  });
+  gastos.forEach(g => cuentasMovs.push({ fecha:g.fecha||'', tipo:'Gasto', detalle:`${g.descripcion||''}${g.cot_numero ? ' · '+g.cot_numero : ''}`, cuenta:g.cuenta||'', monto:g.monto||0 }));
+  cuentasMovs.sort((a,b) => String(b.fecha).localeCompare(String(a.fecha)));
+  renderMovsCuentas();
+};
+window.filtrarCuenta = function(c) { cuentasFiltro = (cuentasFiltro === c) ? '' : c; renderMovsCuentas(); };
+let cuentasOrden = { campo:'fecha', dir:-1 }; // dir: 1 ascendente, -1 descendente
+const COLS_MOVS = [['fecha','Fecha'],['tipo','Tipo'],['detalle','Detalle'],['cuenta','Cuenta'],['monto','Monto']];
+window.ordenarCuentas = function(campo) {
+  // mismo campo = invertir; campo nuevo = monto/fecha arrancan de mayor a menor, el resto de A a Z
+  if (cuentasOrden.campo === campo) cuentasOrden.dir *= -1;
+  else cuentasOrden = { campo, dir: (campo === 'monto' || campo === 'fecha') ? -1 : 1 };
+  renderMovsCuentas();
+};
+function renderMovsCuentas() {
+  document.getElementById('cuentasFiltros').innerHTML = ['', ...CUENTAS].map(c =>
+    `<button class="btn ${cuentasFiltro===c?'btn-primary':'btn-secondary'} btn-sm" onclick="filtrarCuenta('${c}')">${c ? (CUENTA_EMOJI[c] + ' ' + c) : 'Todas'}</button>`).join('');
+  const base = cuentasFiltro ? cuentasMovs.filter(x => x.cuenta === cuentasFiltro) : cuentasMovs;
+  const { campo, dir } = cuentasOrden;
+  const lista = [...base].sort((a, b) => {
+    const r = campo === 'monto' ? (a.monto - b.monto) : String(a[campo]||'').localeCompare(String(b[campo]||''), 'es', { sensitivity:'base' });
+    return (r || String(a.fecha).localeCompare(String(b.fecha))) * dir;
+  });
+  document.getElementById('cuentasThead').innerHTML = '<tr>' + COLS_MOVS.map(([k, nombre]) =>
+    '<th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="ordenarCuentas(\'' + k + '\')">' + nombre +
+    (campo === k ? (dir === 1 ? ' ▲' : ' ▼') : ' <span style="opacity:.3">↕</span>') + '</th>').join('') + '</tr>';
+  document.getElementById('cuentasTbody').innerHTML = lista.length ? lista.map(x => `
+    <tr>
+      <td>${x.fecha ? formatDate(x.fecha + 'T12:00:00') : '—'}</td>
+      <td><span class="badge ${x.tipo==='Ingreso'?'badge-pagada':'badge-anulada'}">${x.tipo}</span></td>
+      <td>${escapeHtml(x.detalle)}</td>
+      <td>${x.cuenta ? chipCuenta(x.cuenta) : '<span style="color:#D97706">⚠ Sin asignar</span>'}</td>
+      <td><strong style="color:${x.tipo==='Ingreso'?'#16A34A':'#EF4444'}">${x.tipo==='Ingreso'?'+':'−'}${formatMoney(x.monto)}</strong></td>
+    </tr>`).join('')
+    : `<tr><td colspan="5"><div class="empty-state"><h3>Sin movimientos</h3><p>Los abonos y gastos con cuenta asignada aparecerán aquí</p></div></td></tr>`;
+}
+
+// ============================================================
 // CIERRES
 // ============================================================
 async function loadCierres() {
@@ -2287,7 +2526,7 @@ async function loadCierres() {
     return;
   }
   container.innerHTML = `<div class="card"><div class="table-wrap"><table class="table">
-    <thead><tr><th>Mes</th><th>Cotizaciones</th><th>Cotización</th><th>Reservadas</th><th>Pagadas</th><th>Anuladas</th><th>Cobrado</th><th>Gastos</th><th>Beneficio neto</th><th>Detalle</th></tr></thead>
+    <thead><tr><th>Mes</th><th>Cotizaciones</th><th>Cotización</th><th>Reservadas</th><th>Pagadas</th><th>Anuladas</th><th>Cobrado</th><th>Gastos</th><th>Beneficio neto</th><th>Dinero por cuenta</th><th>Detalle</th></tr></thead>
     <tbody>${cierres.map(c=>`
       <tr>
         <td><strong>${String(c.mes).padStart(2,'0')}/${c.anio}</strong></td>
@@ -2299,6 +2538,7 @@ async function loadCierres() {
         <td style="color:#16A34A;font-weight:600">${formatMoney(c.total_cobrado)}</td>
         <td style="color:#EF4444;font-weight:600">${formatMoney(c.total_gastos)}</td>
         <td style="font-weight:700;color:${(c.beneficio_neto||0)>=0?'var(--morado)':'#EF4444'}">${formatMoney(c.beneficio_neto)}</td>
+        <td style="font-size:0.76rem;line-height:1.5;white-space:nowrap">${c.por_cuenta ? CUENTAS.map(k => `${chipCuenta(k)} <strong>${formatMoney(c.por_cuenta[k]?.debe_tener||0)}</strong>`).join('<br>') : '<span style="color:var(--text-secondary)">—</span>'}</td>
         <td>
           <button class="btn btn-ghost btn-icon" title="Descargar PDF detallado" onclick="descargarPDFCierre('${c.mes_anio}','${String(c.mes).padStart(2,'0')}/${c.anio}')">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
@@ -2331,6 +2571,7 @@ window.calcularCierreMes = async function() {
     const pagadas    = cotsData.filter(c => esCobrada(c.estado));
     const anuladas   = cotsData.filter(c => c.estado === 'Anulada');
     const conteo     = contarEstados(cotsData);
+    const porCuenta  = resumenCuentas(cotsData, gastosData);
     const cierre     = {
       mes, anio, mes_anio: mesAnio,
       n_cotizaciones: cotsData.length,
@@ -2343,6 +2584,9 @@ window.calcularCierreMes = async function() {
       total_cotizado: cotsData.reduce((s,c) => s+(c.total||0), 0),
       total_gastos:   gastosData.reduce((s,g) => s+(g.monto||0), 0),
       beneficio_neto: pagadas.reduce((s,c)=>s+(c.total||0),0) - gastosData.reduce((s,g)=>s+(g.monto||0),0),
+      por_cuenta:     porCuenta.cuentas,
+      total_por_cuenta: porCuenta.total,
+      sin_cuenta:     porCuenta.sin,
       cerrado_en:     serverTimestamp(),
     };
     await setDoc(doc(db,'cierres',mesAnio), cierre);
@@ -2492,6 +2736,28 @@ window.descargarPDFCierre = async function(mesAnio, mesLabel) {
     pdoc.text('TOTAL GASTADO', M+4, y+14);      pdoc.text(formatMoney(totalGastadoGlobal), W-M-4, y+14, {align:'right'});
     pdoc.setFontSize(11);
     pdoc.text('BENEFICIO NETO', M+4, y+21);     pdoc.text(formatMoney(beneficioGlobal), W-M-4, y+21, {align:'right'});
+    y += 32;
+
+    // Dinero por cuenta: lo que debería haber en efectivo y en cada banco
+    const rc = resumenCuentas(todasCots, gastos);
+    chequearEspacio(14 + 7 * (CUENTAS.length + 2));
+    pdoc.setFont('helvetica','bold'); pdoc.setFontSize(9.5); pdoc.setTextColor(...negro);
+    pdoc.text('DINERO POR CUENTA', M, y); y += 6;
+    pdoc.setFontSize(8); pdoc.setTextColor(...gris);
+    pdoc.text('Cuenta', M+3, y); pdoc.text('Recibido', 100, y, {align:'right'}); pdoc.text('Gastado', 138, y, {align:'right'});
+    pdoc.text('Debería haber', W-M-3, y, {align:'right'}); y += 5;
+    const filaCuenta = (nombre, x, negrita) => {
+      pdoc.setFont('helvetica', negrita?'bold':'normal'); pdoc.setFontSize(8.5); pdoc.setTextColor(...negro);
+      const hx = CUENTA_COLOR[nombre]; if (hx) pdoc.setTextColor(parseInt(hx.slice(1,3),16), parseInt(hx.slice(3,5),16), parseInt(hx.slice(5,7),16)); pdoc.text(nombre, M+3, y); pdoc.setTextColor(...negro); pdoc.text(formatMoney(x.recibido), 100, y, {align:'right'});
+      pdoc.setTextColor(...rojo); pdoc.text(formatMoney(x.gastos), 138, y, {align:'right'});
+      pdoc.setTextColor(...(x.debe_tener>=0?morado:rojo)); pdoc.text(formatMoney(x.debe_tener), W-M-3, y, {align:'right'});
+      y += 6;
+    };
+    CUENTAS.forEach(k => filaCuenta(k, rc.cuentas[k], false));
+    pdoc.setDrawColor(...grisClaro); pdoc.line(M, y-2, W-M, y-2);
+    filaCuenta('TOTAL', rc.total, true);
+    const aviso = avisoSinCuenta(rc.sin);
+    if (aviso) { pdoc.setFont('helvetica','normal'); pdoc.setFontSize(7.5); pdoc.setTextColor(...gris); pdoc.text(pdoc.splitTextToSize(aviso, W-M*2), M, y+2); }
 
     pdoc.save(`Cierre_${mesLabel.replace('/','-')}.pdf`);
     toast('PDF de cierre descargado ✓');
@@ -2707,6 +2973,7 @@ window.loadDashboard = async function() {
   document.getElementById('mBeneficio').textContent   = formatMoney(beneficio);
   document.getElementById('mCotizaciones').textContent = cots.length;
   dashCotsMes = cots;
+  document.getElementById('dashCuentas').innerHTML = cardsCuentasHtml(resumenCuentas(cots, gastos), null);
   cargarResumenCotizaciones();
 
   // Próximos eventos (mes actual) / Eventos del mes (mes pasado o futuro elegido)
