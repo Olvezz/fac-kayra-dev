@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kayra Full Party — BETA</title>
   <meta name="robots" content="noindex,nofollow">
+  <link rel="manifest" href="manifest-beta.webmanifest">
+  <meta name="theme-color" content="#A5248B">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Kayra BETA">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">  
   <link rel="stylesheet" href="main.css">
@@ -429,6 +436,7 @@
         <div class="card-body">
           <strong>Herramientas de la BETA</strong>
           <p style="font-size:0.85rem;color:var(--text-secondary);margin:6px 0 12px">Esta beta usa colecciones aparte (<code>beta_*</code>). Copiar solo LEE los datos reales y escribe en la beta; los datos reales no se modifican.</p>
+          <button class="btn btn-primary btn-sm" id="btnDatosPrueba" onclick="cargarDatosPrueba()">Cargar datos de prueba (imaginarios)</button>
           <button class="btn btn-secondary btn-sm" id="btnCopiarBeta" onclick="copiarProduccionABeta()">Copiar datos reales a la beta</button>
           <button class="btn btn-ghost btn-sm" style="color:#EF4444" onclick="vaciarBeta()">Vaciar la beta</button>
         </div>
@@ -671,6 +679,7 @@
 </div>
 
 <!-- Scripts -->
+<script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
 <script type="module">
 import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signOut }
@@ -861,6 +870,107 @@ async function init() {
   });
   initBuscador('buscadorGaleria', val => { galeriaFiltroTexto = val; renderGaleria(); });
 }
+
+// ── Datos de prueba imaginarios (solo escribe en beta_*) ──
+window.cargarDatosPrueba = async function() {
+  if (!confirm('¿Cargar datos IMAGINARIOS de prueba en la beta? Se agregan a lo que ya haya (solo beta_*, nada real).')) return;
+  const btn = document.getElementById('btnDatosPrueba');
+  const pad = n => String(n).padStart(2,'0');
+  const hoy = new Date();
+  const fecha = (off, dia) => new Date(hoy.getFullYear(), hoy.getMonth() + off, dia, 12);
+  const iso = d => d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+  try {
+    btn.disabled = true; btn.textContent = 'Cargando…';
+    // Clientes
+    const CLI = [
+      ['María Pérez','8095550101'],['Juan Rodríguez','8295550102'],['Ana Martínez','8495550103'],
+      ['Luis Fernández','8095550104'],['Carla Núñez','8295550105'],['Pedro Santana','8495550106'],
+    ];
+    const cli = [];
+    for (const [nombre, telefono] of CLI) {
+      const r = await addDoc(collection(db,'clientes'), { nombre, telefono, telefono_norm: telefono, direccion:'Santo Domingo (prueba)', notas:'DATO DE PRUEBA', creado_en: serverTimestamp() });
+      cli.push({ id:r.id, nombre, telefono });
+    }
+    // Catálogo
+    const SVC = [
+      ['Animación infantil (2 h)','Animación',6000],['Decoración con globos','Decoración',8500],
+      ['Mesas y sillas (set 20)','Mobiliario',3500],['Mesa de dulces','Dulces',5000],
+      ['Inflable','Diversión',4000],['Bizcocho temático','Extras',3000],
+    ];
+    const svc = [];
+    for (const [nombre, categoria, precio] of SVC) {
+      const r = await addDoc(collection(db,'catalogo'), { nombre, descripcion:'', categoria, precio_base:Math.round(precio*0.7), margen:0.4286, precio_final:precio });
+      svc.push({ id:r.id, nombre, precio });
+    }
+    // Cotizaciones: [cliente, mes(-1/0/1), día, temática, festejado, estado, [[servicio,cant]], transporte, cuentaCobro, [[fracción, cuenta]]]
+    const COTS = [
+      [0,-1, 5,'Princesas','Sofía (6)','Pagada',    [[0,1],[1,1]],        500,'BHD',        [[0.5,'BHD'],[0.5,'BHD']]],
+      [1,-1,12,'Spiderman','Mateo (7)','Realizado', [[0,1],[4,1],[5,1]],  800,'Banreservas',[[0.4,'Banreservas'],[0.6,'Efectivo']]],
+      [2,-1,20,'Unicornios','Valeria (5)','Realizado',[[1,1],[3,1]],      0,'Efectivo',   [[1,'Efectivo']]],
+      [3, 0, 3,'Fiesta de Roblox','Daniel (9)','Pagada',[[0,1],[2,1],[4,1]],600,'BHD',     [[1,'BHD']]],
+      [4, 0, 9,'Frozen','Isabella (4)','Pagada',    [[1,1],[3,1],[5,1]],  0,'Caribe',      [[0.5,'Caribe'],[0.5,'Caribe']]],
+      [5, 0,15,'Safari','Gael (3)','Reservado',     [[0,1],[1,1]],        500,'Banreservas',[[0.3,'Banreservas']]],
+      [0, 0,22,'Minnie Mouse','Camila (2)','Realizado',[[3,1],[5,1]],     0,'Efectivo',   [[1,'Efectivo']]],
+      [1, 0,26,'Dinosaurios','Thiago (6)','Cotización',[[0,1],[4,1]],     400,'BHD',       []],
+      [2, 0,28,'Barbie','Luna (8)','Anulada',       [[1,1]],              0,'BHD',         [[0.2,'BHD']]],
+      [3, 1, 7,'Superhéroes','Samuel (5)','Reservado',[[0,1],[2,1],[3,1]],600,'BHD',       [[0.5,'BHD']]],
+      [4, 1,18,'Sirenita','Emma (4)','Cotización',  [[1,1],[5,1]],        0,'',            []],
+    ];
+    const cotIds = [];
+    let n = 0;
+    for (const [ci, off, dia, tematica, festejado, estado, its, transporte, cuenta, abs] of COTS) {
+      const c = cli[ci];
+      const items = its.map(([si, cant]) => ({ catalogo_id: svc[si].id, nombre: svc[si].nombre, cantidad: cant, precio_unitario: svc[si].precio, descuento: 0, subtotal: svc[si].precio * cant }));
+      const subtotal = items.reduce((s,i) => s + i.subtotal, 0);
+      const total = subtotal + transporte;
+      const fe = fecha(off, dia);
+      const emision = new Date(fe.getTime() - 12 * 86400000);
+      const abonos = abs.map(([fr, cta], k) => ({ fecha: iso(new Date(emision.getTime() + k * 5 * 86400000)), monto: Math.round(total * fr), cuenta: cta }));
+      const numero = 'KFP-' + hoy.getFullYear() + '-9' + String(++n).padStart(4,'0');
+      const data = {
+        cliente_id: c.id, cliente_nombre: c.nombre, cliente_telefono: c.telefono, cliente_email:'', cliente_direccion:'',
+        fecha_emision: emision, fecha_evento: fe, hora_evento:'16:00', tematica, festejado,
+        items, subtotal, itbis_pct:0, itbis_monto:0, transporte, total,
+        abono: abonos.reduce((s,a) => s + a.monto, 0), abonos,
+        estado, metodo_pago: cuenta === 'Efectivo' ? 'Efectivo' : 'Transferencia', cuenta_cobro: cuenta,
+        notas:'DATO DE PRUEBA', creado_por: currentUser.email, numero,
+        mes_anio: pad(emision.getMonth()+1) + '-' + emision.getFullYear(),
+        mes_anio_evento: pad(fe.getMonth()+1) + '-' + fe.getFullYear(),
+      };
+      const r = await addDoc(collection(db,'cotizaciones'), { ...data, creado_en: serverTimestamp() });
+      cotIds.push({ id:r.id, numero, cliente: c.nombre, mes: data.mes_anio_evento });
+    }
+    // Gastos: [mes, día, descripción, categoría, monto, cuenta, cotización(índice) o -1]
+    const GAS = [
+      [-1, 4,'Globos y helio','Decoración',1800,'Efectivo',0],
+      [-1,11,'Alquiler de inflable','Mobiliario',1500,'BHD',1],
+      [-1,19,'Ingredientes de dulces','Comida',2200,'Banreservas',2],
+      [-1,25,'Gasolina','Transporte',900,'Efectivo',-1],
+      [-1,27,'Compra antigua sin cuenta','Otro',700,'',-1],
+      [ 0, 2,'Bizcocho Roblox','Comida',2000,'BHD',3],
+      [ 0, 8,'Decoración Frozen','Decoración',2600,'Caribe',4],
+      [ 0,10,'Ayudante de animación','Ayudante',1200,'Efectivo',4],
+      [ 0,14,'Transporte de mobiliario','Transporte',800,'Banreservas',5],
+      [ 0,20,'Insumos de limpieza','Insumos',650,'Efectivo',-1],
+      [ 0,24,'Devolución parcial a cliente','Devolución',400,'BHD',8],
+    ];
+    for (const [off, dia, descripcion, categoria, monto, cuenta, ci] of GAS) {
+      const f = fecha(off, dia);
+      const cot = ci >= 0 ? cotIds[ci] : null;
+      const data = {
+        descripcion, monto, fecha: iso(f), categoria,
+        mes_anio: pad(f.getMonth()+1) + '-' + f.getFullYear(),
+        mes_anio_evento: cot ? cot.mes : pad(f.getMonth()+1) + '-' + f.getFullYear(),
+        cot_id: cot?.id || '', cot_numero: cot?.numero || '', cot_cliente: cot?.cliente || '',
+      };
+      if (cuenta) data.cuenta = cuenta;
+      await addDoc(collection(db,'gastos'), { ...data, creado_en: serverTimestamp() });
+    }
+    toast('Datos de prueba cargados ✓ (cotizaciones, gastos, clientes y catálogo)');
+    loadDashboard();
+  } catch(e) { console.error(e); toast('Error al cargar datos de prueba: ' + e.message, 'error'); }
+  btn.disabled = false; btn.textContent = 'Cargar datos de prueba (imaginarios)';
+};
 
 // ── Herramientas de la BETA ──
 window.copiarProduccionABeta = async function() {
