@@ -631,7 +631,7 @@
         <div class="form-row">
           <div class="form-group" id="grpCuentaCobro">
             <label>Cuenta donde se cobrará</label>
-            <select class="input" id="cotCuentaCobro">
+            <select class="input" id="cotCuentaCobro" autocomplete="off" data-lpignore="true">
               <option value="">— Por definir —</option>
               <option value="Efectivo">⚪ Efectivo</option><option value="BHD">🟢 BHD</option><option value="Banreservas">🔵 Banreservas</option><option value="Caribe">🟡 Caribe</option>
             </select>
@@ -1995,7 +1995,7 @@ window.openAbonoModal = function(idx = null) {
     <div class="form-group"><label>Monto (RD$) *</label>
       <input class="input" type="number" id="fAbonoMonto" value="${a?.monto || ''}" min="0" required></div>
     <div class="form-group"><label>Recibido en *</label>
-      <select class="input" id="fAbonoCuenta">${CUENTA_OPTS(a ? a.cuenta : document.getElementById('cotCuentaCobro').value, '— Elige cuenta —')}</select></div>`;
+      <select class="input" id="fAbonoCuenta" autocomplete="off" data-lpignore="true">${CUENTA_OPTS(a ? a.cuenta : document.getElementById('cotCuentaCobro').value, '— Elige cuenta —')}</select></div>`;
   document.getElementById('modalFooter').innerHTML = `
     <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-primary" onclick="guardarAbono(${idx})">Guardar</button>`;
@@ -2492,7 +2492,7 @@ window.openGastoModal = async function(editId = null) {
       <div class="form-group"><label>Categoría</label>
         <select class="input" id="fGastoCat">${CATS.map(c=>`<option${g?.categoria===c?' selected':''}>${c}</option>`).join('')}</select></div>
       <div class="form-group"><label>Pagado desde *</label>
-        <select class="input" id="fGastoCuenta">${CUENTA_OPTS(g?.cuenta, '— Elige cuenta —')}</select></div>
+        <select class="input" id="fGastoCuenta" autocomplete="off" data-lpignore="true">${CUENTA_OPTS(g?.cuenta, '— Elige cuenta —')}</select></div>
     </div>
     <div class="form-group">
       <label>Cotización / Evento relacionado
@@ -2614,18 +2614,24 @@ window.loadCuentas = async function() {
 
   cuentasMovs = [];
   cots.filter(usaCuentas).forEach(c => abonosDe(c).forEach(a => {
-    cuentasMovs.push({ fecha:a.fecha||'', tipo:'Ingreso', detalle:`${c.numero||''} · ${c.cliente_nombre||''}`, cuenta:a.cuenta, monto:a.monto });
+    cuentasMovs.push({ cotId:c.id, fecha:a.fecha||'', tipo:'Ingreso', detalle:`${c.numero||''} · ${c.cliente_nombre||''}`, cuenta:a.cuenta, monto:a.monto });
   }));
   cots.filter(usaCuentas).forEach(c => {
     const saldo = saldoSinAbonos(c);
     if (saldo > 0 && esCobrada(c.estado) && CUENTAS.includes(c.cuenta_cobro)) {
       const fe = c.fecha_evento && c.fecha_evento.toDate ? c.fecha_evento.toDate() : null;
-      cuentasMovs.push({ fecha: fe ? fe.toISOString().slice(0,10) : '', tipo:'Ingreso', detalle:(c.numero||'') + ' · ' + (c.cliente_nombre||'') + ' (saldo cobrado, sin abono registrado)', cuenta:c.cuenta_cobro, monto:saldo });
+      cuentasMovs.push({ cotId:c.id, fecha: fe ? fe.toISOString().slice(0,10) : '', tipo:'Ingreso', detalle:(c.numero||'') + ' · ' + (c.cliente_nombre||'') + ' (saldo cobrado, sin abono registrado)', cuenta:c.cuenta_cobro, monto:saldo });
     }
   });
-  gastos.forEach(g => cuentasMovs.push({ fecha:g.fecha||'', tipo:'Gasto', detalle:`${g.descripcion||''}${g.cot_numero ? ' · '+g.cot_numero : ''}`, cuenta:g.cuenta||'', monto:g.monto||0 }));
+  gastos.forEach(g => cuentasMovs.push({ cotId:g.cot_id||'', fecha:g.fecha||'', tipo:'Gasto', detalle:`${g.descripcion||''}${g.cot_numero ? ' · '+g.cot_numero : ''}`, cuenta:g.cuenta||'', monto:g.monto||0 }));
   cuentasMovs.sort((a,b) => String(b.fecha).localeCompare(String(a.fecha)));
   renderMovsCuentas();
+};
+// Desde el dashboard: abre Pagos recibidos del mismo mes, filtrado por la cuenta elegida
+window.irACuenta = function(c) {
+  cuentasFiltro = c;
+  document.getElementById('filtroCuentasMes').value = document.getElementById('filtroDashMes').value;
+  navTo('cuentas');
 };
 window.filtrarCuenta = function(c) { cuentasFiltro = (cuentasFiltro === c) ? '' : c; renderMovsCuentas(); };
 let cuentasOrden = { campo:'fecha', dir:-1 }; // dir: 1 ascendente, -1 descendente
@@ -2652,7 +2658,7 @@ function renderMovsCuentas() {
     <tr>
       <td>${x.fecha ? formatDate(x.fecha + 'T12:00:00') : '—'}</td>
       <td><span class="badge ${x.tipo==='Ingreso'?'badge-pagada':'badge-anulada'}">${x.tipo}</span></td>
-      <td>${escapeHtml(x.detalle)}</td>
+      <td>${x.cotId ? `<a href="#" title="Abrir cotización" onclick="event.preventDefault();openEditCotizacion('${x.cotId}')" style="color:inherit;text-decoration:underline dotted">${escapeHtml(x.detalle)}</a>` : escapeHtml(x.detalle)}</td>
       <td>${x.cuenta ? chipCuenta(x.cuenta) : '<span style="color:#D97706">⚠ Sin asignar</span>'}</td>
       <td><strong style="color:${x.tipo==='Ingreso'?'#16A34A':'#EF4444'}">${x.tipo==='Ingreso'?'+':'−'}${formatMoney(x.monto)}</strong></td>
     </tr>`).join('')
@@ -3119,7 +3125,7 @@ window.loadDashboard = async function() {
   document.getElementById('mBeneficio').textContent   = formatMoney(beneficio);
   document.getElementById('mCotizaciones').textContent = cots.length;
   dashCotsMes = cots;
-  document.getElementById('dashCuentas').innerHTML = cardsCuentasHtml(resumenCuentas(cots, gastos), null);
+  document.getElementById('dashCuentas').innerHTML = cardsCuentasHtml(resumenCuentas(cots, gastos), 'irACuenta');
   cargarResumenCotizaciones();
 
   // Próximos eventos (mes actual) / Eventos del mes (mes pasado o futuro elegido)
