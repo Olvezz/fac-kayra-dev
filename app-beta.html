@@ -441,6 +441,17 @@
           <button class="btn btn-ghost btn-sm" style="color:#EF4444" onclick="vaciarBeta()">Vaciar la beta</button>
         </div>
       </div>
+      <div class="card" style="max-width:600px;margin-bottom:16px">
+        <div class="card-body">
+          <strong>Correos autorizados</strong>
+          <p style="font-size:0.85rem;color:var(--text-secondary);margin:6px 0 12px">Cuentas de Google que pueden entrar al sistema. Los correos fijos no se pueden quitar.</p>
+          <div id="accesosLista" style="margin-bottom:12px"></div>
+          <form onsubmit="agregarAcceso(event)" style="display:flex;gap:8px">
+            <input class="input" type="email" id="accesoNuevo" placeholder="correo@gmail.com" required style="flex:1">
+            <button type="submit" class="btn btn-primary btn-sm">Añadir</button>
+          </form>
+        </div>
+      </div>
       <div class="card" style="max-width:600px">
         <div class="card-body">
           <form id="configForm" onsubmit="saveConfig(event)">
@@ -816,9 +827,20 @@ let galeriaFiltroTexto = '';
 let cotFiltroTexto = '', clienteFiltroTexto = '', catalogoFiltroTexto = '', gastoFiltroTexto = '';
 
 // ── Auth guard ──
-const unsubApp = onAuthStateChanged(auth, user => {
+// Autorizado = lista fija o correos añadidos desde Configuración. Se guarda en config/accesos
+// (la real, sin prefijo beta_) para que sea la misma lista en el login y en las dos apps.
+async function esAutorizado(email) {
+  if (!email) return false;
+  email = email.toLowerCase();
+  if (WHITELIST.includes(email)) return true;
+  try {
+    const snap = await getDoc(_doc(db,'config','accesos'));
+    return snap.exists() && (snap.data().emails || []).includes(email);
+  } catch { return false; }
+}
+const unsubApp = onAuthStateChanged(auth, async user => {
   unsubApp();
-  if (!user || !WHITELIST.includes(user.email)) {
+  if (!user || !(await esAutorizado(user.email))) {
     // Pequeño delay para evitar race con index.html
     setTimeout(() => { window.location.href = 'index.html'; }, 200);
     return;
@@ -1405,7 +1427,51 @@ async function loadConfig() {
     };
   } catch { return {}; }
 }
+// ── Correos autorizados ──
+let accesosExtra = [];
+async function cargarAccesos() {
+  try {
+    const snap = await getDoc(_doc(db,'config','accesos'));
+    accesosExtra = snap.exists() ? (snap.data().emails || []) : [];
+  } catch { accesosExtra = []; }
+  renderAccesos();
+}
+function renderAccesos() {
+  const fila = (email, fijo) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border,#eee)">
+    <span>${escapeHtml(email)} <span style="color:var(--text-secondary);font-size:0.8rem">${escapeHtml(nombreUsuario(email))}${fijo ? ' · fijo' : ''}</span></span>
+    ${fijo ? '' : `<button class="btn btn-ghost btn-sm" style="color:#EF4444" onclick="quitarAcceso('${escapeHtml(email)}')">Quitar</button>`}
+  </div>`;
+  document.getElementById('accesosLista').innerHTML =
+    WHITELIST.map(e => fila(e, true)).join('') + accesosExtra.map(e => fila(e, false)).join('');
+}
+async function guardarAccesos(lista) {
+  await setDoc(_doc(db,'config','accesos'), { emails: lista });
+  accesosExtra = lista;
+  renderAccesos();
+}
+window.agregarAcceso = async function(e) {
+  e.preventDefault();
+  const input = document.getElementById('accesoNuevo');
+  const email = input.value.trim().toLowerCase();
+  if (WHITELIST.includes(email) || accesosExtra.includes(email)) { toast('Ese correo ya tiene acceso'); return; }
+  try {
+    await guardarAccesos([...accesosExtra, email]);
+    input.value = '';
+    logAccion('Editó', 'Configuración', 'Autorizó el correo ' + email);
+    toast('Correo autorizado ✓');
+  } catch { toast('No se pudo guardar (permisos)'); }
+};
+window.quitarAcceso = async function(email) {
+  if (!confirm('¿Quitar el acceso a ' + email + '?')) return;
+  try {
+    await guardarAccesos(accesosExtra.filter(x => x !== email));
+    logAccion('Editó', 'Configuración', 'Quitó el acceso del correo ' + email);
+    toast('Acceso quitado');
+  } catch { toast('No se pudo guardar (permisos)'); }
+};
+
 function loadConfigForm() {
+  cargarAccesos();
   document.getElementById('cfgNombre').value     = appConfig.nombre_negocio || '';
   document.getElementById('cfgTelefono').value   = appConfig.telefono || '';
   document.getElementById('cfgWhatsapp').value   = appConfig.whatsapp || '';
