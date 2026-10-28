@@ -799,9 +799,19 @@ let galeriaFiltroTexto = '';
 let cotFiltroTexto = '', clienteFiltroTexto = '', catalogoFiltroTexto = '', gastoFiltroTexto = '';
 
 // ── Auth guard ──
-const unsubApp = onAuthStateChanged(auth, user => {
+// Autorizado = lista fija o correos añadidos desde Configuración (config/accesos)
+async function esAutorizado(email) {
+  if (!email) return false;
+  email = email.toLowerCase();
+  if (WHITELIST.includes(email)) return true;
+  try {
+    const snap = await getDoc(doc(db,'config','accesos'));
+    return snap.exists() && (snap.data().emails || []).includes(email);
+  } catch { return false; }
+}
+const unsubApp = onAuthStateChanged(auth, async user => {
   unsubApp();
-  if (!user || !WHITELIST.includes(user.email)) {
+  if (!user || !(await esAutorizado(user.email))) {
     // Pequeño delay para evitar race con index.html
     setTimeout(() => { window.location.href = 'index.html'; }, 200);
     return;
