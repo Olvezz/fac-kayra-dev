@@ -3,6 +3,8 @@
     "public": ".",
     "ignore": [
       "firebase.json",
+      "README.md",
+      "Guia-*.pdf",
       ".firebaserc",
       "**/.*",
       "**/node_modules/**"
