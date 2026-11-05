@@ -1,0 +1,11 @@
+# Normaliza los saltos de línea y marca los binarios (evita avisos y diferencias falsas entre Windows y Mac)
+* text=auto
+*.png binary
+*.ico binary
+*.pdf binary
+
+# Lo que NO se publica en Firebase Hosting (git archive lo excluye; ver scripts/desplegar.ps1)
+README.md export-ignore
+scripts/ export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore

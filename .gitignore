@@ -1,6 +1,13 @@
 # Firebase
 .firebase/
 
+# Material de trabajo local (no se sube ni se publica)
+evidencias/
+Guia-*.pdf
+Vista-previa-*
+Captura de pantalla*
+*.log
+
 # Claude local settings (machine-specific)
 .claude/settings.local.json
 

@@ -55,15 +55,21 @@ No hay servidor: la revisión corre en el navegador (`autoCerrarMesAnterior` en 
 - La ventana de detalle del cierre siempre se calcula en vivo; el cierre *guardado* solo cambia con lo anterior.
 - Limitación: depende de que alguien abra la app. Para una ejecución exacta a las 00:00 del día 1 haría falta una Cloud Function programada (requiere plan Blaze).
 
-## Despliegue
+## Estructura del proyecto
 
-El hosting sirve la carpeta raíz (`public: "."`). `git push` no despliega.
+| Ruta | Para qué sirve |
+|---|---|
+| `index.html`, `app.html`, `app-beta.html`, `main.css`, `sw.js`, `manifest*.webmanifest`, `favicon.ico` | La app. **Se quedan en la raíz**: las direcciones de GitHub Pages y la PWA instalada dependen de ellas |
+| `icons/` | Íconos de la PWA (`icon-*.png`, `apple-touch-icon.png`) y logos (`caribe.png`) |
+| `scripts/desplegar.ps1` | Publica en Firebase lo commiteado, sin archivos sueltos |
+| `evidencias/` | Capturas de trabajo, solo local (ignorada por git y por Firebase) |
 
-```
-firebase deploy --only hosting --account oliverjunior071914@gmail.com
-```
+## Cómo se publica
 
-En PowerShell, si bloquea `firebase.ps1`, usar `firebase.cmd`. Reglas de Firestore y correos autorizados (`config/accesos`) se gestionan en la consola de Firebase, no en este repo.
+- **Lo que ve el usuario:** GitHub Pages — `https://olvezz.github.io/fac-kayra-dev/app.html` (beta: `.../app-beta.html`). Se publica solo con `git push` a `main` (tarda 1–3 min y el navegador lo guarda ~10 min; abrir con `?v=N` para saltar la copia vieja).
+- **Firebase Hosting** (`kayra-cotizaciones.web.app`): `powershell -ExecutionPolicy Bypass -File scriptsdesplegar.ps1`. Publica lo commiteado (`git archive HEAD`), no la carpeta de trabajo.
+- Reglas de Firestore y correos autorizados (`config/accesos`) se gestionan en la consola de Firebase o desde Configuración, no en este repo.
+- Subir el número de `main.css?v=...` en `app.html` y `app-beta.html` cada vez que cambie el CSS.
 
 ## Historial de cambios relevantes
 
