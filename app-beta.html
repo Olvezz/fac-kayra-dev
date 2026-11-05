@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">  
-  <link rel="stylesheet" href="main.css?v=20261106m">
+  <link rel="stylesheet" href="main.css?v=20261106t">
 </head>
 <body>
 <div style="position:fixed;top:8px;right:8px;z-index:9999;background:#D97706;color:#fff;font:700 11px/1 sans-serif;padding:6px 10px;border-radius:99px;letter-spacing:.5px;pointer-events:none">BETA · DATOS DE PRUEBA</div>
@@ -245,14 +245,16 @@
           <div class="page-title">Cotizaciones</div>
           <div class="page-subtitle" id="cotSubtitle">Cargando...</div>
         </div>
-        <button class="btn btn-primary" onclick="openNuevaCotizacion()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nueva cotización
-        </button>
+        <div class="hdr-acc">
+          <div id="buscadorCot"></div>
+          <button class="btn btn-primary" onclick="openNuevaCotizacion()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva<span class="txt-md">&nbsp;cotización</span>
+          </button>
+        </div>
       </div>
 
-      <div class="filters-bar">
-        <div id="buscadorCot"></div>
+      <div class="filters-bar filtros-lista">
         <select class="input" id="filtroEstado" onchange="loadCotizaciones()" style="max-width:160px">
           <option value="">Todos los estados</option>
           <option>Cotización</option>
@@ -260,7 +262,7 @@
           <option>Realizado</option><option>Anulada</option>
         </select>
         <input type="month" class="input" id="filtroMes" data-clear="1" data-vacio="Todos los meses" oninput="loadCotizaciones()" style="max-width:160px">
-        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtroEstado').value='';document.getElementById('filtroMes').value='';loadCotizaciones()">Limpiar</button>
+        <button type="button" class="btn btn-secondary btn-limpiar" title="Limpiar filtros" aria-label="Limpiar filtros" onclick="document.getElementById('filtroEstado').value='';document.getElementById('filtroMes').value='';loadCotizaciones()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></button>
       </div>
 
       <div class="card">
@@ -293,13 +295,13 @@
           <div class="page-title">Clientes</div>
           <div class="page-subtitle" id="clientesSubtitle">Cargando...</div>
         </div>
-        <button class="btn btn-primary" onclick="openClienteModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nuevo cliente
-        </button>
-      </div>
-      <div class="filters-bar">
-        <div id="buscadorClientes"></div>
+        <div class="hdr-acc">
+          <div id="buscadorClientes"></div>
+          <button class="btn btn-primary" onclick="openClienteModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nuevo<span class="txt-md">&nbsp;cliente</span>
+          </button>
+        </div>
       </div>
       <div class="card">
         <div class="table-wrap">
@@ -319,13 +321,13 @@
     <div class="page" id="page-catalogo">
       <div class="page-header">
         <div><div class="page-title">Catálogo de Servicios</div></div>
-        <button class="btn btn-primary" onclick="openServicioModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Agregar servicio
-        </button>
-      </div>
-      <div class="filters-bar">
-        <div id="buscadorCatalogo"></div>
+        <div class="hdr-acc">
+          <div id="buscadorCatalogo"></div>
+          <button class="btn btn-primary" onclick="openServicioModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Agregar<span class="txt-md">&nbsp;servicio</span>
+          </button>
+        </div>
       </div>
       <div id="catalogoContent"><div class="loading-page"><div class="spinner"></div></div></div>
     </div>
@@ -337,15 +339,17 @@
           <div class="page-title">Gastos</div>
           <div class="page-subtitle" id="gastosSubtitle">Este mes</div>
         </div>
-        <button class="btn btn-primary" onclick="openGastoModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Registrar gasto
-        </button>
+        <div class="hdr-acc">
+          <div id="buscadorGastos"></div>
+          <button class="btn btn-primary" onclick="openGastoModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Registrar<span class="txt-md">&nbsp;gasto</span>
+          </button>
+        </div>
       </div>
-      <div class="filters-bar">
-        <div id="buscadorGastos"></div>
+      <div class="filters-bar filtros-lista">
         <input type="month" class="input" id="filtroGastoMes" data-clear="1" data-vacio="Todos los meses" oninput="loadGastos()" style="max-width:200px">
-        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtroGastoMes').value='';loadGastos()">Limpiar</button>
+        <button type="button" class="btn btn-secondary btn-limpiar" title="Limpiar filtros" aria-label="Limpiar filtros" onclick="document.getElementById('filtroGastoMes').value='';loadGastos()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></button>
         <button class="btn btn-secondary btn-sm" id="btnAgruparGastos" onclick="toggleAgruparGastos()">Agrupar por cotización</button>
       </div>
       <div class="grid-2" style="margin-bottom:16px">
@@ -402,10 +406,10 @@
       <div class="page-header">
         <div><div class="page-title">Cierres Mensuales</div></div>
       </div>
-      <div class="filters-bar">
+      <div class="filters-bar filtros-cierre">
         <input type="month" class="input" id="filtroCierreMes" style="max-width:180px">
         <button class="btn btn-primary" onclick="calcularCierreMes()">
-          Calcular cierre del mes elegido
+          Calcular<span class="txt-md">&nbsp;cierre del mes elegido</span>
         </button>
       </div>
       <div id="cierresContent"><div class="loading-page"><div class="spinner"></div></div></div>
@@ -418,9 +422,9 @@
           <div class="page-title">Galería de eventos</div>
           <div class="page-subtitle" id="galeriaSubtitle">Eventos marcados como “Realizado”</div>
         </div>
-      </div>
-      <div class="filters-bar">
-        <div id="buscadorGaleria"></div>
+        <div class="hdr-acc">
+          <div id="buscadorGaleria"></div>
+        </div>
       </div>
       <div id="galeriaContent"><div class="loading-page"><div class="spinner"></div></div></div>
     </div>
@@ -1597,8 +1601,8 @@ window.navTo = function(page) {
   if (page === 'config')       loadConfigForm();
 };
 
-window.toggleSidebar = () => { const o = document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarBackdrop').classList.toggle('open', o); };
-window.closeSidebar  = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop').classList.remove('open'); };
+window.toggleSidebar = () => { const o = document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebarBackdrop').classList.toggle('open', o); document.body.classList.toggle('menu-abierto', o); };
+window.closeSidebar  = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebarBackdrop').classList.remove('open'); document.body.classList.remove('menu-abierto'); };   // con el menú abierto, la página de fondo no se desplaza
 // Deslizar el menú hacia la izquierda también lo cierra
 (() => {
   let x0 = null; const sb = document.getElementById('sidebar');
@@ -1742,21 +1746,35 @@ function comboAttach(root, { items, getLabel, getSub, getId, onSelect, hiddenSel
 // BUSCADOR EXPANDIBLE (lupa) — filtra tablas ya cargadas en memoria,
 // sin volver a consultar Firestore.
 // ============================================================
+// Altura máxima visible vista hasta ahora: sirve para saber cuándo el teclado del celular se muestra o se baja
+let vvMax = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+window.addEventListener('orientationchange', () => { setTimeout(() => { vvMax = window.visualViewport ? window.visualViewport.height : window.innerHeight; }, 400); });
 function initBuscador(id, onFiltrar) {
   const wrap   = document.getElementById(id);
   if (!wrap) return;
   const btn    = wrap.querySelector('.search-btn');
   const input  = wrap.querySelector('.search-input');
   const clearBtn = wrap.querySelector('.search-clear');
+  let ultimo = '';        // último texto ya filtrado (evita repetir el filtro y asegura que siempre quede el más reciente)
+  let tecladoVisible = false;
   function actualizarClear() { clearBtn.style.display = input.value ? 'flex' : 'none'; }
+  // Filtra en vivo con lo que haya escrito, letra por letra / palabra por palabra
+  function filtrar() {
+    actualizarClear();
+    if (input.value === ultimo) return;
+    ultimo = input.value;
+    onFiltrar(ultimo);
+  }
   function cerrar() {
     wrap.classList.remove('open');
     input.value = '';
+    ultimo = '';
     actualizarClear();
     onFiltrar('');
   }
   function limpiar() {
     input.value = '';
+    ultimo = '';
     actualizarClear();
     input.focus();
     onFiltrar('');
@@ -1766,16 +1784,39 @@ function initBuscador(id, onFiltrar) {
     else { wrap.classList.add('open'); input.focus(); }
   });
   clearBtn.addEventListener('click', limpiar);
-  input.addEventListener('input', () => { actualizarClear(); onFiltrar(input.value); });
-  input.addEventListener('keydown', e => { if (e.key === 'Escape') cerrar(); });
-  input.addEventListener('blur', () => { if (!input.value) wrap.classList.remove('open'); });
+  // Tocar la lupa o la ✕ con el teclado abierto no debe quitarle el foco al campo (si no, el cuadro se cerraba y se reabría solo)
+  [btn, clearBtn].forEach(b => b.addEventListener('pointerdown', e => { if (document.activeElement === input) e.preventDefault(); }));
+  // Algunos teclados de celular (autocompletar / predictivo) no avisan con "input" en cada letra: se escuchan todos los eventos
+  ['input', 'keyup', 'compositionupdate', 'compositionend', 'change'].forEach(ev => input.addEventListener(ev, filtrar));
+  // Respaldo: mientras el campo tiene el foco se revisa cada 150 ms por si el teclado cambió el texto sin avisar
+  let vigia = null;
+  input.addEventListener('focus', () => { clearInterval(vigia); vigia = setInterval(filtrar, 150); });
+  input.addEventListener('blur', () => {
+    clearInterval(vigia); filtrar();
+    if (!input.value) wrap.classList.remove('open');   // sin texto: el cuadro se esconde
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') cerrar();
+    // Enter = listo: baja el teclado y deja los resultados (si no escribió nada, el cuadro se esconde por el blur)
+    if (e.key === 'Enter') { e.preventDefault(); filtrar(); input.blur(); }
+  });
+  // Si baja el teclado con el botón del sistema, el campo no siempre pierde el foco: se detecta por el cambio de altura visible
+  const vv = window.visualViewport;
+  if (vv) vv.addEventListener('resize', () => {
+    vvMax = Math.max(vvMax, vv.height);
+    if (vv.height < vvMax - 120) { tecladoVisible = true; return; }
+    if (tecladoVisible) {
+      tecladoVisible = false;
+      if (wrap.classList.contains('open') && !input.value) { input.blur(); wrap.classList.remove('open'); }
+    }
+  });
 }
 function buscadorHtml(id, placeholder) {
   return `<div class="search-box" id="${id}">
     <button type="button" class="search-btn" title="Buscar">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </button>
-    <input type="text" class="search-input" placeholder="${placeholder}">
+    <input type="text" class="search-input" placeholder="${placeholder}" enterkeyhint="search" autocomplete="off" autocapitalize="none">
     <button type="button" class="search-clear" title="Limpiar" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
@@ -1798,6 +1839,42 @@ async function logAccion(accion, entidad, detalle, usuarioOverride, cambios) {
     });
   } catch(e) { console.warn('No se pudo registrar el log:', e); }
 }
+
+// ── Anti doble toque ──
+// Guardar, descargar, compartir, exportar o eliminar: si se toca varias veces seguidas (o se pulsa Enter repetido), solo cuenta la primera.
+// Mientras la acción corre el botón se ve atenuado y no responde, y no se acepta otra igual hasta unos instantes después de terminar.
+function unaVez(fn, espera) {
+  let ocupado = false;
+  const envuelta = function(...args) {
+    if (ocupado) {                                           // ya hay una en marcha: se ignora (y no deja enviar el formulario otra vez)
+      if (args[0] && typeof args[0].preventDefault === 'function') args[0].preventDefault();
+      return;
+    }
+    ocupado = true;
+    const ev = window.event;
+    const b = ev && ev.currentTarget && ev.currentTarget.closest ? ev.currentTarget.closest('button') : null;
+    if (b) b.classList.add('procesando');
+    const liberar = () => setTimeout(() => { ocupado = false; if (b) b.classList.remove('procesando'); }, espera);
+    let r;
+    try { r = fn.apply(this, args); } catch (e) { liberar(); throw e; }
+    if (r && typeof r.then === 'function') return r.finally(liberar);
+    liberar();
+    return r;
+  };
+  envuelta.unaVez = true;
+  return envuelta;
+}
+window.unaVez = unaVez;
+function protegerAcciones() {
+  const rapidas = ['saveCotizacion','saveCliente','saveServicio','saveGasto','saveFoto','saveConfig','agregarAcceso','quitarAcceso',
+    'deleteCliente','deleteServicio','deleteCotizacion','deleteGasto','eliminarAbono','guardarAbono','vincGuardar'];
+  const lentas = ['descargarPDF','descargarPDFCierre','enviarWA','calcularCierreMes','guardarCierreDesdeVista',
+    'cargarDatosPrueba','copiarProduccionABeta','vaciarBeta'];   // las tres últimas existen solo en la beta
+  rapidas.forEach(n => { if (typeof window[n] === 'function' && !window[n].unaVez) window[n] = unaVez(window[n], 700); });
+  lentas.forEach(n => { if (typeof window[n] === 'function' && !window[n].unaVez) window[n] = unaVez(window[n], 2000); });
+}
+// se aplica cuando ya están definidas todas las funciones de la página
+if (document.readyState === 'complete') protegerAcciones(); else window.addEventListener('load', protegerAcciones);
 
 // Anuncio de actualización en Registros: se guarda UNA sola vez (el id es fijo), la primera vez que alguien abre la app tras publicarla.
 // Para un próximo anuncio: cambiar ANUNCIO_ID y el texto.
@@ -2387,7 +2464,7 @@ function renderCotizaciones() {
     return `<tr>
       <td><strong style="color:var(--morado)">${c.numero}</strong></td>
       <td>${escapeHtml(c.cliente_nombre)||'—'}</td>
-      <td>${fe}${c.hora_evento?`<br><small style="color:var(--text-secondary)">${escapeHtml(c.hora_evento)}</small>`:''}</td>
+      <td style="white-space:nowrap">${fe}${c.hora_evento?`<br><small style="color:var(--text-secondary)">${escapeHtml(c.hora_evento)}</small>`:''}</td>
       <td>${escapeHtml(c.tematica)||'—'}</td>
       <td><strong>${formatMoney(c.total)}</strong></td>
       <td>${c.abono ? `${formatMoney(c.abono)}<br><small style="color:var(--text-secondary)">Saldo: ${formatMoney(saldo)}</small>` : '<span style="color:var(--text-secondary)">—</span>'}</td>
@@ -3144,7 +3221,7 @@ function renderGastos() {
   } else {
     tbody.innerHTML = lista.map(g => `
       <tr>
-        <td>${fmtF(g.fecha)}</td>
+        <td style="white-space:nowrap">${fmtF(g.fecha)}</td>
         <td>${escapeHtml(g.descripcion)||'—'}</td>
         <td><span class="badge badge-cotizacion">${escapeHtml(g.categoria)||'General'}</span></td>
         <td>${g.cuenta ? chipCuenta(g.cuenta) : '<span style="color:var(--text-secondary)">—</span>'}</td>
@@ -3170,6 +3247,7 @@ function renderGastos() {
 window.toggleAgruparGastos = function() {
   gastosAgrupado = !gastosAgrupado;
   document.getElementById('btnAgruparGastos').textContent = gastosAgrupado ? 'Ver como lista' : 'Agrupar por cotización';
+  document.getElementById('btnAgruparGastos').classList.toggle('activo', gastosAgrupado);   // resaltado mientras está agrupado
   document.getElementById('gastosFlatWrap').style.display    = gastosAgrupado ? 'none' : '';
   document.getElementById('gastosGroupedWrap').style.display = gastosAgrupado ? '' : 'none';
   renderGastos(); // vuelve a dibujar con el nuevo modo (lista o agrupado)
@@ -3200,7 +3278,7 @@ function renderGastosAgrupados(lista) {
           <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Pagado desde</th><th>Monto</th><th>Acciones</th></tr></thead>
           <tbody>${grp.gastos.map(g => `
             <tr>
-              <td>${fmtF(g.fecha)}</td>
+              <td style="white-space:nowrap">${fmtF(g.fecha)}</td>
               <td>${escapeHtml(g.descripcion)||'—'}</td>
               <td><span class="badge badge-cotizacion">${escapeHtml(g.categoria)||'General'}</span></td>
               <td>${g.cuenta ? chipCuenta(g.cuenta) : '—'}</td>
@@ -3429,7 +3507,7 @@ function renderMovsCuentas() {
     (campo === k ? (dir === 1 ? ' ▲' : ' ▼') : ' <span style="opacity:.3">↕</span>') + '</th>').join('') + '</tr>';
   document.getElementById('cuentasTbody').innerHTML = lista.length ? lista.map(x => `
     <tr>
-      <td>${x.fecha ? formatDate(x.fecha + 'T12:00:00') : '—'}</td>
+      <td style="white-space:nowrap">${x.fecha ? formatDate(x.fecha + 'T12:00:00') : '—'}</td>
       <td><span class="badge ${x.tipo==='Ingreso'?'badge-pagada':'badge-anulada'}">${x.tipo}</span></td>
       <td>${x.cotId ? `<a href="#" title="Abrir cotización" onclick="event.preventDefault();openEditCotizacion('${x.cotId}')" style="color:inherit;cursor:pointer">${escapeHtml(x.detalle)}</a>` : escapeHtml(x.detalle)}</td>
       <td>${x.cuenta ? chipCuenta(x.cuenta) : '<span style="color:#D97706">⚠ Sin asignar</span>'}</td>

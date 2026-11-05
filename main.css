@@ -1160,3 +1160,48 @@ body.modal-abierto { overflow: hidden !important; }
 .dp-av-i small { color: var(--text-secondary); }
 .sl-o { flex: 1; }
 .sl-oc { flex-shrink: 0; font-size: 0.72rem; font-weight: 700; color: #B45309; background: #FFF1D6; padding: 2px 8px; border-radius: 99px; max-width: 48%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Cotizaciones, Gastos y Cierres: lupa en el encabezado, filtros en una línea, "Limpiar" como ícono ── */
+.hdr-acc { display: flex; align-items: center; gap: 8px; }
+.btn-limpiar { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; }
+.filtros-lista { gap: 8px; }
+@media (max-width: 560px) {
+  .page-header:has(.hdr-acc) { flex-wrap: wrap; row-gap: 10px; margin-bottom: 14px; }
+  .page-header:has(.hdr-acc) > div:first-child { flex: 1 1 0; min-width: 0; }
+  .page-header .hdr-acc { display: contents; }   /* lupa y botón pasan a ser hijos directos del encabezado, para poder reubicar la lupa abierta */
+  .page-header .hdr-acc .btn { padding: 9px 12px; }
+  .page-header .txt-md { display: none; }
+  .page-header .hdr-acc .search-box { height: 38px; }
+  .page-header .hdr-acc .search-box .search-btn { width: 36px; height: 36px; }
+  /* al tocar la lupa, el buscador baja a su propia fila: debajo del título y arriba de los filtros */
+  .page-header .hdr-acc .search-box.open { order: 3; flex: 1 1 100%; height: 44px; border-radius: 22px; background: #fff; animation: sb-baja .22s ease-out; }
+  .page-header .hdr-acc .search-box.open .search-btn { width: 42px; height: 42px; }
+  .page-header .hdr-acc .search-box.open .search-input { flex: 1; width: auto; min-width: 0; font-size: 0.95rem; }
+  .filtros-lista { flex-wrap: wrap; gap: 8px; }
+  .filtros-lista .sl-btn, .filtros-lista .mp-btn { flex: 1 1 0; min-width: 0; max-width: none !important; }
+  .filtros-lista .btn-limpiar { width: 42px; height: 42px; }
+  .filtros-lista #btnAgruparGastos { flex: 1 1 100%; justify-content: center; }
+  /* Cierres: el selector de mes y "Calcular" lado a lado */
+  .filtros-cierre { flex-wrap: nowrap; gap: 8px; }
+  .filtros-cierre .mp-btn { flex: 1 1 0; min-width: 0; max-width: none; }
+  .filtros-cierre .btn { flex-shrink: 0; white-space: nowrap; }
+  .filtros-cierre .txt-md { display: none; }
+}
+
+/* ── Gastos: botón de agrupar por cotización bien visible (antes era gris casi invisible) ── */
+#btnAgruparGastos {
+  background: #fff; color: var(--morado); border: 1.5px solid var(--morado); font-weight: 700;
+}
+#btnAgruparGastos::before { content: '▦'; margin-right: 7px; font-size: 0.95em; }
+#btnAgruparGastos:hover { background: var(--morado-ghost); }
+#btnAgruparGastos.activo { background: var(--morado); color: #fff; }
+#btnAgruparGastos.activo::before { content: '☰'; }
+@keyframes sb-baja { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* Menú lateral abierto (celular): el fondo no se desplaza y el scroll del menú no se "escapa" hacia la página */
+body.menu-abierto { overflow: hidden !important; }
+.sidebar { overscroll-behavior: contain; }
+.sidebar-backdrop { touch-action: none; }
+
+/* Botón con una acción en curso (anti doble toque): atenuado y sin responder */
+.procesando { opacity: .55; pointer-events: none; cursor: progress; }
