@@ -5,6 +5,7 @@
       "firebase.json",
       "README.md",
       "Guia-*.pdf",
+      "evidencias/**",
       ".firebaserc",
       "**/.*",
       "**/node_modules/**"
