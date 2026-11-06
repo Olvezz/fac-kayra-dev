@@ -815,14 +815,14 @@ function movimientosCaja(cots, gastos) {
 function resumenCuentas(cots, gastos, mesAnio) {
   const cuentas = {};
   CUENTAS.forEach(k => { cuentas[k] = { saldo_inicial:0, recibido:0, gastos:0, debe_tener:0, saldo_final:0, por_cobrar:0 }; });
-  const sin = { n_abonos:0, monto_abonos:0, n_gastos:0, monto_gastos:0, n_cots:0, monto_cots:0 };
+  const sin = { n_abonos:0, monto_abonos:0, n_gastos:0, monto_gastos:0, n_cots:0, monto_cots:0, n_viejos:0, monto_viejos:0 };
   const movsTodos = movimientosCaja(cots, gastos);
   const rg = rangoMeses(mesAnio);
   // Saldo inicial: lo acumulado en cada cuenta en los meses anteriores al período
   if (rg) movsTodos.filter(x => ymKey(x.mes) < rg.d && cuentas[x.cuenta] && (x.tipo === 'Gasto' || x.usa))
     .forEach(x => { cuentas[x.cuenta].saldo_inicial += x.tipo === 'Ingreso' ? x.monto : -x.monto; });
   movsTodos.filter(x => enRango(x.mes, rg)).forEach(x => {
-    if (x.tipo === 'Ingreso' && !x.usa) return;
+    if (x.tipo === 'Ingreso' && !x.usa) { sin.n_viejos++; sin.monto_viejos += x.monto; return; }   // cotización anterior a las cuentas: cuenta en el total pero no en ninguna cuenta
     const k = cuentas[x.cuenta];
     if (x.tipo === 'Gasto') {
       if (k) k.gastos += x.monto; else { sin.n_gastos++; sin.monto_gastos += x.monto; }
@@ -857,6 +857,7 @@ function avisoSinCuenta(sin) {
   const p = [];
   if (sin.n_abonos) p.push(`${sin.n_abonos} abono(s) por ${formatMoney(sin.monto_abonos)}`);
   if (sin.n_cots) p.push(sin.n_cots + ' cotización(es) cobrada(s) por ' + formatMoney(sin.monto_cots) + ' sin cuenta de cobro');
+  if (sin.n_viejos) p.push(sin.n_viejos + ' ingreso(s) por ' + formatMoney(sin.monto_viejos) + ' de cotizaciones sin cuentas (anteriores a esta función)');
   if (sin.n_gastos) p.push(`${sin.n_gastos} gasto(s) por ${formatMoney(sin.monto_gastos)}`);
   return p.length ? `Sin cuenta asignada (no incluidos arriba): ${p.join(' y ')}. Anteriores a esta función o pendientes de asignar.` : '';
 }
@@ -3611,10 +3612,10 @@ async function datosCierre(mesAnio) {
   // repartido por cuenta. No arrastra saldo de meses anteriores.
   const cuentasEv = {};
   CUENTAS.forEach(k => { cuentasEv[k] = { cobrado:0, gastos:0, neto:0, por_cobrar:0 }; });
-  const sinEv = { n_abonos:0, monto_abonos:0, n_cots:0, monto_cots:0, n_gastos:0, monto_gastos:0 };
+  const sinEv = { n_abonos:0, monto_abonos:0, n_cots:0, monto_cots:0, n_gastos:0, monto_gastos:0, n_viejos:0, monto_viejos:0 };
   eventos.forEach(e => {
     e.abonos.forEach(a => {
-      if (!a.usa) return;
+      if (!a.usa) { sinEv.n_viejos++; sinEv.monto_viejos += a.monto; return; }
       if (cuentasEv[a.cuenta]) cuentasEv[a.cuenta].cobrado += a.monto;
       else if (a.implicito) { sinEv.n_cots++; sinEv.monto_cots += a.monto; }
       else { sinEv.n_abonos++; sinEv.monto_abonos += a.monto; }
