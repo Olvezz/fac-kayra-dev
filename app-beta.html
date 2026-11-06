@@ -853,6 +853,12 @@ function totalesCaja(cots, gastos, mesAnio) {
   const egresos  = movs.filter(x => x.tipo === 'Gasto').reduce((s,x) => s + x.monto, 0);
   return { ingresos, gastos: egresos, neto: ingresos - egresos };
 }
+// Lo que no tiene cuenta (ingresos y gastos), para mostrarlo como una tarjeta/fila más junto a las cuentas
+function sinAsignarTot(sin) {
+  const ing = sin.monto_abonos + sin.monto_cots + (sin.monto_viejos || 0), gas = sin.monto_gastos;
+  const n = sin.n_abonos + sin.n_cots + (sin.n_viejos || 0) + sin.n_gastos;
+  return { n, ing, gas, neto: ing - gas };
+}
 function avisoSinCuenta(sin) {
   const p = [];
   if (sin.n_abonos) p.push(`${sin.n_abonos} abono(s) por ${formatMoney(sin.monto_abonos)}`);
@@ -3903,8 +3909,11 @@ function cierreHtml(d, mesLabel) {
   const tarjetaEv = (nombre, x, total) => `<div class="cz-cta${total ? ' tot' : ''}">
     <div class="cz-cta-h">${total ? '<strong>TOTAL</strong>' : chipCuenta(nombre)}<strong style="color:${color(x.neto)}">${$(x.neto)}</strong></div>
     <div class="cz-cta-g"><div class="cz-kv"><span>Cobrado</span><span style="color:${verde}">${$(x.cobrado)}</span></div><div class="cz-kv"><span>Gastos</span><span style="color:${rojo}">${$(x.gastos)}</span></div>${verPorCobrar ? `<div class="cz-kv"><span>Por cobrar</span><span style="color:#D97706">${$(x.por_cobrar)}</span></div>` : ''}</div></div>`;
+  const sinTarjeta = (t, filas) => `<div class="cz-cta" style="border-color:#D97706;background:#FFFBF2"><div class="cz-cta-h"><strong style="color:#B45309">⚠ Sin asignar</strong><strong style="color:${color(t.neto)}">${$(t.neto)}</strong></div><div class="cz-cta-g">${filas}</div></div>`;
+  const kv = (l, v, c) => `<div class="cz-kv"><span>${l}</span><span style="color:${c}">${$(v)}</span></div>`;
+  const sEv = sinAsignarTot(d.sinEv), sCu = sinAsignarTot(d.sin);
   h += secD('cz-cuentas-ev', 'Dinero por eventos del mes', `Neto ${$(d.totalEv.neto)}`,
-    `<div class="cz-sub">Solo lo cobrado y pagado dentro de este mes por los ${d.eventos.length} evento(s) de este mes. Cobrado − gastos = neto.${d.previoEv ? ' Además ya se había cobrado antes del mes (anticipos): <strong>' + $(d.previoEv) + '</strong>.' : ''}</div><div class="cz-ctas">${tarjetaEv('', d.totalEv, true)}${CUENTAS.map(k => tarjetaEv(k, d.cuentasEv[k])).join('')}</div>`
+    `<div class="cz-sub">Solo lo cobrado y pagado dentro de este mes por los ${d.eventos.length} evento(s) de este mes. Cobrado − gastos = neto.${d.previoEv ? ' Además ya se había cobrado antes del mes (anticipos): <strong>' + $(d.previoEv) + '</strong>.' : ''}</div><div class="cz-ctas">${tarjetaEv('', d.totalEv, true)}${CUENTAS.map(k => tarjetaEv(k, d.cuentasEv[k])).join('')}${sEv.n ? sinTarjeta(sEv, kv('Cobrado', sEv.ing, verde) + kv('Gastos', sEv.gas, rojo)) : ''}</div>`
     + (avisoEv ? `<p style="font-size:0.76rem;color:var(--text-secondary);margin-top:8px">${escapeHtml(avisoEv)}</p>` : ''), false);
 
   // ── Dinero por cuenta: una tarjeta por cuenta ──
@@ -3912,7 +3921,7 @@ function cierreHtml(d, mesLabel) {
     <div class="cz-cta-h">${total ? '<strong>TOTAL</strong>' : chipCuenta(nombre)}<strong style="color:${color(x.saldo_final)}">${$(x.saldo_final)}</strong></div>
     <div class="cz-cta-g"><div class="cz-kv"><span>Saldo inicial</span><span>${$(x.saldo_inicial)}</span></div><div class="cz-kv"><span>Ingresos</span><span style="color:${verde}">${$(x.recibido)}</span></div><div class="cz-kv"><span>Gastos</span><span style="color:${rojo}">${$(x.gastos)}</span></div></div></div>`;
   h += secD('cz-cuentas', 'Dinero por cuenta', `Debería haber ${$(d.totalCuentas.saldo_final)}`,
-    `<div class="cz-sub">Saldo inicial + ingresos − gastos = lo que debería haber al cerrar el mes.</div><div class="cz-ctas">${tarjeta('', d.totalCuentas, true)}${CUENTAS.map(k => tarjeta(k, d.cuentas[k])).join('')}</div>`
+    `<div class="cz-sub">Saldo inicial + ingresos − gastos = lo que debería haber al cerrar el mes.</div><div class="cz-ctas">${tarjeta('', d.totalCuentas, true)}${CUENTAS.map(k => tarjeta(k, d.cuentas[k])).join('')}${sCu.n ? sinTarjeta(sCu, kv('Ingresos', sCu.ing, verde) + kv('Gastos', sCu.gas, rojo)) : ''}</div>`
     + (aviso ? `<p style="font-size:0.76rem;color:var(--text-secondary);margin-top:8px">${escapeHtml(aviso)}</p>` : ''), false);
 
   return h;
@@ -4254,7 +4263,7 @@ window.descargarPDFCierre = async function(mesAnio, mesLabel, compartir) {
       const verPC = d.totalEv.por_cobrar > 0;
       const fe = (n, x) => [n, {t:$(x.cobrado), c:verde}, {t:$(x.gastos), c:rojo}, ...(verPC ? [{t:$(x.por_cobrar), c:[217,119,6]}] : []), {t:$(x.neto), b:true, c: x.neto >= 0 ? morado : rojo}];
       tabla([{t:'Cuenta',w:42},{t:'Cobrado',w:verPC ? 34 : 46,a:'r'},{t:'Gastos',w:verPC ? 34 : 46,a:'r'},...(verPC ? [{t:'Por cobrar',w:34,a:'r'}] : []),{t:'Neto',w:verPC ? 36 : 48,a:'r'}],
-        CUENTAS.map(k => fe(k, d.cuentasEv[k])), fe('TOTAL', d.totalEv));
+        [...CUENTAS.map(k => fe(k, d.cuentasEv[k])), ...(sinAsignarTot(d.sinEv).n ? [fe('Sin asignar', { cobrado:sinAsignarTot(d.sinEv).ing, gastos:sinAsignarTot(d.sinEv).gas, por_cobrar:0, neto:sinAsignarTot(d.sinEv).neto })] : [])], fe('TOTAL', d.totalEv));
       if (d.previoEv) nota('Anticipos de estos eventos cobrados antes del mes (no incluidos arriba): ' + $(d.previoEv));
       const avEv = avisoSinCuenta(d.sinEv);
       if (avEv) nota(avEv);
@@ -4264,7 +4273,7 @@ window.descargarPDFCierre = async function(mesAnio, mesLabel, compartir) {
     titulo('Dinero por cuenta', 'Saldo inicial + ingresos − gastos = lo que debería haber al cerrar el mes');
     const fc = (n, x) => [n, $(x.saldo_inicial), {t:$(x.recibido), c:verde}, {t:$(x.gastos), c:rojo}, {t:$(x.saldo_final), b:true, c: x.saldo_final >= 0 ? morado : rojo}];
     tabla([{t:'Cuenta',w:42},{t:'Saldo inicial',w:36,a:'r'},{t:'Ingresos',w:34,a:'r'},{t:'Gastos',w:34,a:'r'},{t:'Saldo final',w:36,a:'r'}],
-      CUENTAS.map(k => fc(k, d.cuentas[k])), fc('TOTAL', d.totalCuentas));
+      [...CUENTAS.map(k => fc(k, d.cuentas[k])), ...(sinAsignarTot(d.sin).n ? [['Sin asignar', '—', {t:$(sinAsignarTot(d.sin).ing), c:verde}, {t:$(sinAsignarTot(d.sin).gas), c:rojo}, {t:$(sinAsignarTot(d.sin).neto), b:true, c: sinAsignarTot(d.sin).neto >= 0 ? morado : rojo}]] : [])], fc('TOTAL', d.totalCuentas));
     const aviso = avisoSinCuenta(d.sin);
     if (aviso) nota(aviso);
 
