@@ -854,6 +854,13 @@ function totalesCaja(cots, gastos, mesAnio) {
   return { ingresos, gastos: egresos, neto: ingresos - egresos };
 }
 // Lo que no tiene cuenta (ingresos y gastos), para mostrarlo como una tarjeta/fila más junto a las cuentas
+function entradoTxt(e, $) {
+  const p = [];
+  if (e.antes) p.push('antes del mes: <strong>' + $(e.antes) + '</strong>');
+  if (e.mes) p.push('en el mes: <strong>' + $(e.mes) + '</strong>');
+  if (e.despues) p.push('después del mes: <strong>' + $(e.despues) + '</strong>');
+  return p.length ? 'Lo cobrado entró así: ' + p.join(' · ') + '.' : '';
+}
 function sinAsignarTot(sin) {
   const ing = sin.monto_abonos + sin.monto_cots + (sin.monto_viejos || 0), gas = sin.monto_gastos;
   const n = sin.n_abonos + sin.n_cots + (sin.n_viejos || 0) + sin.n_gastos;
@@ -3614,22 +3621,21 @@ async function datosCierre(mesAnio) {
   CUENTAS.forEach(k => Object.keys(totalCuentas).forEach(f => { totalCuentas[f] += cuentas[k][f]; }));
   const sin = resumenCuentas(cots, gastos, mesAnio).sin;
 
-  // Dinero por eventos del mes: lo que se cobró y se gastó DENTRO de este mes por los eventos de este mes, repartido por cuenta.
-  // No arrastra saldo de meses anteriores; lo cobrado antes del mes (anticipos) se informa aparte en 'previo'.
+  // Dinero por eventos del mes: TODOS los abonos y gastos de las cotizaciones de los eventos de este mes, sin importar la fecha
+  // en que entraron. Es solo informativo: no afecta a Ingresos, Gastos ni Dinero por cuenta. 'entrado' dice cuándo entró lo cobrado.
   const cuentasEv = {};
   CUENTAS.forEach(k => { cuentasEv[k] = { cobrado:0, gastos:0, neto:0, por_cobrar:0 }; });
   const sinEv = { n_abonos:0, monto_abonos:0, n_cots:0, monto_cots:0, n_gastos:0, monto_gastos:0, n_viejos:0, monto_viejos:0 };
-  let previo = 0;
+  const entrado = { antes:0, mes:0, despues:0 };
   eventos.forEach(e => {
     e.abonos.forEach(a => {
-      if (a.mes !== mesAnio) { if (ymKey(a.mes) < cur) previo += a.monto; return; }
+      const kA = ymKey(a.mes); entrado[kA < cur ? 'antes' : kA > cur ? 'despues' : 'mes'] += a.monto;
       if (!a.usa) { sinEv.n_viejos++; sinEv.monto_viejos += a.monto; return; }
       if (cuentasEv[a.cuenta]) cuentasEv[a.cuenta].cobrado += a.monto;
       else if (a.implicito) { sinEv.n_cots++; sinEv.monto_cots += a.monto; }
       else { sinEv.n_abonos++; sinEv.monto_abonos += a.monto; }
     });
     e.gastosDet.forEach(x => {
-      if (x.mes !== mesAnio) return;
       if (cuentasEv[x.cuenta]) cuentasEv[x.cuenta].gastos += x.monto;
       else { sinEv.n_gastos++; sinEv.monto_gastos += x.monto; }
     });
@@ -3645,7 +3651,7 @@ async function datosCierre(mesAnio) {
   const cotsMes = cots.filter(c => mesEventoDe(c) === mesAnio);
   return { mesAnio, cotsMes, conteo: contarEstados(cotsMes), ingresos, gastosMes, totIng, totGas, neto: totIng - totGas,
            margen: totIng ? (totIng - totGas) / totIng * 100 : 0, ingPorRel, porCategoria, eventos, cuentas, totalCuentas, sin,
-           cuentasEv, totalEv, sinEv, previoEv: previo };
+           cuentasEv, totalEv, sinEv, entradoEv: entrado };
 }
 
 // Calcula el cierre de un mes y lo guarda en 'cierres'. 'datos' permite reutilizar un datosCierre ya calculado.
@@ -3913,7 +3919,7 @@ function cierreHtml(d, mesLabel) {
   const kv = (l, v, c) => `<div class="cz-kv"><span>${l}</span><span style="color:${c}">${$(v)}</span></div>`;
   const sEv = sinAsignarTot(d.sinEv), sCu = sinAsignarTot(d.sin);
   h += secD('cz-cuentas-ev', 'Dinero por eventos del mes', `Neto ${$(d.totalEv.neto)}`,
-    `<div class="cz-sub">Solo lo cobrado y pagado dentro de este mes por los ${d.eventos.length} evento(s) de este mes. Cobrado − gastos = neto.${d.previoEv ? ' Además ya se había cobrado antes del mes (anticipos): <strong>' + $(d.previoEv) + '</strong>.' : ''}</div><div class="cz-ctas">${tarjetaEv('', d.totalEv, true)}${CUENTAS.map(k => tarjetaEv(k, d.cuentasEv[k])).join('')}${sEv.n ? sinTarjeta(sEv, kv('Cobrado', sEv.ing, verde) + kv('Gastos', sEv.gas, rojo)) : ''}</div>`
+    `<div class="cz-sub">Todo lo cobrado y gastado por los ${d.eventos.length} evento(s) de este mes, sin importar cuándo entró. Es solo para orientarse: no cambia los demás totales del cierre. ${entradoTxt(d.entradoEv, $)}</div><div class="cz-ctas">${tarjetaEv('', d.totalEv, true)}${CUENTAS.map(k => tarjetaEv(k, d.cuentasEv[k])).join('')}${sEv.n ? sinTarjeta(sEv, kv('Cobrado', sEv.ing, verde) + kv('Gastos', sEv.gas, rojo)) : ''}</div>`
     + (avisoEv ? `<p style="font-size:0.76rem;color:var(--text-secondary);margin-top:8px">${escapeHtml(avisoEv)}</p>` : ''), false);
 
   // ── Dinero por cuenta: una tarjeta por cuenta ──
@@ -4258,13 +4264,13 @@ window.descargarPDFCierre = async function(mesAnio, mesLabel, compartir) {
     }
 
     // Dinero por eventos del mes
-    titulo('Dinero por eventos del mes', 'Lo cobrado y pagado dentro de este mes por los eventos de este mes, por cuenta (sin arrastrar saldo anterior)');
+    titulo('Dinero por eventos del mes', 'Todo lo cobrado y gastado por los eventos de este mes, sin importar cuándo entró (solo informativo, no afecta los demás totales)');
     {
       const verPC = d.totalEv.por_cobrar > 0;
       const fe = (n, x) => [n, {t:$(x.cobrado), c:verde}, {t:$(x.gastos), c:rojo}, ...(verPC ? [{t:$(x.por_cobrar), c:[217,119,6]}] : []), {t:$(x.neto), b:true, c: x.neto >= 0 ? morado : rojo}];
       tabla([{t:'Cuenta',w:42},{t:'Cobrado',w:verPC ? 34 : 46,a:'r'},{t:'Gastos',w:verPC ? 34 : 46,a:'r'},...(verPC ? [{t:'Por cobrar',w:34,a:'r'}] : []),{t:'Neto',w:verPC ? 36 : 48,a:'r'}],
         [...CUENTAS.map(k => fe(k, d.cuentasEv[k])), ...(sinAsignarTot(d.sinEv).n ? [fe('Sin asignar', { cobrado:sinAsignarTot(d.sinEv).ing, gastos:sinAsignarTot(d.sinEv).gas, por_cobrar:0, neto:sinAsignarTot(d.sinEv).neto })] : [])], fe('TOTAL', d.totalEv));
-      if (d.previoEv) nota('Anticipos de estos eventos cobrados antes del mes (no incluidos arriba): ' + $(d.previoEv));
+      nota(entradoTxt(d.entradoEv, $).replace(/<[^>]+>/g, ''));
       const avEv = avisoSinCuenta(d.sinEv);
       if (avEv) nota(avEv);
     }
