@@ -3607,9 +3607,35 @@ async function datosCierre(mesAnio) {
   CUENTAS.forEach(k => Object.keys(totalCuentas).forEach(f => { totalCuentas[f] += cuentas[k][f]; }));
   const sin = resumenCuentas(cots, gastos, mesAnio).sin;
 
+  // Dinero por eventos del mes: solo lo cobrado y gastado por los eventos de este mes (sin importar la fecha del movimiento),
+  // repartido por cuenta. No arrastra saldo de meses anteriores.
+  const cuentasEv = {};
+  CUENTAS.forEach(k => { cuentasEv[k] = { cobrado:0, gastos:0, neto:0, por_cobrar:0 }; });
+  const sinEv = { n_abonos:0, monto_abonos:0, n_cots:0, monto_cots:0, n_gastos:0, monto_gastos:0 };
+  eventos.forEach(e => {
+    e.abonos.forEach(a => {
+      if (!a.usa) return;
+      if (cuentasEv[a.cuenta]) cuentasEv[a.cuenta].cobrado += a.monto;
+      else if (a.implicito) { sinEv.n_cots++; sinEv.monto_cots += a.monto; }
+      else { sinEv.n_abonos++; sinEv.monto_abonos += a.monto; }
+    });
+    e.gastosDet.forEach(x => {
+      if (cuentasEv[x.cuenta]) cuentasEv[x.cuenta].gastos += x.monto;
+      else { sinEv.n_gastos++; sinEv.monto_gastos += x.monto; }
+    });
+    const c = e.cot;
+    if (usaCuentas(c) && c.estado === 'Reservado' && cuentasEv[c.cuenta_cobro] && saldoSinAbonos(c) > 0) cuentasEv[c.cuenta_cobro].por_cobrar += saldoSinAbonos(c);
+  });
+  const totalEv = { cobrado:0, gastos:0, neto:0, por_cobrar:0 };
+  CUENTAS.forEach(k => {
+    const x = cuentasEv[k]; x.neto = x.cobrado - x.gastos;
+    Object.keys(totalEv).forEach(f => { totalEv[f] += x[f]; });
+  });
+
   const cotsMes = cots.filter(c => mesEventoDe(c) === mesAnio);
   return { mesAnio, cotsMes, conteo: contarEstados(cotsMes), ingresos, gastosMes, totIng, totGas, neto: totIng - totGas,
-           margen: totIng ? (totIng - totGas) / totIng * 100 : 0, ingPorRel, porCategoria, eventos, cuentas, totalCuentas, sin };
+           margen: totIng ? (totIng - totGas) / totIng * 100 : 0, ingPorRel, porCategoria, eventos, cuentas, totalCuentas, sin,
+           cuentasEv, totalEv, sinEv };
 }
 
 // Calcula el cierre de un mes y lo guarda en 'cierres'. 'datos' permite reutilizar un datosCierre ya calculado.
@@ -3634,6 +3660,8 @@ async function calcularYGuardarCierre(mes, anio, extra = {}, datos = null) {
     por_cuenta:     d.cuentas,
     total_por_cuenta: d.totalCuentas,
     sin_cuenta:     d.sin,
+    por_cuenta_eventos: d.cuentasEv,
+    total_por_cuenta_eventos: d.totalEv,
     ...extra,
     cerrado_en:     serverTimestamp(),
   };
@@ -3786,7 +3814,7 @@ function cierreHtml(d, mesLabel) {
 
   // ── Índice fijo ──
   const chip = (id, t, n) => `<button type="button" class="cz-chip${id === 'cz-resumen' ? ' on' : ''}" data-t="${id}" onclick="cierreIr('${id}')">${t}${n !== undefined ? ` <b>${n}</b>` : ''}</button>`;
-  let h = `<div class="cz-nav"><div class="cz-chips">${chip('cz-resumen', 'Resumen')}${chip('cz-eventos', 'Eventos', d.eventos.length)}${chip('cz-ingresos', 'Ingresos', d.ingresos.length)}${chip('cz-gastos', 'Gastos', d.gastosMes.length)}${chip('cz-cuentas', 'Cuentas')}</div>
+  let h = `<div class="cz-nav"><div class="cz-chips">${chip('cz-resumen', 'Resumen')}${chip('cz-eventos', 'Eventos', d.eventos.length)}${chip('cz-ingresos', 'Ingresos', d.ingresos.length)}${chip('cz-gastos', 'Gastos', d.gastosMes.length)}${chip('cz-cuentas-ev', 'Por eventos')}${chip('cz-cuentas', 'Cuentas')}</div>
     <button type="button" class="cz-all" id="czTodo" onclick="cierreTodo()" title="Abrir o cerrar todas las secciones">⇕ Expandir</button></div>`;
 
   // ── Resumen ──
@@ -3864,6 +3892,16 @@ function cierreHtml(d, mesLabel) {
     cuerpoG += `<div style="margin:8px 0"><button type="button" class="btn btn-secondary btn-sm" onclick="openGastoModal(null,null,fechaCierre())">+ Agregar gasto</button></div>`;
   }
   h += secD('cz-gastos', 'Gastos del mes', `${$(d.totGas)} · ${d.gastosMes.length}`, cuerpoG, false);
+
+  // ── Dinero por eventos del mes: lo cobrado y gastado por los eventos de este mes, por cuenta ──
+  const avisoEv = avisoSinCuenta(d.sinEv).replace('(no incluidos arriba)', '(no incluidos arriba, solo de eventos de este mes)');
+  const verPorCobrar = d.totalEv.por_cobrar > 0;
+  const tarjetaEv = (nombre, x, total) => `<div class="cz-cta${total ? ' tot' : ''}">
+    <div class="cz-cta-h">${total ? '<strong>TOTAL</strong>' : chipCuenta(nombre)}<strong style="color:${color(x.neto)}">${$(x.neto)}</strong></div>
+    <div class="cz-cta-g"><div class="cz-kv"><span>Cobrado</span><span style="color:${verde}">${$(x.cobrado)}</span></div><div class="cz-kv"><span>Gastos</span><span style="color:${rojo}">${$(x.gastos)}</span></div>${verPorCobrar ? `<div class="cz-kv"><span>Por cobrar</span><span style="color:#D97706">${$(x.por_cobrar)}</span></div>` : ''}</div></div>`;
+  h += secD('cz-cuentas-ev', 'Dinero por eventos del mes', `Neto ${$(d.totalEv.neto)}`,
+    `<div class="cz-sub">Solo lo cobrado y gastado por los ${d.eventos.length} evento(s) de este mes, sin importar la fecha del movimiento. Cobrado − gastos = neto de los eventos.</div><div class="cz-ctas">${tarjetaEv('', d.totalEv, true)}${CUENTAS.map(k => tarjetaEv(k, d.cuentasEv[k])).join('')}</div>`
+    + (avisoEv ? `<p style="font-size:0.76rem;color:var(--text-secondary);margin-top:8px">${escapeHtml(avisoEv)}</p>` : ''), false);
 
   // ── Dinero por cuenta: una tarjeta por cuenta ──
   const tarjeta = (nombre, x, total) => `<div class="cz-cta${total ? ' tot' : ''}">
@@ -4204,6 +4242,17 @@ window.descargarPDFCierre = async function(mesAnio, mesLabel, compartir) {
       tabla([{t:'Fecha',w:20},{t:'Descripción',w:62},{t:'Categoría',w:28},{t:'Cuenta',w:22},{t:'Evento',w:24},{t:'Monto',w:26,a:'r'}],
         d.gastosMes.map(x => [fmtF(x.fecha), x.g.descripcion||'', {t:x.g.categoria||'', c:gris}, x.cuenta || 'Sin asignar',
           x.g.cot_id ? (x.g.cot_numero||'') : 'General', {t:$(x.monto), c:rojo, b:true}]));
+    }
+
+    // Dinero por eventos del mes
+    titulo('Dinero por eventos del mes', 'Lo cobrado y gastado por los eventos de este mes, por cuenta (sin arrastrar saldo anterior)');
+    {
+      const verPC = d.totalEv.por_cobrar > 0;
+      const fe = (n, x) => [n, {t:$(x.cobrado), c:verde}, {t:$(x.gastos), c:rojo}, ...(verPC ? [{t:$(x.por_cobrar), c:[217,119,6]}] : []), {t:$(x.neto), b:true, c: x.neto >= 0 ? morado : rojo}];
+      tabla([{t:'Cuenta',w:42},{t:'Cobrado',w:verPC ? 34 : 46,a:'r'},{t:'Gastos',w:verPC ? 34 : 46,a:'r'},...(verPC ? [{t:'Por cobrar',w:34,a:'r'}] : []),{t:'Neto',w:verPC ? 36 : 48,a:'r'}],
+        CUENTAS.map(k => fe(k, d.cuentasEv[k])), fe('TOTAL', d.totalEv));
+      const avEv = avisoSinCuenta(d.sinEv);
+      if (avEv) nota(avEv);
     }
 
     // Dinero por cuenta
