@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="es" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --ground: #100d18;
+        --ink: #ffffff;
+        --muted: #b9b3c9;
+        --magenta: #a5248b;
+        --pink: #f472b6;
+        --teal: #5bc4c8;
+        --font-display: "Outfit", sans-serif;
+        --font-body: "Inter", sans-serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--ground); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: var(--font-body); color: var(--ink); }
+      #bg { position: absolute; inset: 0; background:
+          radial-gradient(900px 600px at 15% 10%, rgba(165,36,139,.35), transparent 60%),
+          radial-gradient(800px 600px at 90% 95%, rgba(91,196,200,.22), transparent 60%),
+          var(--ground); }
+      #dots { position: absolute; inset: -60px; background-image: radial-gradient(rgba(255,255,255,.09) 1.6px, transparent 1.8px); background-size: 34px 34px; }
+
+      /* PC: ventana de Brave / de la app */
+      #device { position: absolute; left: 160px; top: 70px; width: 1600px; height: 870px; border-radius: 16px; overflow: hidden;
+        background: #fff; box-shadow: 0 40px 120px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.1); }
+      #zoom { position: absolute; inset: 0; transform-origin: 50% 50%; }
+      #zoom video { position: absolute; left: 0; top: 0; width: 1600px; height: 870px; object-fit: cover; }
+
+      /* Celular */
+      #phone { position: absolute; left: 1160px; top: 70px; width: 437px; height: 940px; border-radius: 58px; padding: 16px;
+        background: #1d1a26; box-shadow: 0 50px 140px rgba(0,0,0,.65), 0 0 0 2px rgba(255,255,255,.1); }
+      #pscreen { position: relative; width: 405px; height: 900px; border-radius: 44px; overflow: hidden; background: #fff; }
+      #pzoom { position: absolute; inset: 0; transform-origin: 50% 50%; }
+      #pzoom video { position: absolute; left: 0; top: 0; width: 405px; height: 900px; object-fit: cover; }
+
+      /* Efecto de clic / toque */
+      .ring { position: absolute; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; opacity: 0; pointer-events: none; z-index: 5;
+        border: 5px solid var(--pink); box-shadow: 0 0 24px 6px rgba(244,114,182,.55), inset 0 0 18px rgba(91,196,200,.6); }
+
+      /* Paso de la PC (abajo a la izquierda, sobre la ventana) */
+      .step { position: absolute; left: 110px; bottom: 26px; z-index: 30; }
+      .step .in { display: flex; align-items: center; gap: 20px; padding: 16px 32px 16px 16px; border-radius: 24px;
+        background: rgba(22,18,32,.9); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 18px 50px rgba(0,0,0,.45); }
+      .step .n { width: 74px; height: 74px; border-radius: 20px; display: grid; place-items: center; font: 800 38px var(--font-display);
+        background: linear-gradient(135deg, var(--magenta), #d946ef); color: #fff; }
+      .step .k { font: 700 28px var(--font-display); letter-spacing: .12em; color: var(--pink); }
+      .step .t { font: 700 42px/1.05 var(--font-display); letter-spacing: -.01em; margin-top: 2px; }
+      .step .s { font: 500 28px/1.3 var(--font-body); color: var(--muted); margin-top: 4px; }
+
+      /* Paso del celular (a la izquierda, grande) */
+      .pstep { position: absolute; left: 150px; top: 300px; width: 900px; z-index: 30; }
+      .pstep .k { font: 700 30px var(--font-display); letter-spacing: .16em; color: var(--pink); }
+      .pstep .n { display: inline-grid; place-items: center; width: 120px; height: 120px; border-radius: 30px; margin: 18px 0 26px;
+        font: 800 64px var(--font-display); background: linear-gradient(135deg, var(--magenta), #d946ef); }
+      .pstep .t { font: 800 76px/1.02 var(--font-display); letter-spacing: -.02em; }
+      .pstep .s { font: 500 36px/1.35 var(--font-body); color: var(--muted); margin-top: 18px; max-width: 820px; }
+
+      /* Dirección del sitio */
+      #url { position: absolute; left: 0; right: 0; top: 560px; display: flex; justify-content: center; z-index: 35; }
+      #url .in { padding: 14px 34px; border-radius: 999px; background: #fff; color: #1a1625; font: 700 40px var(--font-display);
+        box-shadow: 0 18px 50px rgba(0,0,0,.5); }
+      #url .in b { color: var(--magenta); }
+      #urlp { position: absolute; left: 150px; top: 830px; z-index: 35; }
+      #urlp .in { display: inline-block; padding: 12px 28px; border-radius: 999px; background: #fff; color: #1a1625; font: 700 34px var(--font-display); }
+      #urlp .in b { color: var(--magenta); }
+
+      /* Títulos */
+      .title { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 40; }
+      .title .big { font: 800 112px/1 var(--font-display); letter-spacing: -.03em; }
+      .title .big b { color: var(--pink); font-weight: 800; }
+      .title .sub { font: 500 36px/1.3 var(--font-body); color: var(--muted); margin-top: 24px; }
+      .title .tag { font: 700 30px var(--font-display); letter-spacing: .2em; color: var(--teal); margin-bottom: 18px; }
+      #logo, #logo2 { width: 220px; height: 220px; border-radius: 50%; margin-bottom: 34px; box-shadow: 0 0 0 10px rgba(255,255,255,.05), 0 30px 80px rgba(165,36,139,.45); }
+      .word { display: inline-block; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="129.8" data-width="1920" data-height="1080">
+      <div id="bg"></div>
+      <div id="dots"></div>
+
+      <!-- INTRO -->
+      <div id="intro" class="title clip" data-start="0" data-duration="5.2" data-track-index="1">
+        <img id="logo" src="assets/img/logo.png" alt="Kayra Full Party" />
+        <div class="big" id="introTitle"><span class="word">Instala</span> <span class="word"><b>Kayra</b></span> <span class="word">paso a paso</span></div>
+        <div class="sub" id="introSub">Desde cero, en la PC y en el celular</div>
+      </div>
+
+      <!-- PARTE 1: PC -->
+      <div id="tpc" class="title clip" data-start="5" data-duration="3.6" data-track-index="1">
+        <div class="tag">PARTE 1</div>
+        <div class="big">En la <b>PC</b></div>
+        <div class="sub">Con el navegador que ya usas</div>
+      </div>
+
+      <div id="device">
+        <div id="zoom" data-layout-allow-overflow>
+          <video id="v-p1" class="clip" src="assets/video/pc-1-entrar.mp4" muted playsinline data-start="8.6" data-duration="10.5" data-track-index="2"></video>
+          <video id="v-p2" class="clip" src="assets/video/pc-2-login.mp4" muted playsinline data-start="19.1" data-duration="18.5" data-track-index="2"></video>
+          <video id="v-p3" class="clip" src="assets/video/pc-3-instalar.mp4" muted playsinline data-start="37.6" data-duration="19" data-track-index="2"></video>
+          <video id="v-p4" class="clip" src="assets/video/pc-4-abrir.mp4" muted playsinline data-start="56.6" data-duration="10.5" data-track-index="2"></video>
+          <div class="ring" id="r1" style="left:687px;top:37px"></div>
+          <div class="ring" id="r2" style="left:800px;top:492px"></div>
+          <div class="ring" id="r3" style="left:1119px;top:641px"></div>
+          <div class="ring" id="r4" style="left:1085px;top:37px"></div>
+          <div class="ring" id="r5" style="left:839px;top:223px"></div>
+          <div class="ring" id="r6" style="left:844px;top:178px"></div>
+          <div class="ring" id="r7" style="left:825px;top:143px"></div>
+        </div>
+      </div>
+
+      <div id="url" class="clip" data-start="10.4" data-duration="8.4" data-track-index="4"><div class="in">olvezz.github.io/<b>fac-kayra-dev</b></div></div>
+
+      <div id="s1" class="step clip" data-start="8.9" data-duration="10" data-track-index="3"><div class="in"><div class="n">1</div><div><div class="k">PASO 1 · PC</div><div class="t">Entra al sitio</div><div class="s">Escribe la dirección en la barra del navegador</div></div></div></div>
+      <div id="s2" class="step clip" data-start="19.3" data-duration="18.1" data-track-index="3"><div class="in"><div class="n">2</div><div><div class="k">PASO 2 · PC</div><div class="t">Inicia sesión con Google</div><div class="s">"Continuar con Google" y elige tu cuenta autorizada</div></div></div></div>
+      <div id="s3" class="step clip" data-start="37.8" data-duration="18.6" data-track-index="3"><div class="in"><div class="n">3</div><div><div class="k">PASO 3 · PC</div><div class="t">Instala la app</div><div class="s">Ícono de instalar en la barra → Siguiente → Instalar</div></div></div></div>
+      <div id="s4" class="step clip" data-start="56.8" data-duration="10.1" data-track-index="3"><div class="in"><div class="n">4</div><div><div class="k">PASO 4 · PC</div><div class="t">Ábrela en su propia ventana</div><div class="s">Queda en el escritorio y en el menú Inicio</div></div></div></div>
+
+      <!-- PARTE 2: CELULAR -->
+      <div id="tcel" class="title clip" data-start="67.1" data-duration="3.6" data-track-index="1">
+        <div class="tag">PARTE 2</div>
+        <div class="big">En el <b>celular</b></div>
+        <div class="sub">Con Chrome en Android</div>
+      </div>
+
+      <div id="phone">
+        <div id="pscreen" data-layout-allow-overflow>
+          <div id="pzoom" data-layout-allow-overflow>
+            <video id="v-c1" class="clip" src="assets/video/cel-1-entrar.mp4" muted playsinline data-start="70.6" data-duration="11.8" data-track-index="2"></video>
+            <video id="v-c2" class="clip" src="assets/video/cel-2-login.mp4" muted playsinline data-start="82.4" data-duration="14.1" data-track-index="2"></video>
+            <video id="v-c3" class="clip" src="assets/video/cel-3-instalar.mp4" muted playsinline data-start="96.5" data-duration="14.3" data-track-index="2"></video>
+            <video id="v-c4" class="clip" src="assets/video/cel-4-abrir.mp4" muted playsinline data-start="110.8" data-duration="11.5" data-track-index="2"></video>
+            <div class="ring" id="t1" style="left:157px;top:66px"></div>
+            <div class="ring" id="t2" style="left:382px;top:66px"></div>
+            <div class="ring" id="t3" style="left:189px;top:747px"></div>
+            <div class="ring" id="t4" style="left:109px;top:757px"></div>
+            <div class="ring" id="t5" style="left:339px;top:547px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="p1" class="pstep clip" data-start="70.9" data-duration="11.3" data-track-index="3"><div class="k">PASO 1 · CELULAR</div><div class="n">1</div><div class="t">Abre Chrome y entra al sitio</div><div class="s">Escribe la dirección en la barra de arriba</div></div>
+      <div id="urlp" class="clip" data-start="72" data-duration="10" data-track-index="4"><div class="in">olvezz.github.io/<b>fac-kayra-dev</b></div></div>
+      <div id="p2" class="pstep clip" data-start="82.6" data-duration="13.7" data-track-index="3"><div class="k">PASO 2 · CELULAR</div><div class="n">2</div><div class="t">Inicia sesión con Google</div><div class="s">Toca "Continuar con Google"; tu cuenta se elige sola</div></div>
+      <div id="p3" class="pstep clip" data-start="96.7" data-duration="13.9" data-track-index="3"><div class="k">PASO 3 · CELULAR</div><div class="n">3</div><div class="t">Instala la app</div><div class="s">Menú ⋮ → "Instalar y crear acceso directo" → Instalar</div></div>
+      <div id="p4" class="pstep clip" data-start="111" data-duration="11.1" data-track-index="3"><div class="k">PASO 4 · CELULAR</div><div class="n">4</div><div class="t">Ábrela desde tu pantalla de inicio</div><div class="s">Aparece como "Kayra" y abre a pantalla completa</div></div>
+
+      <!-- FINAL -->
+      <div id="outro" class="title clip" data-start="122.3" data-duration="7.5" data-track-index="1">
+        <img id="logo2" src="assets/img/logo.png" alt="" />
+        <div class="big" id="outTitle" style="font-size:100px">¡Listo! <b>Ya tienes Kayra</b></div>
+        <div class="sub" id="outSub">En tu PC y en tu celular, siempre a un toque</div>
+      </div>
+
+      <audio id="s-intro" src="assets/sfx/impact-bass-1.mp3" data-start="0.05" data-duration="2.1" data-volume="0.55"></audio>
+      <audio id="s-sp" src="assets/sfx/sparkle.mp3" data-start="0.8" data-duration="1.8" data-volume="0.35"></audio>
+      <audio id="s-w1" src="assets/sfx/whoosh-cinematic.mp3" data-start="4.6" data-duration="0.57" data-volume="0.6"></audio>
+      <audio id="s-w2" src="assets/sfx/whoosh.mp3" data-start="8.2" data-duration="0.57" data-volume="0.5"></audio>
+      <audio id="s-w3" src="assets/sfx/whoosh-cinematic.mp3" data-start="66.8" data-duration="0.57" data-volume="0.6"></audio>
+      <audio id="s-w4" src="assets/sfx/whoosh.mp3" data-start="70.3" data-duration="0.57" data-volume="0.5"></audio>
+      <audio id="s-riser" src="assets/sfx/riser.mp3" data-start="118.5" data-duration="3.8" data-volume="0.35" data-fade-in="1"></audio>
+      <audio id="s-out" src="assets/sfx/impact-bass-1.mp3" data-start="122.4" data-duration="2.1" data-volume="0.5"></audio>
+      <audio id="s-sp2" src="assets/sfx/sparkle.mp3" data-start="122.8" data-duration="1.8" data-volume="0.35"></audio>
+      <audio id="ps1" src="assets/sfx/pop.mp3" data-start="9" data-duration="0.7" data-volume="0.4"></audio>
+      <audio id="ps2" src="assets/sfx/pop.mp3" data-start="19.4" data-duration="0.7" data-volume="0.4"></audio>
+      <audio id="ps3" src="assets/sfx/pop.mp3" data-start="37.9" data-duration="0.7" data-volume="0.4"></audio>
+      <audio id="ps4" src="assets/sfx/pop.mp3" data-start="56.9" data-duration="0.7" data-volume="0.4"></audio>
+      <audio id="pp1" src="assets/sfx/pop.mp3" data-start="71" data-duration="0.7" data-volume="0.4"></audio>
+      <audio id="pp2" src="assets/sfx/pop.mp3" data-start="82.7" data-duration="0.7" data-volume="0.4"></audio>
+      <audio id="pp3" src="assets/sfx/pop.mp3" data-start="96.8" data-duration="0.7" data-volume="0.4"></audio>
+      <audio id="pp4" src="assets/sfx/pop.mp3" data-start="111.1" data-duration="0.7" data-volume="0.4"></audio>
+      <audio id="k1" src="assets/sfx/click-soft.mp3" data-start="10.64" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="k2" src="assets/sfx/click-soft.mp3" data-start="21.94" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="k3" src="assets/sfx/click-soft.mp3" data-start="29.55" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="k4" src="assets/sfx/click-soft.mp3" data-start="39.85" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="k5" src="assets/sfx/click-soft.mp3" data-start="45.54" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="k6" src="assets/sfx/click-soft.mp3" data-start="51.09" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="k7" src="assets/sfx/click-soft.mp3" data-start="58.4" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="k8" src="assets/sfx/click-soft.mp3" data-start="71.14" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="k9" src="assets/sfx/click-soft.mp3" data-start="96.55" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="k10" src="assets/sfx/click-soft.mp3" data-start="98.95" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="k11" src="assets/sfx/click-soft.mp3" data-start="101.32" data-duration="0.36" data-volume="0.55"></audio>
+      <audio id="k12" src="assets/sfx/click-soft.mp3" data-start="103.75" data-duration="0.36" data-volume="0.55"></audio>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#dots", { x: 0, y: 0 }, { x: 34, y: 34, duration: 129.8, ease: "none" }, 0);
+
+      // INTRO (visible desde el primer cuadro)
+      tl.fromTo("#logo", { scale: 0.88, rotate: -12 }, { scale: 1, rotate: 0, duration: 1.0, ease: "back.out(1.6)" }, 0);
+      tl.fromTo("#introTitle .word", { y: 24 }, { y: 0, duration: 0.6, stagger: 0.1, ease: "power4.out" }, 0);
+      tl.fromTo("#introSub", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.4, ease: "power3.out" }, 0.8);
+      tl.to(["#logo", "#introTitle", "#introSub"], { opacity: 0, filter: "blur(10px)", scale: 0.94, duration: 0.3, ease: "power3.in", stagger: 0.04 }, 4.6);
+
+      // Títulos de cada parte
+      const part = (id, t, d) => {
+        tl.fromTo(`${id} .tag`, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, t + 0.05);
+        tl.fromTo(`${id} .big`, { opacity: 0, filter: "blur(12px)", scale: 1.08 }, { opacity: 1, filter: "blur(0px)", scale: 1, duration: 0.5, ease: "expo.out" }, t + 0.15);
+        tl.fromTo(`${id} .sub`, { opacity: 0 }, { opacity: 1, duration: 0.4 }, t + 0.45);
+        tl.to(id, { opacity: 0, filter: "blur(10px)", duration: 0.25, ease: "power3.in" }, t + d - 0.3);
+      };
+      part("#tpc", 5, 3.6);
+      part("#tcel", 67.1, 3.6);
+
+      // Ventana de la PC
+      tl.fromTo("#device", { opacity: 0, rotateX: 22, y: 160, scale: 0.86, transformPerspective: 1600 }, { opacity: 1, rotateX: 0, y: 0, scale: 1, duration: 1.1, ease: "power4.out" }, 8.4);
+      tl.fromTo("#device", { opacity: 1, y: 0, scale: 1 }, { opacity: 0, y: 120, scale: 0.9, duration: 0.45, ease: "power3.in", immediateRender: false }, 66.8);
+
+      // Teléfono
+      tl.fromTo("#phone", { opacity: 0, rotateY: -18, x: 200, scale: 0.9, transformPerspective: 1800 }, { opacity: 1, rotateY: 0, x: 0, scale: 1, duration: 1.1, ease: "power4.out" }, 70.4);
+      tl.fromTo("#phone", { opacity: 1, y: 0, scale: 1 }, { opacity: 0, y: 140, scale: 0.9, duration: 0.45, ease: "power3.in", immediateRender: false }, 121.9);
+
+      // Pasos de la PC
+      ["#s1","#s2","#s3","#s4"].forEach((id) => {
+        const el = document.querySelector(id); const s = parseFloat(el.dataset.start), d = parseFloat(el.dataset.duration);
+        const inn = el.querySelector(".in"), n = el.querySelector(".n");
+        tl.fromTo(inn, { opacity: 0, x: -40, filter: "blur(10px)" }, { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.45, ease: "expo.out" }, s);
+        tl.fromTo(n, { scale: 0.4, rotate: -25 }, { scale: 1, rotate: 0, duration: 0.55, ease: "back.out(2)" }, s + 0.05);
+        tl.to(inn, { opacity: 0, x: -24, filter: "blur(8px)", duration: 0.22, ease: "power3.in" }, s + d - 0.3);
+      });
+      // Pasos del celular
+      ["#p1","#p2","#p3","#p4"].forEach((id) => {
+        const el = document.querySelector(id); const s = parseFloat(el.dataset.start), d = parseFloat(el.dataset.duration);
+        tl.fromTo(`${id} .k`, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.4, ease: "expo.out" }, s);
+        tl.fromTo(`${id} .n`, { opacity: 0, scale: 0.4, rotate: -25 }, { opacity: 1, scale: 1, rotate: 0, duration: 0.55, ease: "back.out(2)" }, s + 0.08);
+        tl.fromTo(`${id} .t`, { opacity: 0, y: 30, filter: "blur(10px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out" }, s + 0.15);
+        tl.fromTo(`${id} .s`, { opacity: 0 }, { opacity: 1, duration: 0.4 }, s + 0.4);
+        tl.to(el, { opacity: 0, x: -30, filter: "blur(8px)", duration: 0.25, ease: "power3.in" }, s + d - 0.3);
+      });
+
+      // Dirección del sitio
+      tl.fromTo("#url .in", { opacity: 0, y: 30, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.8)" }, 10.4);
+      tl.to("#url .in", { opacity: 0, y: 20, duration: 0.25, ease: "power3.in" }, 18.5);
+      tl.fromTo("#urlp .in", { opacity: 0, y: 30, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.8)" }, 72);
+      tl.to("#urlp .in", { opacity: 0, y: 20, duration: 0.25, ease: "power3.in" }, 81.7);
+
+      // Efecto en cada clic o toque: aro que se expande y se desvanece
+      const ring = (id, t) => {
+        tl.fromTo(id, { opacity: 1, scale: 0.3 }, { opacity: 0, scale: 1.5, duration: 0.7, ease: "power2.out", immediateRender: false }, t);
+      };
+      [["#r1",10.64],["#r2",21.94],["#r3",29.55],["#r4",39.85],["#r5",45.54],["#r6",51.09],["#r7",58.4],
+       ["#t1",71.14],["#t2",96.55],["#t3",98.95],["#t4",101.32],["#t5",103.75]].forEach(([id, t]) => ring(id, t));
+
+      // Acercamientos
+      const punch = (sel, t, ox, oy, sc, hold) => {
+        tl.to(sel, { scale: sc, transformOrigin: `${ox}% ${oy}%`, duration: 0.7, ease: "power3.inOut" }, t);
+        tl.to(sel, { scale: 1, duration: 0.6, ease: "power3.inOut" }, t + 0.7 + hold);
+      };
+      punch("#zoom", 9.9, 35, 0, 1.7, 5.6);    // barra de direcciones mientras se escribe
+      punch("#zoom", 27.6, 70, 72, 1.5, 2.6);  // elegir la cuenta
+      punch("#zoom", 39.0, 53, 9, 2.6, 12.6);  // diálogo de instalación
+      punch("#pzoom", 71.6, 50, 4, 1.6, 6.0);  // barra de Chrome mientras se escribe
+      punch("#pzoom", 101.0, 85, 58, 1.2, 2.4); // hoja y diálogo de instalar
+
+      // FINAL
+      tl.fromTo("#logo2", { opacity: 0, scale: 0.3, rotate: -40 }, { opacity: 1, scale: 1, rotate: 0, duration: 0.8, ease: "back.out(1.7)" }, 122.4);
+      tl.fromTo("#outTitle", { opacity: 0, filter: "blur(12px)", y: 20 }, { opacity: 1, filter: "blur(0px)", y: 0, duration: 0.6, ease: "expo.out" }, 122.7);
+      tl.fromTo("#outSub", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 123.2);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
