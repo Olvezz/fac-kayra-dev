@@ -13,12 +13,13 @@ SCE="scale=720:1600:flags=lanczos,fps=30"
 mkdir -p pc/assets/video movil/assets/video pasos/assets/video guia/assets/video
 TMP=raw/tmpcut; rm -rf $TMP; mkdir -p $TMP
 
-# ---- Demo PC: recorrido (1.6x) y caso práctico en la beta (1.5x)
-ffmpeg -y -loglevel error -ss 2.5 -to 143 -i raw/pc/app-recorrido.mp4 -vf "setpts=PTS/1.6,$SPC" $PCV pc/assets/video/pc-recorrido.mp4
-ffmpeg -y -loglevel error -ss 3.0 -to 121 -i raw/pc/app-beta.mp4 -vf "setpts=PTS/1.5,$SPC" $PCV pc/assets/video/pc-flujo.mp4
+# ---- Demo PC: recorrido (1.35x) y caso práctico en la beta (1.3x)
+ffmpeg -y -loglevel error -ss 2.5 -to 165 -i raw/pc/app-recorrido2.mp4 -vf "setpts=PTS/1.35,$SPC" $PCV pc/assets/video/pc-recorrido.mp4
+ffmpeg -y -loglevel error -ss 3.0 -to 126 -i raw/pc/app-beta2.mp4 -vf "setpts=PTS/1.3,$SPC" $PCV pc/assets/video/pc-flujo.mp4
 
-# ---- Demo celular: recorrido (1.6x)
-ffmpeg -y -loglevel error -ss 1.5 -to 147 -i raw/movil/app-recorrido.mp4 -vf "setpts=PTS/1.6,$SCE" $CEL movil/assets/video/movil-recorrido.mp4
+# ---- Demo celular: recorrido en dos tomas (screenrecord corta a los 180 s), unidas y a 1.35x
+ffmpeg -y -loglevel error -i raw/movil/app-recorrido2-1.mp4 -i raw/movil/app-recorrido2-2.mp4 -filter_complex "[0:v]trim=start=1.5:end=109.5,setpts=PTS-STARTPTS,fps=30[a];[1:v]trim=start=1.0:end=85.5,setpts=PTS-STARTPTS,fps=30[b];[a][b]concat=n=2:v=1[c];[c]setpts=PTS/1.35,fps=30,scale=720:1600:flags=lanczos,setpts=PTS-STARTPTS[o]" -map "[o]" $CEL movil/assets/video/movil-recorrido.mp4
+cp movil/assets/video/movil-recorrido.mp4 pc/assets/video/pc-flujo.mp4 guia/assets/video/
 
 # ---- Paso a paso PC (velocidad real). Las otras cuentas de Google se desenfocan.
 BLUR="split[a][b];[b]crop=480:310:1690:1070,boxblur=18:3[bl];[a][bl]overlay=1690:1070:enable='between(t,47,54)+between(t,93,97.5)',$SPC"
