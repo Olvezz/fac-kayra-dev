@@ -1,0 +1,5 @@
+# Grabaciones originales: muy pesadas para GitHub (una pasa de 100 MB); quedan solo en la PC
+raw/
+# Archivos temporales de HyperFrames
+.hyperframes/
+node_modules/
