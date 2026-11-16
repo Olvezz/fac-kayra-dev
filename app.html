@@ -6,7 +6,7 @@
   <title>Kayra Full Party</title>
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">  
-  <link rel="stylesheet" href="main.css?v=20261116w">
+  <link rel="stylesheet" href="main.css?v=20261116z">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#A5248B">
   <meta name="mobile-web-app-capable" content="yes">
@@ -193,15 +193,13 @@
 
       <!-- Agenda: próximos eventos y recientes en un solo cuadro -->
       <div class="card">
-        <div class="card-header" style="gap:8px;flex-wrap:wrap">
+        <div class="card-header dash-agenda-head">
           <div class="dash-tabs">
-            <button type="button" class="dash-tab active" id="dashProximosTitulo" onclick="dashTab('prox')">🎈 Próximos eventos</button>
-            <button type="button" class="dash-tab" id="dashRecientesTab" onclick="dashTab('rec')">🕘 Recientes</button>
+            <button type="button" class="dash-tab active" id="dashProximosTitulo" onclick="dashTab('prox')">Próximos</button>
+            <button type="button" class="dash-tab" id="dashRecientesTab" onclick="dashTab('rec')">Recientes</button>
           </div>
-          <div style="display:flex;gap:4px">
-            <button class="btn btn-ghost btn-sm" onclick="navTo('calendario')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-right:5px;vertical-align:-2px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendario</button>
-            <button class="btn btn-ghost btn-sm" onclick="navTo('cotizaciones')">Ver todas</button>
-          </div>
+          <button class="btn btn-ghost btn-sm dash-ir" id="dashIrCal" onclick="navTo('calendario')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-right:5px;vertical-align:-2px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendario</button>
+          <button class="btn btn-ghost btn-sm dash-ir" id="dashIrTodas" onclick="navTo('cotizaciones')" style="display:none">Ver todas</button>
         </div>
         <div class="card-body" id="dashProximos" style="padding-top:6px">
           <div class="loading-page"><div class="spinner"></div></div>
@@ -214,7 +212,7 @@
       <!-- Dinero por cuenta -->
       <div class="card" style="margin-top:20px">
         <div class="card-header">
-          <span class="card-title">💰 Dinero por cuenta (período elegido)</span>
+          <span class="card-title"><svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--morado)"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Dinero por cuenta (período elegido)</span>
           <button class="btn btn-ghost btn-sm" onclick="navTo('cuentas')">Ver detalle</button>
         </div>
         <div class="card-body"><div class="grid-4" id="dashCuentas"></div></div>
@@ -223,7 +221,7 @@
       <!-- Ganancia general: visor independiente del mes elegido arriba (solo lee, no afecta nada) -->
       <div class="card" style="margin-top:20px">
         <div class="card-header" style="flex-wrap:wrap;gap:8px">
-          <span class="card-title">📈 Ganancia general</span>
+          <span class="card-title"><svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--morado)"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Ganancia general</span>
           <input type="month" class="input" id="filtroGanancia" data-range="1" data-clear="1" data-clear-label="Todo el historial" data-vacio="Todo el historial" oninput="renderGanancia()">
         </div>
         <div class="card-body" id="dashGanancia"><div class="loading-page"><div class="spinner"></div></div></div>
@@ -232,7 +230,7 @@
       <!-- Resumen de cotizaciones por estado -->
       <div class="card" style="margin-top:20px">
         <div class="card-header">
-          <span class="card-title">📊 Resumen de cotizaciones</span>
+          <span class="card-title"><svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--morado)"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Resumen de cotizaciones</span>
           <div style="display:flex;gap:6px">
             <button class="btn btn-secondary btn-sm" id="dashResumenBtnMes" onclick="setDashResumenAlcance('mes')">Período elegido</button>
             <button class="btn btn-secondary btn-sm" id="dashResumenBtnTodas" onclick="setDashResumenAlcance('todas')">Todas</button>
@@ -496,6 +494,20 @@
       </div>
       <div class="card" style="max-width:600px;margin-bottom:16px">
         <div class="card-body">
+          <strong class="font-display">Registro rápido</strong>
+          <p style="font-size:0.85rem;color:var(--text-secondary);margin:6px 0 12px">El botón <b>+</b> de abajo a la derecha anota un gasto o un abono en pocos toques. En Android, con la app instalada, mantén presionado el ícono de Kayra para ver <b>Anotar gasto</b> y <b>Anotar abono</b>; puedes arrastrarlos a la pantalla de inicio.</p>
+          <div id="qrAjustes"></div>
+        </div>
+      </div>
+      <div class="card" style="max-width:600px;margin-bottom:16px">
+        <div class="card-body">
+          <strong class="font-display">Cuentas y categorías de gastos</strong>
+          <p style="font-size:0.85rem;color:var(--text-secondary);margin:6px 0 4px">Edita, agrega, deshabilita o borra. Una deshabilitada ya no sale para anotar, pero su historial y sus saldos se siguen viendo.</p>
+          <div id="listasCfg"><div class="loading-page"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+      <div class="card" style="max-width:600px;margin-bottom:16px">
+        <div class="card-body">
           <strong class="font-display">Correos autorizados</strong>
           <p style="font-size:0.85rem;color:var(--text-secondary);margin:6px 0 12px">Cuentas de Google que pueden entrar al sistema. Los correos fijos no se pueden quitar.</p>
           <div id="accesosLista" style="margin-bottom:12px"></div>
@@ -594,14 +606,14 @@
         </div>
 
         <div class="form-row" id="cotClienteInfo" style="display:none">
-          <div><span style="font-size:0.8rem;color:var(--text-secondary)">📱 </span><span id="cotClienteTel" style="font-size:0.85rem"></span></div>
-          <div><span style="font-size:0.8rem;color:var(--text-secondary)">📧 </span><span id="cotClienteEmail" style="font-size:0.85rem"></span></div>
+          <div><span style="color:var(--text-secondary)"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></span><span id="cotClienteTel" style="font-size:0.85rem"></span></div>
+          <div><span style="color:var(--text-secondary)"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 6 12 13 2 6"/></svg></span><span id="cotClienteEmail" style="font-size:0.85rem"></span></div>
         </div>
 
         <hr class="divider">
 
         <!-- Datos del evento -->
-        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary);margin-bottom:12px">🎈 Datos del evento</div>
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary);margin-bottom:12px"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Datos del evento</div>
         <div class="form-row-3">
           <div class="form-group">
             <label>Fecha del evento</label>
@@ -623,7 +635,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Temática 🎨</label>
+            <label>Temática</label>
             <input type="text" class="input" id="cotTematica" placeholder="Ej: Frozen, Spiderman...">
           </div>
         </div>
@@ -637,7 +649,7 @@
 
         <!-- Items -->
         <div class="svc-head-row">
-          <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary)">📋 Servicios <span id="svcCount"></span></span>
+          <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary)"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>Servicios <span id="svcCount"></span></span>
           <div class="svc-acc">
             <button type="button" class="btn btn-secondary btn-sm" id="svcToggleTodos" onclick="toggleSvcTodos()" style="display:none">⇕ Contraer</button>
             <button type="button" class="btn btn-secondary btn-sm" onclick="openSvcPicker()">+ Agregar servicio</button>
@@ -686,7 +698,7 @@
             <label>Cuenta donde se cobrará</label>
             <select class="input" id="cotCuentaCobro" autocomplete="off" data-lpignore="true">
               <option value="">— Por definir —</option>
-              <option value="Efectivo">⚪ Efectivo</option><option value="BHD">🟢 BHD</option><option value="Banreservas">🔵 Banreservas</option><option value="Caribe">🟡 Caribe</option>
+              <option value="Efectivo">Efectivo</option><option value="BHD">BHD</option><option value="Banreservas">Banreservas</option><option value="Caribe">Caribe</option>
             </select>
             <small style="color:var(--text-secondary)">Cuenta prevista; los abonos pueden ir a otra. Alimenta "Pagos recibidos".</small>
           </div>
@@ -694,7 +706,7 @@
 
         <hr class="divider">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary)">💰 Abonos recibidos <small style="text-transform:none;font-weight:400">— uso interno, en el PDF/WhatsApp solo se ve el total</small></span>
+          <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary)"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Abonos recibidos <small style="text-transform:none;font-weight:400">— uso interno, en el PDF/WhatsApp solo se ve el total</small></span>
           <button type="button" class="btn btn-secondary btn-sm" onclick="openAbonoModal()">+ Agregar abono</button>
         </div>
         <div id="cotAbonosProg"></div>
@@ -727,14 +739,14 @@
   </div>
 </div>
 
-<script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
 <!-- Scripts -->
+<script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
 <script type="module">
 import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signOut }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
-  getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc,
+  getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, getDoc, getDocs, addDoc, setDoc,
   updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, runTransaction, onSnapshot
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
@@ -749,7 +761,10 @@ const firebaseConfig = {
 };
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db   = getFirestore(app);
+// Caché en el teléfono: lo que se anota sin señal queda guardado y se envía solo al volver la conexión (aunque se cierre la app).
+let db;
+try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
+catch (e) { console.warn('Sin caché local de Firestore:', e); db = getFirestore(app); }
 
 const WHITELIST = ['kayrafullparty@gmail.com','kayravale14@gmail.com','oliverjunior071914@gmail.com'];
 const COT_PREFIX = 'KFP';
@@ -782,13 +797,12 @@ function contarEstados(lista) {
 const CUENTAS = ['Efectivo','BHD','Banreservas','Caribe'];
 // Un color por cuenta para no confundirlas (BHD verde, Banreservas azul, Caribe amarillo (logo verde y amarillo), Efectivo gris)
 const CUENTA_COLOR = { Efectivo:'#6B7280', BHD:'#2E9E4F', Banreservas:'#1D4E9E', Caribe:'#E6B800' };
-const CUENTA_EMOJI = { Efectivo:'⚪', BHD:'🟢', Banreservas:'🔵', Caribe:'🟡' };
 function chipCuenta(c) {
   if (!c) return '';
   return '<span style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:' + (CUENTA_COLOR[c] || '#9CA3AF') + '"></span>' + escapeHtml(c) + '</span>';
 }
 const CUENTA_OPTS = (sel, vacio) => `<option value="">${vacio}</option>` +
-  CUENTAS.map(c => `<option value="${c}"${sel===c?' selected':''}>${CUENTA_EMOJI[c]} ${c}</option>`).join('');
+  cuentasActivas(sel).map(c => `<option value="${c}"${sel===c?' selected':''}>${c}</option>`).join('');   // el selector propio pinta el punto de color
 function abonosDe(c) {
   return Array.isArray(c.abonos) ? c.abonos.map(a => ({ fecha:a.fecha, monto:Number(a.monto)||0, cuenta:a.cuenta||'' })) : [];
 }
@@ -841,14 +855,14 @@ function movimientosCaja(cots, gastos) {
 function resumenCuentas(cots, gastos, mesAnio) {
   const cuentas = {};
   CUENTAS.forEach(k => { cuentas[k] = { saldo_inicial:0, recibido:0, gastos:0, debe_tener:0, saldo_final:0, por_cobrar:0 }; });
-  const sin = { n_abonos:0, monto_abonos:0, n_gastos:0, monto_gastos:0, n_cots:0, monto_cots:0 };
+  const sin = { n_abonos:0, monto_abonos:0, n_gastos:0, monto_gastos:0, n_cots:0, monto_cots:0, n_viejos:0, monto_viejos:0 };
   const movsTodos = movimientosCaja(cots, gastos);
   const rg = rangoMeses(mesAnio);
   // Saldo inicial: lo acumulado en cada cuenta en los meses anteriores al período
   if (rg) movsTodos.filter(x => ymKey(x.mes) < rg.d && cuentas[x.cuenta] && (x.tipo === 'Gasto' || x.usa))
     .forEach(x => { cuentas[x.cuenta].saldo_inicial += x.tipo === 'Ingreso' ? x.monto : -x.monto; });
   movsTodos.filter(x => enRango(x.mes, rg)).forEach(x => {
-    if (x.tipo === 'Ingreso' && !x.usa) return;
+    if (x.tipo === 'Ingreso' && !x.usa) { sin.n_viejos++; sin.monto_viejos += x.monto; return; }   // cotización anterior a las cuentas: cuenta en el total pero no en ninguna cuenta
     const k = cuentas[x.cuenta];
     if (x.tipo === 'Gasto') {
       if (k) k.gastos += x.monto; else { sin.n_gastos++; sin.monto_gastos += x.monto; }
@@ -879,10 +893,24 @@ function totalesCaja(cots, gastos, mesAnio) {
   const egresos  = movs.filter(x => x.tipo === 'Gasto').reduce((s,x) => s + x.monto, 0);
   return { ingresos, gastos: egresos, neto: ingresos - egresos };
 }
+// Lo que no tiene cuenta (ingresos y gastos), para mostrarlo como una tarjeta/fila más junto a las cuentas
+function entradoTxt(e, $) {
+  const p = [];
+  if (e.antes) p.push('antes del mes: <strong>' + $(e.antes) + '</strong>');
+  if (e.mes) p.push('en el mes: <strong>' + $(e.mes) + '</strong>');
+  if (e.despues) p.push('después del mes: <strong>' + $(e.despues) + '</strong>');
+  return p.length ? 'Lo cobrado entró así: ' + p.join(' · ') + '.' : '';
+}
+function sinAsignarTot(sin) {
+  const ing = sin.monto_abonos + sin.monto_cots + (sin.monto_viejos || 0), gas = sin.monto_gastos;
+  const n = sin.n_abonos + sin.n_cots + (sin.n_viejos || 0) + sin.n_gastos;
+  return { n, ing, gas, neto: ing - gas };
+}
 function avisoSinCuenta(sin) {
   const p = [];
   if (sin.n_abonos) p.push(`${sin.n_abonos} abono(s) por ${formatMoney(sin.monto_abonos)}`);
   if (sin.n_cots) p.push(sin.n_cots + ' cotización(es) cobrada(s) por ' + formatMoney(sin.monto_cots) + ' sin cuenta de cobro');
+  if (sin.n_viejos) p.push(sin.n_viejos + ' ingreso(s) por ' + formatMoney(sin.monto_viejos) + ' de cotizaciones sin cuentas (anteriores a esta función)');
   if (sin.n_gastos) p.push(`${sin.n_gastos} gasto(s) por ${formatMoney(sin.monto_gastos)}`);
   return p.length ? `Sin cuenta asignada (no incluidos arriba): ${p.join(' y ')}. Anteriores a esta función o pendientes de asignar.` : '';
 }
@@ -1163,7 +1191,7 @@ function dpAbrir(inp) {
       <div class="dp-sem">${['L','M','M','J','V','S','D'].map(x => `<span>${x}</span>`).join('')}</div>
       <div class="dp-grid">${celdas}</div>
       ${mapa ? '<div class="dp-ley"><i></i> Los puntos marcan días que ya tienen eventos (color = estado)</div>' : ''}
-      ${min ? '<div class="dp-ley">🔒 Las fechas pasadas no están disponibles</div>' : ''}
+      ${min ? '<div class="dp-ley">' + ico('candado', 13) + 'Las fechas pasadas no están disponibles</div>' : ''}
       <div class="mp-foot"><button type="button" class="mp-chip" data-hoy="1">Hoy</button>${inp.required ? '' : '<button type="button" class="mp-chip limpiar" data-limpiar="1">Quitar fecha</button>'}</div>`;
   };
   const elegir = v => {
@@ -1202,10 +1230,12 @@ window.addEventListener('resize', () => dpCerrar());
 // Eventos ya agendados por día (cotizaciones no anuladas), para marcarlos en el calendario de la fecha del evento.
 // Se mantienen al día en vivo (onSnapshot): así el calendario abre al instante y el aviso sale sin esperar.
 let eventosMapa = null, eventosUnsub = null;
+let cotsVivas = null;   // todas las cotizaciones (también sin fecha y anuladas), en vivo: las usa el registro rápido
 function eventosVivos() {
   if (eventosUnsub) return;
   eventosUnsub = onSnapshot(collection(db, 'cotizaciones'), snap => {
     const mapa = {};
+    cotsVivas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     snap.docs.forEach(d => {
       const c = { id: d.id, ...d.data() };
       if (c.estado === 'Anulada') return;
@@ -1215,6 +1245,7 @@ function eventosVivos() {
     eventosMapa = mapa;
     if (dpAbierto && dpAbierto.refrescar) dpAbierto.refrescar();
     if (document.getElementById('page-calendario')?.classList.contains('active')) calPintar();   // el calendario se actualiza solo al guardar/editar
+    if (typeof qrAlCambiarCots === 'function') qrAlCambiarCots();
     const fe = document.getElementById('cotFechaEvento');
     if (fe && fe._dp && fe.value) dpAvisar(fe);
   }, e => { console.warn('No se pudo seguir los eventos en vivo:', e); eventosUnsub = null; });
@@ -1229,7 +1260,7 @@ function eventosPorDia() {
 }
 // Los de otras cotizaciones (la que se está editando no cuenta contra sí misma)
 const eventosDelDia = (mapa, iso) => ((mapa && mapa[iso]) || []).filter(c => c.id !== editingCotId);
-const lineaEvento = c => `<div class="dp-av-i"><i style="background:${ESTADO_COLOR[c.estado] || '#9CA3AF'}"></i><span>${escapeHtml(c.numero || '')} · ${escapeHtml(c.cliente_nombre || '')}${c.hora_evento ? ' · 🕒 ' + escapeHtml(c.hora_evento) : ''}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''} <small>(${escapeHtml(c.estado || '')})</small></span></div>`;
+const lineaEvento = c => `<div class="dp-av-i"><i style="background:${ESTADO_COLOR[c.estado] || '#9CA3AF'}"></i><span>${escapeHtml(c.numero || '')} · ${escapeHtml(c.cliente_nombre || '')}${c.hora_evento ? ' · ' + ico('reloj', 13) + escapeHtml(c.hora_evento) : ''}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''} <small>(${escapeHtml(c.estado || '')})</small></span></div>`;
 function avisoDe(el, ancla) {
   let a = el._aviso;
   if (!a) { a = document.createElement('div'); a.className = 'dp-aviso'; a.style.display = 'none'; ancla.insertAdjacentElement('afterend', a); el._aviso = a; }
@@ -1245,7 +1276,7 @@ async function dpAvisar(inp) {
   if (inp.value !== v) return;   // mientras tanto se eligió otra fecha
   const lista = eventosDelDia(mapa, v);
   if (!lista.length) { a.style.display = 'none'; horaAvisar(); return; }
-  a.innerHTML = `<div class="dp-av-t">⚠ Ese día ya hay ${lista.length === 1 ? '1 evento' : lista.length + ' eventos'}:</div>` + lista.map(lineaEvento).join('');
+  a.innerHTML = `<div class="dp-av-t">${ico('alerta', 14)}Ese día ya hay ${lista.length === 1 ? '1 evento' : lista.length + ' eventos'}:</div>` + lista.map(lineaEvento).join('');
   a.style.display = '';
   horaAvisar();
 }
@@ -1263,7 +1294,7 @@ function horaAvisar() {
   const a = avisoDe(hs, hs._sl.btn);
   const choca = hs.value && fe.value && eventosMapa ? eventosDelDia(eventosMapa, fe.value).filter(c => c.hora_evento === hs.value) : [];
   if (!choca.length) { a.style.display = 'none'; return; }
-  a.innerHTML = `<div class="dp-av-t">⚠ A esa hora ya hay ${choca.length === 1 ? 'un evento' : choca.length + ' eventos'}:</div>` + choca.map(lineaEvento).join('');
+  a.innerHTML = `<div class="dp-av-t">${ico('alerta', 14)}A esa hora ya hay ${choca.length === 1 ? 'un evento' : choca.length + ' eventos'}:</div>` + choca.map(lineaEvento).join('');
   a.style.display = '';
 }
 function dpMejorar(inp) {
@@ -1417,8 +1448,9 @@ window.logout = () => signOut(auth).then(() => { window.location.href = 'index.h
 
 // ── Init ──
 async function init() {
-  appConfig = await loadConfig();
-  await Promise.all([loadClientes(), loadCatalogo()]);
+  [appConfig] = await Promise.all([loadConfig(), cargarListas()]);   // config y cuentas/categorías de gastos (editables en Configuración), a la vez
+  qrIniciar();               // botón "+", atajos del ícono (?rapido=) y sacudir: lo antes posible, para que el atajo abra rápido
+  await Promise.all([loadClientes(), loadCatalogo()].map(p => p.catch(e => console.warn('Carga inicial:', e.message))));
   await migrarMesAnioEvento();
   await autoAnularVencidas();
   await autoGestionarEventosVencidos();
@@ -2010,6 +2042,7 @@ window.quitarAcceso = async function(email) {
 };
 
 function loadConfigForm() {
+  pintarListasCfg(true);
   cargarAccesos();
   document.getElementById('cfgNombre').value     = appConfig.nombre_negocio || '';
   document.getElementById('cfgTelefono').value   = appConfig.telefono || '';
@@ -2115,7 +2148,7 @@ window.saveCliente = async function(editId) {
   if (telNorm) {
     const dup = clientes.find(c => c.id !== editId && normalizarTel(c.telefono) === telNorm);
     if (dup) {
-      toast(`⚠️ El cliente “${dup.nombre}” ya está registrado con el número ${dup.telefono || telefono}. Cambia el número o déjalo vacío.`, 'error');
+      toast(`El cliente “${dup.nombre}” ya está registrado con el número ${dup.telefono || telefono}. Cambia el número o déjalo vacío.`, 'error');
       const inp = document.getElementById('fClienteTelefono');
       inp?.focus(); inp?.select();
       return;
@@ -2205,9 +2238,10 @@ function renderCatalogo() {
       </div>
     </div>`).join('');
 }
-window.openServicioModal = function(editId = null) {
-  const s = editId ? catalogo.find(x => x.id === editId) : null;
-  document.getElementById('modalTitle').textContent = s ? 'Editar servicio' : 'Nuevo servicio';
+window.openServicioModal = function(editId = null, opts = {}) {
+  const s = editId ? catalogo.find(x => x.id === editId) : (opts.nombre ? { nombre: opts.nombre } : null);
+  svcDesdeCot = !!opts.desdeCot;
+  document.getElementById('modalTitle').textContent = editId ? 'Editar servicio' : 'Nuevo servicio';
   const CATS = ['Animación','Decoración','Mobiliario','Dulces','Diversión','Extras','Paquetes'];
   document.getElementById('modalBody').innerHTML = `
     <div class="form-group"><label>Nombre del servicio *</label>
@@ -2225,10 +2259,12 @@ window.openServicioModal = function(editId = null) {
     <div class="form-group"><label>Precio final (calculado)</label>
       <input class="input" id="fSvcFinal" value="${formatMoney(s?.precio_final||0)}" readonly style="background:var(--bg);font-weight:700;color:var(--morado)"></div>`;
   document.getElementById('modalFooter').innerHTML = `
-    <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-primary" onclick="saveServicio(${editId?`'${editId}'`:'null'})">Guardar</button>`;
+    <button class="btn btn-secondary" onclick="${svcDesdeCot ? 'openSvcPicker()' : 'closeModal()'}">${svcDesdeCot ? '‹ Volver' : 'Cancelar'}</button>
+    <button class="btn btn-primary" id="fSvcGuardar" onclick="saveServicio(${editId?`'${editId}'`:'null'})">${svcDesdeCot ? 'Guardar y agregar' : 'Guardar'}</button>`;
   document.getElementById('modalOverlay').classList.add('open');
+  if (svcDesdeCot && !window.matchMedia('(pointer: coarse)').matches) setTimeout(() => document.getElementById(opts.nombre ? 'fSvcBase' : 'fSvcNombre')?.focus(), 120);
 };
+let svcDesdeCot = false;   // el formulario del servicio se abrió desde una cotización
 window.calcSvcFinal = function() {
   const base   = parseFloat(document.getElementById('fSvcBase').value) || 0;
   const margen = parseFloat(document.getElementById('fSvcMargen').value) / 100 || 0;
@@ -2237,6 +2273,7 @@ window.calcSvcFinal = function() {
 window.saveServicio = async function(editId) {
   const nombre = document.getElementById('fSvcNombre').value.trim();
   if (!nombre) { toast('El nombre es requerido','error'); return; }
+  if (!editId && catalogo.some(s => normalizarTexto(s.nombre) === normalizarTexto(nombre))) { toast('Ya hay un servicio con ese nombre en el catálogo', 'error'); return; }
   const base   = parseFloat(document.getElementById('fSvcBase').value)   || 0;
   const margen = parseFloat(document.getElementById('fSvcMargen').value) / 100 || 0;
   const antes  = editId ? catalogo.find(s => s.id === editId) : null;
@@ -2247,13 +2284,24 @@ window.saveServicio = async function(editId) {
     precio_base: base, margen,
     precio_final: Math.round(base * (1 + margen)),
   };
-  if (editId) await updateDoc(doc(db,'catalogo',editId), data);
-  else        await addDoc(collection(db,'catalogo'), data);
+  const btnG = document.getElementById('fSvcGuardar'); if (btnG) { btnG.disabled = true; btnG.textContent = 'Guardando…'; }
+  let nuevoId = null;
+  try {
+    if (editId) await updateDoc(doc(db,'catalogo',editId), data);
+    else        nuevoId = (await addDoc(collection(db,'catalogo'), data)).id;
+  } catch (e) {
+    toast('No se pudo guardar: ' + e.message, 'error');
+    if (btnG) { btnG.disabled = false; btnG.textContent = svcDesdeCot ? 'Guardar y agregar' : 'Guardar'; }
+    return;
+  }
   const cambios = editId ? diffCampos(antes, data, CAMPOS_SERVICIO) : null;
   logAccion(editId ? 'Editó' : 'Creó', 'Servicio', `${nombre} · ${formatMoney(data.precio_final)}`, null, cambios);
   toast(editId ? 'Servicio actualizado ✓' : 'Servicio creado ✓');
-  closeModal();
+  const aCot = svcDesdeCot && nuevoId;
+  svcDesdeCot = false;
+  if (!aCot) closeModal();
   await loadCatalogo(true);
+  if (aCot) svcPickAgregar(nuevoId);   // se agrega a la cotización abierta (y se cierra el cuadro)
 };
 window.deleteServicio = async function(id, nombre) {
   if (!confirm(`¿Eliminar "${nombre}"?`)) return;
@@ -2571,10 +2619,10 @@ window.removeItemRow = function(btn) {
 window.openSvcPicker = function() {
   document.getElementById('modalTitle').textContent = 'Agregar servicios';
   document.getElementById('modalBody').innerHTML = `
-    <input class="input" id="svcBuscar" placeholder="🔍 Toca aquí para buscar un servicio…" autocomplete="off" oninput="svcPickRender()">
+    <input class="input" id="svcBuscar" placeholder="Toca aquí para buscar un servicio…" autocomplete="off" oninput="svcPickRender()">
     <div id="svcPickInfo" style="font-size:0.76rem;color:var(--text-secondary);margin:8px 2px"></div>
     <div id="svcPickLista" style="max-height:52vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm)"></div>`;
-  document.getElementById('modalFooter').innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>`;
+  document.getElementById('modalFooter').innerHTML = `<button class="btn btn-secondary" onclick="svcPickCrear()">${ico('mas', 15)} Nuevo servicio</button><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>`;
   const overlay = document.getElementById('modalOverlay');
   overlay.style.zIndex = '300'; // se apila arriba del modal de cotización
   overlay.classList.add('open');
@@ -2591,7 +2639,7 @@ window.svcPickRender = function() {
   const lista = catalogoAZ().filter(s => !q || normalizarTexto((s.nombre||'') + ' ' + (s.categoria||'')).includes(q)).slice(0, 80);
   const exacto = catalogo.some(s => normalizarTexto(s.nombre) === q);
   const y = cont.scrollTop;
-  cont.innerHTML = (texto && !exacto ? `<div class="svc-pick" onclick="svcPickLibre()"><div style="min-width:0;flex:1"><div class="svc-pick-n">➕ Agregar “${escapeHtml(texto)}” como servicio libre</div><div class="svc-pick-s">No está en el catálogo; podrás ponerle el precio</div></div></div>` : '')
+  cont.innerHTML = (texto && !exacto ? `<div class="svc-pick svc-pick-nuevo" onclick="svcPickCrear()"><div style="min-width:0;flex:1"><div class="svc-pick-n">${ico('caja', 16)} Crear “${escapeHtml(texto)}” en el catálogo</div><div class="svc-pick-s">Queda guardado para las próximas cotizaciones y se agrega a esta</div></div></div><div class="svc-pick" onclick="svcPickLibre()"><div style="min-width:0;flex:1"><div class="svc-pick-n">${ico('mas', 16)} Agregar “${escapeHtml(texto)}” solo a esta cotización</div><div class="svc-pick-s">No se guarda en el catálogo; podrás ponerle el precio</div></div></div>` : '')
     + (lista.length ? lista.map(s => {
         const n = svcEnCotizacion(s.id).reduce((t, r) => t + (parseFloat(r.querySelector('.inp-cant').value) || 0), 0);
         return `<div class="svc-pick" onclick="svcPickAgregar('${s.id}')">
@@ -2620,6 +2668,12 @@ window.svcPickAgregar = function(id) {
   } else {
     svcMostrar(addItemRow({ catalogo_id: s.id, nombre: s.nombre, cantidad: 1, precio_unitario: s.precio_final, descuento: 0, subtotal: s.precio_final }, { arriba: true, abierto: true }));
   }
+};
+// Crear un servicio del catálogo desde la cotización: se abre el formulario del catálogo encima (la cotización no se toca),
+// y al guardar se agrega a la cotización. "Cancelar" vuelve a la lista de servicios.
+window.svcPickCrear = function() {
+  const nombre = (document.getElementById('svcBuscar')?.value || '').trim();
+  openServicioModal(null, { desdeCot: true, nombre });
 };
 window.svcPickLibre = function() {
   const nombre = document.getElementById('svcBuscar').value.trim(); if (!nombre) return;
@@ -2696,7 +2750,7 @@ function renderCotAbonos(total) {
         <div class="ab-main">
           <div class="ab-fecha">${formatDate(a.fecha ? a.fecha + 'T12:00:00' : '')}</div>
           <div class="ab-monto">${formatMoney(a.monto)}</div>
-          <div class="ab-cta">${a.cuenta ? `<span class="ab-rec">Recibido en </span><b>${escapeHtml(a.cuenta)}</b>` : '<span class="warn">⚠ Sin asignar cuenta</span>'}</div>
+          <div class="ab-cta">${a.cuenta ? `<span class="ab-rec">Recibido en </span><b>${escapeHtml(a.cuenta)}</b>` : '<span class="warn">' + ico('alerta', 14) + 'Sin asignar cuenta</span>'}</div>
         </div>
         <div class="ab-act">
           <button type="button" title="Editar" onclick="openAbonoModal(${idx})">${icoEditar}</button>
@@ -2818,7 +2872,7 @@ window.saveCotizacion = async function() {
         return firma && firma === firmaNueva;
       });
       if (similar) {
-        const ok = confirm(`⚠️ Ya existe una cotización similar para ${cliente?.nombre||'este cliente'}:\n\n${similar.numero} — ${formatMoney(similar.total)} (${similar.estado})\ncon los mismos servicios.\n\n¿Quieres crearla de todos modos?`);
+        const ok = confirm(`Ya existe una cotización similar para ${cliente?.nombre||'este cliente'}:\n\n${similar.numero} — ${formatMoney(similar.total)} (${similar.estado})\ncon los mismos servicios.\n\n¿Quieres crearla de todos modos?`);
         if (!ok) return;
       }
     } catch(e) { console.warn('No se pudo verificar duplicados de cotización:', e); }
@@ -3212,7 +3266,7 @@ window.openGastoModal = async function(editId = null, cotPreset = null, fechaPre
   let g = null;
   if (editId) { const s = await getDoc(doc(db,'gastos',editId)); g = s.data(); }
   editingGastoAntes = g; // se usa al guardar, para armar el detalle de qué cambió
-  const CATS = ['Mobiliario','Decoración','Comida','Transporte','Insumos','Ayudante','Gastos de casa','Devolución','Otro'];
+  const CATS = catsActivas(g?.categoria);
   gastoCotOpciones = await cotizacionesParaSelect();
   // la lista del selector trae solo las 300 más recientes: si la cotización pedida no está, se agrega
   if (cotPreset && !gastoCotOpciones.some(c => c.id === cotPreset)) {
@@ -3297,7 +3351,7 @@ window.saveGasto = async function(editId) {
       );
       if (dup) {
         const ref = cotNumero ? `la cotización ${cotNumero}` : 'un gasto general';
-        const ok = confirm(`⚠️ Ya existe un gasto de ${formatMoney(monto)} para ${ref} este mes ("${dup.descripcion}").\n\n¿Registrarlo de todos modos?`);
+        const ok = confirm(`Ya existe un gasto de ${formatMoney(monto)} para ${ref} este mes ("${dup.descripcion}").\n\n¿Registrarlo de todos modos?`);
         if (!ok) return;
       }
     } catch(e) { console.warn('No se pudo verificar duplicados de gasto:', e); }
@@ -3392,7 +3446,7 @@ window.ordenarCuentas = function(campo) {
 };
 function renderMovsCuentas() {
   document.getElementById('cuentasFiltros').innerHTML = ['', ...CUENTAS].map(c =>
-    `<button class="btn ${cuentasFiltro===c?'btn-primary':'btn-secondary'} btn-sm" onclick="filtrarCuenta('${c}')">${c ? (CUENTA_EMOJI[c] + ' ' + c) : 'Todas'}</button>`).join('');
+    `<button class="btn ${cuentasFiltro===c?'btn-primary':'btn-secondary'} btn-sm" onclick="filtrarCuenta('${c}')">${c ? chipCuenta(c) : 'Todas'}</button>`).join('');
   const base = cuentasFiltro ? cuentasMovs.filter(x => x.cuenta === cuentasFiltro) : cuentasMovs;
   const { campo, dir } = cuentasOrden;
   const lista = [...base].sort((a, b) => {
@@ -3407,7 +3461,7 @@ function renderMovsCuentas() {
       <td style="white-space:nowrap">${x.fecha ? formatDate(x.fecha + 'T12:00:00') : '—'}</td>
       <td><span class="badge ${x.tipo==='Ingreso'?'badge-pagada':'badge-anulada'}">${x.tipo}</span></td>
       <td>${x.cotId ? `<a href="#" title="Abrir cotización" onclick="event.preventDefault();openEditCotizacion('${x.cotId}')" style="color:inherit;cursor:pointer">${escapeHtml(x.detalle)}</a>` : escapeHtml(x.detalle)}</td>
-      <td>${x.cuenta ? chipCuenta(x.cuenta) : '<span style="color:#D97706">⚠ Sin asignar</span>'}</td>
+      <td>${x.cuenta ? chipCuenta(x.cuenta) : '<span style="color:#D97706">' + ico('alerta', 14) + 'Sin asignar</span>'}</td>
       <td><strong style="color:${x.tipo==='Ingreso'?'#16A34A':'#EF4444'}">${x.tipo==='Ingreso'?'+':'−'}${formatMoney(x.monto)}</strong></td>
     </tr>`).join('')
     : `<tr><td colspan="5"><div class="empty-state"><h3>Sin movimientos</h3><p>Los abonos y gastos con cuenta asignada aparecerán aquí</p></div></td></tr>`;
@@ -3437,7 +3491,7 @@ async function loadCierres() {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
           </button>
         </td>
-        <td style="white-space:nowrap"><strong>${String(c.mes).padStart(2,'0')}-${c.anio}</strong>${c.automatico ? '<div style="font-size:0.68rem;color:var(--text-secondary)">⚙ automático</div>' : ''}</td>
+        <td style="white-space:nowrap"><strong>${String(c.mes).padStart(2,'0')}-${c.anio}</strong>${c.automatico ? '<div style="font-size:0.68rem;color:var(--text-secondary)">' + ico('engrane', 12) + 'automático</div>' : ''}</td>
         <td>${c.n_cotizaciones||0}</td>
         <td>${c.n_solo_cotizadas ?? '—'}</td>
         <td>${c.n_reservadas ?? '—'}</td>
@@ -3504,9 +3558,37 @@ async function datosCierre(mesAnio) {
   CUENTAS.forEach(k => Object.keys(totalCuentas).forEach(f => { totalCuentas[f] += cuentas[k][f]; }));
   const sin = resumenCuentas(cots, gastos, mesAnio).sin;
 
+  // Dinero por eventos del mes: TODOS los abonos y gastos de las cotizaciones de los eventos de este mes, sin importar la fecha
+  // en que entraron. Es solo informativo: no afecta a Ingresos, Gastos ni Dinero por cuenta. 'entrado' dice cuándo entró lo cobrado.
+  const cuentasEv = {};
+  CUENTAS.forEach(k => { cuentasEv[k] = { cobrado:0, gastos:0, neto:0, por_cobrar:0 }; });
+  const sinEv = { n_abonos:0, monto_abonos:0, n_cots:0, monto_cots:0, n_gastos:0, monto_gastos:0, n_viejos:0, monto_viejos:0 };
+  const entrado = { antes:0, mes:0, despues:0 };
+  eventos.forEach(e => {
+    e.abonos.forEach(a => {
+      const kA = ymKey(a.mes); entrado[kA < cur ? 'antes' : kA > cur ? 'despues' : 'mes'] += a.monto;
+      if (!a.usa) { sinEv.n_viejos++; sinEv.monto_viejos += a.monto; return; }
+      if (cuentasEv[a.cuenta]) cuentasEv[a.cuenta].cobrado += a.monto;
+      else if (a.implicito) { sinEv.n_cots++; sinEv.monto_cots += a.monto; }
+      else { sinEv.n_abonos++; sinEv.monto_abonos += a.monto; }
+    });
+    e.gastosDet.forEach(x => {
+      if (cuentasEv[x.cuenta]) cuentasEv[x.cuenta].gastos += x.monto;
+      else { sinEv.n_gastos++; sinEv.monto_gastos += x.monto; }
+    });
+    const c = e.cot;
+    if (usaCuentas(c) && c.estado === 'Reservado' && cuentasEv[c.cuenta_cobro] && saldoSinAbonos(c) > 0) cuentasEv[c.cuenta_cobro].por_cobrar += saldoSinAbonos(c);
+  });
+  const totalEv = { cobrado:0, gastos:0, neto:0, por_cobrar:0 };
+  CUENTAS.forEach(k => {
+    const x = cuentasEv[k]; x.neto = x.cobrado - x.gastos;
+    Object.keys(totalEv).forEach(f => { totalEv[f] += x[f]; });
+  });
+
   const cotsMes = cots.filter(c => mesEventoDe(c) === mesAnio);
   return { mesAnio, cotsMes, conteo: contarEstados(cotsMes), ingresos, gastosMes, totIng, totGas, neto: totIng - totGas,
-           margen: totIng ? (totIng - totGas) / totIng * 100 : 0, ingPorRel, porCategoria, eventos, cuentas, totalCuentas, sin };
+           margen: totIng ? (totIng - totGas) / totIng * 100 : 0, ingPorRel, porCategoria, eventos, cuentas, totalCuentas, sin,
+           cuentasEv, totalEv, sinEv, entradoEv: entrado };
 }
 
 // Calcula el cierre de un mes y lo guarda en 'cierres'. 'datos' permite reutilizar un datosCierre ya calculado.
@@ -3531,6 +3613,8 @@ async function calcularYGuardarCierre(mes, anio, extra = {}, datos = null) {
     por_cuenta:     d.cuentas,
     total_por_cuenta: d.totalCuentas,
     sin_cuenta:     d.sin,
+    por_cuenta_eventos: d.cuentasEv,
+    total_por_cuenta_eventos: d.totalEv,
     ...extra,
     cerrado_en:     serverTimestamp(),
   };
@@ -3670,8 +3754,8 @@ function cierreHtml(d, mesLabel) {
   const rojo = '#EF4444', verde = '#16A34A';
   const color = n => n >= 0 ? 'var(--morado)' : rojo;
   const link = c => `<a href="#" onclick="event.preventDefault();event.stopPropagation();openEditCotizacion('${c.id}')" style="color:inherit;cursor:pointer">${escapeHtml(c.numero||'')} · ${escapeHtml(c.cliente_nombre||'')}</a>`;
-  const infoEv = c => { const fe = fechaEventoISO(c); return (fe ? '🎈 ' + escapeHtml(fmtF(fe)) : '') + (c.tematica ? ' · ' + escapeHtml(c.tematica) : ''); };
-  const selCuenta = (tipo, ref) => `<select class="input" style="width:auto;max-width:140px;padding:3px 6px;font-size:0.76rem;border-color:#D97706;color:#B45309" onclick="event.stopPropagation()" onchange="asignarCuentaCierre(this,'${tipo}','${ref}')">${CUENTA_OPTS('', '⚠ Asignar…')}</select>`;
+  const infoEv = c => { const fe = fechaEventoISO(c); return (fe ? ico('cal', 13) + escapeHtml(fmtF(fe)) : '') + (c.tematica ? ' · ' + escapeHtml(c.tematica) : ''); };
+  const selCuenta = (tipo, ref) => `<select class="input" style="width:auto;max-width:140px;padding:3px 6px;font-size:0.76rem;border-color:#D97706;color:#B45309" onclick="event.stopPropagation()" onchange="asignarCuentaCierre(this,'${tipo}','${ref}')">${CUENTA_OPTS('', 'Asignar cuenta…')}</select>`;
   const kpi = (t, v, c, sub) => `<div class="metric-card"><div class="metric-label">${t}</div><div class="metric-value" style="color:${c};font-size:1.25rem">${v}</div>${sub ? `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">${sub}</div>` : ''}</div>`;
   // Sección plegable: el título y su total siempre se ven, aunque esté cerrada
   const secD = (id, titulo, resumen, cuerpo, def) => `<details class="cz-sec" id="${id}" data-k="${id}" ${cAbre(id, def) ? 'open' : ''} ontoggle="cierreToggle(this)">
@@ -3683,7 +3767,7 @@ function cierreHtml(d, mesLabel) {
 
   // ── Índice fijo ──
   const chip = (id, t, n) => `<button type="button" class="cz-chip${id === 'cz-resumen' ? ' on' : ''}" data-t="${id}" onclick="cierreIr('${id}')">${t}${n !== undefined ? ` <b>${n}</b>` : ''}</button>`;
-  let h = `<div class="cz-nav"><div class="cz-chips">${chip('cz-resumen', 'Resumen')}${chip('cz-eventos', 'Eventos', d.eventos.length)}${chip('cz-ingresos', 'Ingresos', d.ingresos.length)}${chip('cz-gastos', 'Gastos', d.gastosMes.length)}${chip('cz-cuentas', 'Cuentas')}</div>
+  let h = `<div class="cz-nav"><div class="cz-chips">${chip('cz-resumen', 'Resumen')}${chip('cz-eventos', 'Eventos', d.eventos.length)}${chip('cz-ingresos', 'Ingresos', d.ingresos.length)}${chip('cz-gastos', 'Gastos', d.gastosMes.length)}${chip('cz-cuentas-ev', 'Por eventos')}${chip('cz-cuentas', 'Cuentas')}</div>
     <button type="button" class="cz-all" id="czTodo" onclick="cierreTodo()" title="Abrir o cerrar todas las secciones">⇕ Expandir</button></div>`;
 
   // ── Resumen ──
@@ -3695,8 +3779,8 @@ function cierreHtml(d, mesLabel) {
       ${kpi('Eventos del mes', d.eventos.length, 'var(--morado)', d.conteo['Anulada'] ? `${d.conteo['Anulada']} anulada(s)` : '')}
     </div>
     ${(sinGastos || aviso) ? `<div class="cz-aviso">
-      ${sinGastos ? `<div>⚠ <strong>${sinGastos}</strong> evento(s) sin gastos registrados <button type="button" class="cz-ver" onclick="cierreIr('cz-eventos')">Ver</button></div>` : ''}
-      ${aviso ? `<div>⚠ ${escapeHtml(aviso)}</div>` : ''}</div>` : ''}
+      ${sinGastos ? `<div>${ico('alerta', 14)}<strong>${sinGastos}</strong> evento(s) sin gastos registrados <button type="button" class="cz-ver" onclick="cierreIr('cz-eventos')">Ver</button></div>` : ''}
+      ${aviso ? `<div>${ico('alerta', 14)}${escapeHtml(aviso)}</div>` : ''}</div>` : ''}
     <p style="font-size:0.76rem;color:var(--text-secondary);margin:10px 0 0">El dinero cuenta en el mes en que <strong>entró</strong> y los gastos en el mes en que se <strong>pagaron</strong>, sin importar la fecha del evento.</p></div>`;
 
   // ── Eventos del mes: cada uno compacto; al tocarlo se ve el desglose (gastos, totales y abonos con su fecha) ──
@@ -3709,12 +3793,12 @@ function cierreHtml(d, mesLabel) {
     return `<details class="cz-ev" data-k="${k}" ${cAbre(k, false) ? 'open' : ''} ontoggle="cierreToggle(this)">
       <summary>
         <div class="cz-ev-l"><div class="cz-ev-n">${escapeHtml(e.cot.numero||'')} · ${escapeHtml(e.cot.cliente_nombre||'')}</div>
-          <div class="cz-ev-s">${infoEv(e.cot)} ${badgeHtml(e.cot.estado)}${e.gastosDet.length ? '' : ' <span class="cz-warn">⚠ sin gastos</span>'}</div></div>
+          <div class="cz-ev-s">${infoEv(e.cot)} ${badgeHtml(e.cot.estado)}${e.gastosDet.length ? '' : ' <span class="cz-warn">' + ico('alerta', 13) + 'sin gastos</span>'}</div></div>
         <div class="cz-ev-r"><div style="font-weight:800;color:${color(e.utilidad)}">${$(e.utilidad)}</div><div class="cz-mini">neto</div></div>
       </summary>
       <div class="cz-ev-b">
-        <div style="padding:4px 0 2px">${e.gastosDet.length ? e.gastosDet.map(x => filaG(x.g)).join('') : '<div style="margin:4px 14px;padding:8px 10px;border-radius:var(--radius-sm);background:#FFF7E6;color:#B45309;font-size:0.82rem">⚠ Este evento aún no tiene gastos registrados. Agrega uno nuevo o vincula uno que ya exista.</div>'}</div>
-        <div class="acc-row" style="padding:2px 14px 12px"><button type="button" class="btn btn-secondary btn-sm acc-btn" onclick="openGastoModal(null,'${e.cot.id}',fechaCierre())"><span class="ic">＋</span>Gasto nuevo</button><button type="button" class="btn btn-secondary btn-sm acc-btn" onclick="vincularGastos('${e.cot.id}')"><span class="ic">🔗</span>Vincular existente</button><button type="button" class="btn btn-secondary btn-sm acc-btn" onclick="openEditCotizacion('${e.cot.id}')"><span class="ic">📄</span>Abrir cotización</button></div>
+        <div style="padding:4px 0 2px">${e.gastosDet.length ? e.gastosDet.map(x => filaG(x.g)).join('') : '<div style="margin:4px 14px;padding:8px 10px;border-radius:var(--radius-sm);background:#FFF7E6;color:#B45309;font-size:0.82rem">' + ico('alerta', 14) + 'Este evento aún no tiene gastos registrados. Agrega uno nuevo o vincula uno que ya exista.</div>'}</div>
+        <div class="acc-row" style="padding:2px 14px 12px"><button type="button" class="btn btn-secondary btn-sm acc-btn" onclick="openGastoModal(null,'${e.cot.id}',fechaCierre())"><span class="ic">${ico('mas', 16)}</span>Gasto nuevo</button><button type="button" class="btn btn-secondary btn-sm acc-btn" onclick="vincularGastos('${e.cot.id}')"><span class="ic">${ico('enlace', 16)}</span>Vincular existente</button><button type="button" class="btn btn-secondary btn-sm acc-btn" onclick="openEditCotizacion('${e.cot.id}')"><span class="ic">${ico('cot', 16)}</span>Abrir cotización</button></div>
         <div style="display:flex;justify-content:flex-end;padding:10px 14px;border-top:1px solid var(--border)"><div style="min-width:min(270px,100%);display:grid;gap:5px">
           ${filaT('Total de la cotización', $(e.total), 'inherit')}
           ${filaT('Cobrado', $(e.cobrado), 'inherit')}
@@ -3729,7 +3813,7 @@ function cierreHtml(d, mesLabel) {
         </div></div></details>`;
   }).join('');
   h += secD('cz-eventos', 'Eventos del mes',
-    `${d.eventos.length} evento(s)${sinGastos ? ` · <span class="cz-warn">⚠ ${sinGastos} sin gastos</span>` : ''}`,
+    `${d.eventos.length} evento(s)${sinGastos ? ` · <span class="cz-warn">${ico('alerta', 13)}${sinGastos} sin gastos</span>` : ''}`,
     `<div class="cz-sub">Toca un evento para ver sus gastos y abonos con fecha.</div>` + (d.eventos.length ? evHtml : vacio('No hubo eventos reservados, pagados o realizados ese mes.')), true);
 
   // ── Ingresos: una línea por aporte (fecha, evento, tipo y cuenta) ──
@@ -3762,12 +3846,25 @@ function cierreHtml(d, mesLabel) {
   }
   h += secD('cz-gastos', 'Gastos del mes', `${$(d.totGas)} · ${d.gastosMes.length}`, cuerpoG, false);
 
+  // ── Dinero por eventos del mes: lo cobrado y gastado por los eventos de este mes, por cuenta ──
+  const avisoEv = avisoSinCuenta(d.sinEv).replace('(no incluidos arriba)', '(no incluidos arriba, solo de eventos de este mes)');
+  const verPorCobrar = d.totalEv.por_cobrar > 0;
+  const tarjetaEv = (nombre, x, total) => `<div class="cz-cta${total ? ' tot' : ''}">
+    <div class="cz-cta-h">${total ? '<strong>TOTAL</strong>' : chipCuenta(nombre)}<strong style="color:${color(x.neto)}">${$(x.neto)}</strong></div>
+    <div class="cz-cta-g"><div class="cz-kv"><span>Cobrado</span><span style="color:${verde}">${$(x.cobrado)}</span></div><div class="cz-kv"><span>Gastos</span><span style="color:${rojo}">${$(x.gastos)}</span></div>${verPorCobrar ? `<div class="cz-kv"><span>Por cobrar</span><span style="color:#D97706">${$(x.por_cobrar)}</span></div>` : ''}</div></div>`;
+  const sinTarjeta = (t, filas) => `<div class="cz-cta" style="border-color:#D97706;background:#FFFBF2"><div class="cz-cta-h"><strong style="color:#B45309">${ico('alerta', 14)}Sin asignar</strong><strong style="color:${color(t.neto)}">${$(t.neto)}</strong></div><div class="cz-cta-g">${filas}</div></div>`;
+  const kv = (l, v, c) => `<div class="cz-kv"><span>${l}</span><span style="color:${c}">${$(v)}</span></div>`;
+  const sEv = sinAsignarTot(d.sinEv), sCu = sinAsignarTot(d.sin);
+  h += secD('cz-cuentas-ev', 'Dinero por eventos del mes', `Neto ${$(d.totalEv.neto)}`,
+    `<div class="cz-sub">Todo lo cobrado y gastado por los ${d.eventos.length} evento(s) de este mes, sin importar cuándo entró. Es solo para orientarse: no cambia los demás totales del cierre. ${entradoTxt(d.entradoEv, $)}</div><div class="cz-ctas">${tarjetaEv('', d.totalEv, true)}${CUENTAS.map(k => tarjetaEv(k, d.cuentasEv[k])).join('')}${sEv.n ? sinTarjeta(sEv, kv('Cobrado', sEv.ing, verde) + kv('Gastos', sEv.gas, rojo)) : ''}</div>`
+    + (avisoEv ? `<p style="font-size:0.76rem;color:var(--text-secondary);margin-top:8px">${escapeHtml(avisoEv)}</p>` : ''), false);
+
   // ── Dinero por cuenta: una tarjeta por cuenta ──
   const tarjeta = (nombre, x, total) => `<div class="cz-cta${total ? ' tot' : ''}">
     <div class="cz-cta-h">${total ? '<strong>TOTAL</strong>' : chipCuenta(nombre)}<strong style="color:${color(x.saldo_final)}">${$(x.saldo_final)}</strong></div>
     <div class="cz-cta-g"><div class="cz-kv"><span>Saldo inicial</span><span>${$(x.saldo_inicial)}</span></div><div class="cz-kv"><span>Ingresos</span><span style="color:${verde}">${$(x.recibido)}</span></div><div class="cz-kv"><span>Gastos</span><span style="color:${rojo}">${$(x.gastos)}</span></div></div></div>`;
   h += secD('cz-cuentas', 'Dinero por cuenta', `Debería haber ${$(d.totalCuentas.saldo_final)}`,
-    `<div class="cz-sub">Saldo inicial + ingresos − gastos = lo que debería haber al cerrar el mes.</div><div class="cz-ctas">${tarjeta('', d.totalCuentas, true)}${CUENTAS.map(k => tarjeta(k, d.cuentas[k])).join('')}</div>`
+    `<div class="cz-sub">Saldo inicial + ingresos − gastos = lo que debería haber al cerrar el mes.</div><div class="cz-ctas">${tarjeta('', d.totalCuentas, true)}${CUENTAS.map(k => tarjeta(k, d.cuentas[k])).join('')}${sCu.n ? sinTarjeta(sCu, kv('Ingresos', sCu.ing, verde) + kv('Gastos', sCu.gas, rojo)) : ''}</div>`
     + (aviso ? `<p style="font-size:0.76rem;color:var(--text-secondary);margin-top:8px">${escapeHtml(aviso)}</p>` : ''), false);
 
   return h;
@@ -3791,10 +3888,10 @@ window.verCierre = async function(mesAnio, mesLabel) {
   document.getElementById('cierreBody').innerHTML = '<div class="loading-page"><div class="spinner"></div></div>';
   const puedeCompartir = !!(navigator.canShare && navigator.share);
   document.getElementById('cierreFooter').innerHTML = `
-    <button class="btn btn-secondary acc-btn" onclick="closeCierre()"><span class="ic">✕</span>Cerrar</button>
-    ${puedeCompartir ? `<button class="btn btn-secondary acc-btn" onclick="descargarPDFCierre('${mesAnio}','${mesLabel}',true)"><span class="ic">↗</span>Compartir</button>` : ''}
-    <button class="btn btn-secondary acc-btn" onclick="guardarCierreDesdeVista()" title="Guarda o actualiza el cierre de este mes con los datos actuales"><span class="ic">💾</span>Guardar cierre</button>
-    <button class="btn btn-primary acc-btn" onclick="descargarPDFCierre('${mesAnio}','${mesLabel}')"><span class="ic">⬇</span>Descargar PDF</button>`;
+    <button class="btn btn-secondary acc-btn" onclick="closeCierre()"><span class="ic">${ico('cerrar', 16)}</span>Cerrar</button>
+    ${puedeCompartir ? `<button class="btn btn-secondary acc-btn" onclick="descargarPDFCierre('${mesAnio}','${mesLabel}',true)"><span class="ic">${ico('compartir', 16)}</span>Compartir</button>` : ''}
+    <button class="btn btn-secondary acc-btn" onclick="guardarCierreDesdeVista()" title="Guarda o actualiza el cierre de este mes con los datos actuales"><span class="ic">${ico('guardar', 16)}</span>Guardar cierre</button>
+    <button class="btn btn-primary acc-btn" onclick="descargarPDFCierre('${mesAnio}','${mesLabel}')"><span class="ic">${ico('descargar', 16)}</span>Descargar PDF</button>`;
   document.getElementById('cierreBody').scrollTop = 0;
   document.getElementById('cierreOverlay').classList.add('open');
   try { await pintarCierre(); }
@@ -4103,11 +4200,23 @@ window.descargarPDFCierre = async function(mesAnio, mesLabel, compartir) {
           x.g.cot_id ? (x.g.cot_numero||'') : 'General', {t:$(x.monto), c:rojo, b:true}]));
     }
 
+    // Dinero por eventos del mes
+    titulo('Dinero por eventos del mes', 'Todo lo cobrado y gastado por los eventos de este mes, sin importar cuándo entró (solo informativo, no afecta los demás totales)');
+    {
+      const verPC = d.totalEv.por_cobrar > 0;
+      const fe = (n, x) => [n, {t:$(x.cobrado), c:verde}, {t:$(x.gastos), c:rojo}, ...(verPC ? [{t:$(x.por_cobrar), c:[217,119,6]}] : []), {t:$(x.neto), b:true, c: x.neto >= 0 ? morado : rojo}];
+      tabla([{t:'Cuenta',w:42},{t:'Cobrado',w:verPC ? 34 : 46,a:'r'},{t:'Gastos',w:verPC ? 34 : 46,a:'r'},...(verPC ? [{t:'Por cobrar',w:34,a:'r'}] : []),{t:'Neto',w:verPC ? 36 : 48,a:'r'}],
+        [...CUENTAS.map(k => fe(k, d.cuentasEv[k])), ...(sinAsignarTot(d.sinEv).n ? [fe('Sin asignar', { cobrado:sinAsignarTot(d.sinEv).ing, gastos:sinAsignarTot(d.sinEv).gas, por_cobrar:0, neto:sinAsignarTot(d.sinEv).neto })] : [])], fe('TOTAL', d.totalEv));
+      nota(entradoTxt(d.entradoEv, $).replace(/<[^>]+>/g, ''));
+      const avEv = avisoSinCuenta(d.sinEv);
+      if (avEv) nota(avEv);
+    }
+
     // Dinero por cuenta
     titulo('Dinero por cuenta', 'Saldo inicial + ingresos − gastos = lo que debería haber al cerrar el mes');
     const fc = (n, x) => [n, $(x.saldo_inicial), {t:$(x.recibido), c:verde}, {t:$(x.gastos), c:rojo}, {t:$(x.saldo_final), b:true, c: x.saldo_final >= 0 ? morado : rojo}];
     tabla([{t:'Cuenta',w:42},{t:'Saldo inicial',w:36,a:'r'},{t:'Ingresos',w:34,a:'r'},{t:'Gastos',w:34,a:'r'},{t:'Saldo final',w:36,a:'r'}],
-      CUENTAS.map(k => fc(k, d.cuentas[k])), fc('TOTAL', d.totalCuentas));
+      [...CUENTAS.map(k => fc(k, d.cuentas[k])), ...(sinAsignarTot(d.sin).n ? [['Sin asignar', '—', {t:$(sinAsignarTot(d.sin).ing), c:verde}, {t:$(sinAsignarTot(d.sin).gas), c:rojo}, {t:$(sinAsignarTot(d.sin).neto), b:true, c: sinAsignarTot(d.sin).neto >= 0 ? morado : rojo}]] : [])], fc('TOTAL', d.totalCuentas));
     const aviso = avisoSinCuenta(d.sin);
     if (aviso) nota(aviso);
 
@@ -4297,6 +4406,755 @@ window.saveFoto = async function(id) {
 // ============================================================
 // DASHBOARD
 // ============================================================
+// ============================================================
+// REGISTRO RÁPIDO (botón "+", atajos del ícono y sacudir)
+// Pensado para el celular: anotar un gasto o un abono de una cotización en pocos toques.
+//  - Gasto: monto, categoría, cuenta, fecha (Hoy/Ayer/otra), descripción y evento opcionales. Mismo formato que "Nuevo gasto".
+//  - Abono: se elige el evento con saldo pendiente y se anota monto + cuenta. El estado avanza igual que en la cotización
+//    (primer abono → Reservado; cubre el total → Pagada).
+//  - Deshacer durante unos segundos. Sin señal, se guarda en el teléfono (caché de Firestore) y se envía solo al volver.
+// Entradas: botón flotante, app.html?rapido=gasto|abono (atajos del ícono en Android) y sacudir (opcional, por teléfono).
+// ============================================================
+// Íconos de línea (mismo trazo que los del menú). ico('gasto') → <svg>
+const ICONOS = {
+  gasto: '<line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/>',
+  abono: '<line x1="17" y1="7" x2="7" y2="17"/><polyline points="16 17 7 17 7 8"/>',
+  cot: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+  cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  editar: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  borrar: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  mas: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  caja: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><polyline points="3 8 3 16 12 21 21 16 21 8"/><line x1="12" y1="13" x2="12" y2="21"/>',
+  billetera: '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>',
+  tendencia: '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  barras: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+  banco: '<line x1="3" y1="21" x2="21" y2="21"/><line x1="5" y1="18" x2="5" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="19" y1="18" x2="19" y2="11"/><polygon points="12 3 21 8 3 8"/>',
+  telefono: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+  correo: '<rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 6 12 13 2 6"/>',
+  lista: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
+  dinero: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  candado: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  reloj: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
+  alerta: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  engrane: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+  enlace: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  cerrar: '<path d="M18 6 6 18M6 6l12 12"/>',
+  compartir: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/>',
+  guardar: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+  descargar: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+};
+function ico(n, t = 18) { return `<svg class="ico" width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[n] || ''}</svg>`; }
+const CATS_GASTO = ['Mobiliario','Decoración','Comida','Transporte','Insumos','Ayudante','Gastos de casa','Devolución','Otro'];
+const QR_ESPERA_RED = 2500;   // si el servidor no confirma en este tiempo, se avisa que quedó guardado en el teléfono
+let qr = null;                // estado de la hoja abierta
+let qrGastosRecientes = null; // gastos de este mes y el anterior (para sugerir descripciones)
+
+const qrLeer = (k, def) => { try { return localStorage.getItem('qr_' + k) || def; } catch { return def; } };
+const qrGuardarPref = (k, v) => { try { localStorage.setItem('qr_' + k, v); } catch {} };
+const qrHoy = () => calHoyIso();
+// "1,500.50" / "1500,5" / "RD$ 2 000" → número (la coma de miles o decimal se interpreta como en RD)
+function qrNumero(txt) {
+  let s = String(txt || '').replace(/[^\d.,]/g, '');
+  if (!s) return 0;
+  if (s.includes('.') && s.includes(',')) s = s.replace(/,/g, '');
+  else if (s.includes(',')) s = /,\d{1,2}$/.test(s) ? s.replace(',', '.') : s.replace(/,/g, '');
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+}
+function qrFechaCorta(iso) {
+  if (!iso) return 'Sin fecha de evento';
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${DIAS_CORTO[new Date(y, m - 1, d).getDay()]} ${d} ${MESES_CORTO[m - 1]}${y !== new Date().getFullYear() ? ' ' + y : ''}`;
+}
+const qrSaldo = c => Math.max(0, Math.round(saldoSinAbonos(c) * 100) / 100);
+
+// Cotizaciones a las que se les puede abonar: no anuladas y con saldo. Primero los eventos más cercanos (de hoy en adelante),
+// luego los pasados que todavía deben, y al final las que no tienen fecha.
+function qrCotsAbono(texto) {
+  const hoy = qrHoy(), q = normalizarTexto(texto || '');
+  return (cotsVivas || [])
+    .filter(c => c.estado !== 'Anulada' && (c.total || 0) > 0 && qrSaldo(c) > 0.5)
+    .filter(c => !q || normalizarTexto([c.cliente_nombre, c.numero, c.tematica, c.festejado].join(' ')).includes(q))
+    .map(c => ({ c, f: fechaEventoISO(c) }))
+    .sort((a, b) => {
+      const ga = !a.f ? 2 : a.f >= hoy ? 0 : 1, gb = !b.f ? 2 : b.f >= hoy ? 0 : 1;
+      if (ga !== gb) return ga - gb;
+      return ga === 0 ? a.f.localeCompare(b.f) : (b.f || '').localeCompare(a.f || '');
+    })
+    .map(x => x.c);
+}
+// Eventos para vincular un gasto: no anulados, del último mes en adelante (y los que se busquen por nombre, de cualquier fecha)
+function qrCotsGasto(texto) {
+  const q = normalizarTexto(texto || '');
+  const d = new Date(); d.setDate(d.getDate() - 35);
+  const desde = dpIso(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  return (cotsVivas || [])
+    .filter(c => c.estado !== 'Anulada' && c.estado !== 'Cotización')
+    .filter(c => q ? normalizarTexto([c.cliente_nombre, c.numero, c.tematica, c.festejado].join(' ')).includes(q) : (fechaEventoISO(c) || '') >= desde)
+    .sort((a, b) => Math.abs(new Date(fechaEventoISO(a) || 0) - Date.now()) - Math.abs(new Date(fechaEventoISO(b) || 0) - Date.now()))
+    .slice(0, 40);
+}
+function qrFilaCot(c, conSaldo) {
+  const f = fechaEventoISO(c);
+  return `<button type="button" class="qr-cot" data-id="${c.id}" style="--c:${ESTADO_COLOR[c.estado] || '#9CA3AF'}">
+    <span class="qr-cot-fecha">${f ? `<b>${Number(f.slice(8, 10))}</b><small>${MESES_CORTO[Number(f.slice(5, 7)) - 1]}</small>` : '<small>s/f</small>'}</span>
+    <span class="qr-cot-info"><span class="qr-cot-cli">${escapeHtml(c.cliente_nombre || '—')}</span>
+      <span class="qr-cot-sub">${escapeHtml(qrFechaCorta(f))}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''}</span></span>
+    ${conSaldo ? `<span class="qr-cot-saldo"><small>Debe</small>${formatMoney(qrSaldo(c))}</span>` : ''}
+  </button>`;
+}
+// Lista desplegable de la hoja: un renglón con lo elegido; al tocarlo se abre la lista vertical
+const QR_FLECHA = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>';
+function qrLista(campo, opciones, sel, icono, vacio) {
+  const abierta = qr.abierta === campo;
+  return `<button type="button" class="qr-select${abierta ? ' abierta' : ''}${sel ? '' : ' vacia'}" data-abrir="${campo}" aria-expanded="${abierta}">${sel && icono ? icono(sel) : ''}<span class="qr-select-txt">${escapeHtml(sel || vacio)}</span>${QR_FLECHA}</button>
+    ${abierta ? `<div class="qr-opts" role="listbox">${opciones.map(o => `<button type="button" class="qr-opt${o === sel ? ' sel' : ''}" data-${campo}="${escapeHtml(o)}" role="option" aria-selected="${o === sel}">${icono ? icono(o) : ''}${escapeHtml(o)}${o === sel ? '<b>✓</b>' : ''}</button>`).join('')}</div>` : ''}`;
+}
+const qrIcoCuenta = c => `<span class="qr-select-ico"><i class="qr-dot" style="background:${CUENTA_COLOR[c] || '#9CA3AF'}"></i></span>`;
+const qrFechaHtml = () => `<input type="date" class="input qr-fecha" max="${qrHoy()}" value="${qr.fecha || qrHoy()}" required>`;
+
+// ── Abrir / cerrar la hoja ──
+function qrMontar() {
+  if (document.getElementById('qrSheet')) return;
+  const back = document.createElement('div');
+  back.id = 'qrBack'; back.className = 'qr-back';
+  back.addEventListener('click', () => qrCerrar());
+  const sh = document.createElement('div');
+  sh.id = 'qrSheet'; sh.className = 'qr-sheet'; sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true');
+  sh.addEventListener('click', qrClick);
+  sh.addEventListener('input', qrInput);
+  sh.addEventListener('change', qrInput);
+  document.body.append(back, sh);
+}
+window.qrAbrir = function(tipo) {
+  if (!currentUser) return;
+  qrMontar();
+  dpCerrar(); selCerrar(); closeSidebar();
+  eventosVivos();
+  qr = { paso: tipo === 'gasto' ? 'gasto' : tipo === 'abono' ? 'abono-lista' : 'elegir', busca: '' };
+  if (qr.paso === 'gasto') qrIniciarGasto();
+  document.getElementById('qrBack').classList.add('open');
+  document.getElementById('qrSheet').classList.add('open');
+  document.body.classList.add('qr-abierto');
+  qrPintar(true);
+  if (!history.state || !history.state.qr) history.pushState({ qr: 1 }, '');   // el botón "atrás" del teléfono cierra la hoja
+};
+window.qrCerrar = function(desdeAtras) {
+  if (!qr) return;
+  dpCerrar();
+  qr = null;
+  document.getElementById('qrBack')?.classList.remove('open');
+  document.getElementById('qrSheet')?.classList.remove('open');
+  document.body.classList.remove('qr-abierto');
+  if (!desdeAtras && history.state && history.state.qr) history.back();
+};
+window.addEventListener('popstate', () => {
+  if (!qr) return;
+  if (qr.paso === 'abono-monto') { qr.paso = 'abono-lista'; history.pushState({ qr: 1 }, ''); qrPintar(); return; }   // atrás: un paso
+  qrCerrar(true);
+});
+window.addEventListener('keydown', e => {
+  if (!qr) return;
+  if (e.key === 'Escape') qrCerrar();
+  if (e.key === 'Enter' && e.target.matches('.qr-monto-inp')) { e.preventDefault(); qrGuardar(); }
+});
+function qrIniciarGasto() {
+  Object.assign(qr, { paso: 'gasto', monto: '', cat: qrLeer('cat', 'Insumos'), cuenta: qrLeer('cuenta_gasto', ''), fecha: qrHoy(), desc: '', cotId: '', eligiendoCot: false });
+  if (!catsActivas().includes(qr.cat)) qr.cat = catsActivas()[0] || 'Otro';
+  if (qr.cuenta && !cuentasActivas().includes(qr.cuenta)) qr.cuenta = '';
+  if (!qrGastosRecientes) {
+    const d = new Date(), mA = `${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+    d.setMonth(d.getMonth() - 1);
+    const mB = `${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+    getDocs(query(collection(db, 'gastos'), where('mes_anio', 'in', [mA, mB])))
+      .then(s => { qrGastosRecientes = s.docs.map(x => x.data()); if (qr && qr.paso === 'gasto') qrPintarSugerencias(); })
+      .catch(() => { qrGastosRecientes = []; });
+  }
+}
+// Descripciones usadas antes en la categoría elegida (las más frecuentes primero)
+function qrSugerencias() {
+  const cuenta = {};
+  (qrGastosRecientes || []).filter(g => g.categoria === qr.cat && g.descripcion).forEach(g => {
+    const k = String(g.descripcion).trim(); cuenta[k] = (cuenta[k] || 0) + 1;
+  });
+  return Object.entries(cuenta).sort((a, b) => b[1] - a[1]).slice(0, 6).map(x => x[0]);
+}
+function qrPintarSugerencias() {
+  const el = document.getElementById('qrSug');
+  if (!el) return;
+  const s = qrSugerencias().filter(x => x !== qr.desc);
+  el.innerHTML = s.map(x => `<button type="button" class="qr-sug" data-sug="${escapeHtml(x)}">${escapeHtml(x)}</button>`).join('');
+}
+
+// ── Pintar ──
+function qrHtml() {
+  const cerrar = `<button type="button" class="qr-x" data-cerrar="1" aria-label="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
+  let html = '';
+
+  if (qr.paso === 'elegir') {
+    html = `<div class="qr-head"><div class="qr-titulo">¿Qué quieres anotar?</div>${cerrar}</div>
+      <div class="qr-body"><div class="qr-opciones">
+        <button type="button" class="qr-op gasto" data-ir="gasto"><span class="qr-op-ico">${ico('gasto', 26)}</span><span><b>Gasto</b><small>Salió dinero: compras, pagos, transporte…</small></span></button>
+        <button type="button" class="qr-op abono" data-ir="abono-lista"><span class="qr-op-ico">${ico('abono', 26)}</span><span><b>Abono de un evento</b><small>Entró dinero de una cotización</small></span></button>
+        <button type="button" class="qr-op cot" data-nueva-cot="1"><span class="qr-op-ico">${ico('cot', 24)}</span><span><b>Nueva cotización</b><small>Cliente, servicios y fecha del evento</small></span></button>
+      </div></div>`;
+  }
+
+  else if (qr.paso === 'gasto') {
+    const m = qrNumero(qr.monto);
+    const cot = qr.cotId ? (cotsVivas || []).find(c => c.id === qr.cotId) : null;
+    if (qr.eligiendoCot) {
+      const lista = qrCotsGasto(qr.busca);
+      html = `<div class="qr-head"><button type="button" class="qr-atras" data-cot-cancelar="1" aria-label="Volver">‹</button><div class="qr-titulo">¿De qué evento es el gasto?</div>${cerrar}</div>
+        <div class="qr-buscar"><input class="input qr-buscar-inp" placeholder="Buscar cliente, temática, número…" value="${escapeHtml(qr.busca)}" autocomplete="off"></div>
+        <div class="qr-body qr-lista" id="qrLista">${lista.length ? lista.map(c => qrFilaCot(c, false)).join('') : '<div class="qr-vacio">No hay eventos que coincidan</div>'}</div>`;
+    } else {
+      html = `<div class="qr-head"><div class="qr-titulo"><span class="qr-tag gasto">Gasto</span></div>${cerrar}</div>
+        <div class="qr-body">
+          <label class="qr-monto gasto"><span>RD$</span><input class="qr-monto-inp" inputmode="decimal" enterkeyhint="done" placeholder="0" value="${escapeHtml(qr.monto)}" autocomplete="off" aria-label="Monto del gasto"></label>
+          <div class="qr-lbl">Categoría</div>
+          ${qrLista('cat', catsActivas(qr.cat), qr.cat, null, 'Elige la categoría')}
+          <div class="qr-lbl">¿De qué cuenta salió?</div>
+          ${qrLista('cuenta', cuentasActivas(qr.cuenta), qr.cuenta, qrIcoCuenta, 'Elige la cuenta')}
+          <div class="qr-lbl">Fecha</div>
+          ${qrFechaHtml()}
+          <div class="qr-lbl">Descripción <small>(opcional)</small></div>
+          <input class="input qr-desc" placeholder="${escapeHtml(qr.cat)}" value="${escapeHtml(qr.desc)}" maxlength="120" autocomplete="off">
+          <div class="qr-sugs" id="qrSug"></div>
+          <div class="qr-lbl">Evento <small>(opcional)</small></div>
+          ${cot ? `<div class="qr-cot-elegida">${qrFilaCot(cot, false)}<button type="button" class="qr-quitar" data-cot-quitar="1" aria-label="Quitar evento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>`
+                : `<button type="button" class="qr-vincular" data-cot-elegir="1">${ico('cal', 16)} Vincular a un evento</button>`}
+        </div>
+        <div class="qr-foot"><button type="button" class="btn btn-primary qr-guardar gasto" data-guardar="1"${m > 0 && qr.cuenta ? '' : ' disabled'}>${m > 0 ? 'Guardar gasto · ' + formatMoney(m) : 'Escribe el monto'}</button>
+          ${m > 0 && !qr.cuenta ? '<div class="qr-falta">Elige de qué cuenta salió</div>' : ''}</div>`;
+    }
+  }
+
+  else if (qr.paso === 'abono-lista') {
+    const lista = qrCotsAbono(qr.busca);
+    html = `<div class="qr-head">${qr.desdeElegir ? '<button type="button" class="qr-atras" data-ir="elegir" aria-label="Volver">‹</button>' : ''}<div class="qr-titulo"><span class="qr-tag abono">Abono</span> ¿De qué evento?</div>${cerrar}</div>
+      <div class="qr-buscar"><input class="input qr-buscar-inp" placeholder="Buscar cliente, temática, número…" value="${escapeHtml(qr.busca)}" autocomplete="off"></div>
+      <div class="qr-body qr-lista" id="qrLista">${!cotsVivas ? '<div class="loading-page"><div class="spinner"></div></div>'
+        : lista.length ? lista.map(c => qrFilaCot(c, true)).join('') : `<div class="qr-vacio">${qr.busca ? 'Ningún evento con saldo coincide con la búsqueda' : 'No hay eventos con saldo pendiente'}</div>`}</div>`;
+  }
+
+  else if (qr.paso === 'abono-monto') {
+    const c = (cotsVivas || []).find(x => x.id === qr.cotId);
+    if (!c) { qr.paso = 'abono-lista'; return qrHtml(); }
+    const saldo = qrSaldo(c), m = qrNumero(qr.monto), f = fechaEventoISO(c);
+    const abonado = abonosDe(c).reduce((s, a) => s + a.monto, 0);
+    html = `<div class="qr-head"><button type="button" class="qr-atras" data-ir="abono-lista" aria-label="Volver">‹</button><div class="qr-titulo"><span class="qr-tag abono">Abono</span></div>${cerrar}</div>
+      <div class="qr-body">
+        <div class="qr-evento" style="--c:${ESTADO_COLOR[c.estado] || '#9CA3AF'}">
+          <div class="qr-evento-cli">${escapeHtml(c.cliente_nombre || '—')}</div>
+          <div class="qr-evento-sub">${f ? escapeHtml(calFechaLarga(f)) : 'Sin fecha de evento'}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''} · ${escapeHtml(c.numero || '')}</div>
+          <div class="qr-evento-nums"><span>Total<b>${formatMoney(c.total)}</b></span><span>Abonado<b>${formatMoney(abonado)}</b></span><span class="debe">Debe<b>${formatMoney(saldo)}</b></span></div>
+        </div>
+        <label class="qr-monto abono"><span>RD$</span><input class="qr-monto-inp" inputmode="decimal" enterkeyhint="done" placeholder="0" value="${escapeHtml(qr.monto)}" autocomplete="off" aria-label="Monto del abono"></label>
+        <div class="qr-chips qr-rapidos">
+          <button type="button" class="qr-chip" data-monto="${saldo}">Todo lo que debe · ${formatMoney(saldo)}</button>
+          ${saldo >= 2 ? `<button type="button" class="qr-chip" data-monto="${Math.round(saldo / 2)}">La mitad · ${formatMoney(Math.round(saldo / 2))}</button>` : ''}
+        </div>
+        ${m > saldo + 0.5 ? `<div class="qr-aviso">${ico('alerta', 14)}Es más de lo que debe (${formatMoney(saldo)}). Revisa el monto.</div>` : ''}
+        <div class="qr-lbl">¿En qué cuenta entró?</div>
+        ${qrLista('cuenta', cuentasActivas(qr.cuenta), qr.cuenta, qrIcoCuenta, 'Elige la cuenta')}
+        <div class="qr-lbl">Fecha del pago</div>
+        ${qrFechaHtml()}
+      </div>
+      <div class="qr-foot"><button type="button" class="btn btn-primary qr-guardar abono" data-guardar="1"${m > 0 && qr.cuenta ? '' : ' disabled'}>${m > 0 ? 'Guardar abono · ' + formatMoney(m) : 'Escribe el monto'}</button>
+        ${m > 0 && !qr.cuenta ? '<div class="qr-falta">Elige en qué cuenta entró</div>' : ''}</div>`;
+  }
+
+  return html;
+}
+function qrPintar(enfocar) {
+  const sh = document.getElementById('qrSheet');
+  if (!sh || !qr) return;
+  const html = qrHtml();
+  sh.dataset.paso = qr.paso + (qr.eligiendoCot ? '-cot' : '');
+  sh.innerHTML = html;
+  const fe = sh.querySelector('.qr-fecha');   // el mismo calendario de fechas del resto de Kayra
+  if (fe) { dpMejorar(fe); fe.addEventListener('change', () => { if (fe.value) qr.fecha = fe.value > qrHoy() ? qrHoy() : fe.value; }); }
+  if (qr.paso === 'gasto' && !qr.eligiendoCot) qrPintarSugerencias();
+  // En el celular el teclado NO se abre solo: sale cuando se toca el monto. En PC (sin teclado en pantalla) sí se pone el cursor.
+  if (enfocar && !matchMedia('(pointer: coarse)').matches) {
+    const foco = sh.querySelector('.qr-monto-inp') || (window.innerWidth > 768 ? sh.querySelector('.qr-buscar-inp') : null);
+    if (foco) { foco.focus({ preventScroll: true }); const n = foco.value.length; try { foco.setSelectionRange(n, n); } catch {} }
+  }
+}
+// Repinta sin perder el foco ni lo escrito (solo el botón Guardar y avisos dependen del monto)
+function qrRefrescarPie() {
+  const sh = document.getElementById('qrSheet');
+  if (!sh || !qr) return;
+  const viejo = sh.querySelector('.qr-foot'), aviso = sh.querySelector('.qr-aviso');
+  const tmp = document.createElement('div');
+  tmp.innerHTML = qrHtml();
+  const nuevo = tmp.querySelector('.qr-foot');
+  if (viejo && nuevo) viejo.replaceWith(nuevo);
+  const nuevoAviso = tmp.querySelector('.qr-aviso');
+  if (aviso && !nuevoAviso) aviso.remove();
+  else if (!aviso && nuevoAviso) sh.querySelector('.qr-rapidos')?.insertAdjacentElement('afterend', nuevoAviso);
+  else if (aviso && nuevoAviso) aviso.replaceWith(nuevoAviso);
+}
+window.qrAlCambiarCots = function() {
+  if (!qr) return;
+  if (qr.paso === 'abono-lista' || qr.eligiendoCot) {
+    const l = document.getElementById('qrLista'); if (!l) return;
+    const st = l.scrollTop;
+    const lista = qr.paso === 'abono-lista' ? qrCotsAbono(qr.busca) : qrCotsGasto(qr.busca);
+    l.innerHTML = lista.length ? lista.map(c => qrFilaCot(c, qr.paso === 'abono-lista')).join('') : '<div class="qr-vacio">No hay eventos que coincidan</div>';
+    l.scrollTop = st;
+  }
+};
+
+// ── Interacción ──
+function qrClick(e) {
+  const t = e.target.closest('button');
+  if (!t || !qr) return;
+  const d = t.dataset;
+  if (d.cerrar) return qrCerrar();
+  if (d.nuevaCot) { qrCerrar(); setTimeout(() => openNuevaCotizacion(), 220); return; }
+  if (d.ir) {
+    if (d.ir === 'gasto') { qrIniciarGasto(); }
+    else if (d.ir === 'abono-lista') { if (qr.paso === 'elegir') qr.desdeElegir = true; qr.busca = ''; qr.paso = 'abono-lista'; }
+    else qr.paso = d.ir;
+    return qrPintar(d.ir === 'gasto');
+  }
+  if (t.classList.contains('qr-cot') && d.id) {
+    if (qr.paso === 'abono-lista') {
+      Object.assign(qr, { paso: 'abono-monto', cotId: d.id, monto: '', cuenta: qrLeer('cuenta_abono', ''), fecha: qrHoy() });
+      if (qr.cuenta && !cuentasActivas().includes(qr.cuenta)) qr.cuenta = '';
+      return qrPintar(true);
+    }
+    if (qr.eligiendoCot) { qr.cotId = d.id; qr.eligiendoCot = false; qr.busca = ''; return qrPintar(); }
+    return;
+  }
+  if (d.abrir) { qr.abierta = qr.abierta === d.abrir ? '' : d.abrir; return qrPintar(); }
+  if (d.cat) { qr.cat = d.cat; qr.abierta = ''; return qrPintar(); }
+  if (d.cuenta) { qr.cuenta = d.cuenta; qr.abierta = ''; return qrPintar(); }
+  if (d.monto) { qr.monto = String(d.monto); const i = document.querySelector('#qrSheet .qr-monto-inp'); if (i) i.value = qr.monto; return qrRefrescarPie(); }
+  if (d.sug) { qr.desc = d.sug; const i = document.querySelector('#qrSheet .qr-desc'); if (i) i.value = d.sug; return qrPintarSugerencias(); }
+  if (d.cotElegir) { qr.eligiendoCot = true; qr.busca = ''; return qrPintar(); }
+  if (d.cotCancelar) { qr.eligiendoCot = false; qr.busca = ''; return qrPintar(); }
+  if (d.cotQuitar) { qr.cotId = ''; return qrPintar(); }
+  if (d.guardar) return qrGuardar();
+}
+function qrInput(e) {
+  if (!qr) return;
+  const el = e.target;
+  if (el.matches('.qr-monto-inp')) {
+    const limpio = el.value.replace(/[^\d.,]/g, '');
+    if (limpio !== el.value) el.value = limpio;
+    qr.monto = limpio;
+    qrRefrescarPie();
+  } else if (el.matches('.qr-desc')) {
+    qr.desc = el.value;
+  } else if (el.matches('.qr-buscar-inp') && e.type === 'input') {
+    qr.busca = el.value;
+    qrAlCambiarCots();
+  }
+}
+
+// ── Guardar, deshacer y avisos ──
+// Espera la confirmación del servidor un rato; si no llega (sin señal), Firestore ya lo dejó guardado en el teléfono.
+const qrConEspera = p => Promise.race([p.then(() => 'ok'), new Promise(r => setTimeout(() => r('local'), QR_ESPERA_RED))]);
+function qrRefrescarVista() {
+  const activa = document.querySelector('.page.active')?.id || '';
+  if (activa === 'page-dashboard') loadDashboard();
+  if (activa === 'page-gastos') loadGastos();
+  if (activa === 'page-cotizaciones') loadCotizaciones();
+  if (activa === 'page-cuentas') loadCuentas();
+  refrescarCierreAbierto();
+}
+let qrSnackTimer = null;
+function qrSnack(titulo, detalle, deshacer, tipo) {
+  let s = document.getElementById('qrSnack');
+  if (!s) { s = document.createElement('div'); s.id = 'qrSnack'; s.className = 'qr-snack'; document.body.appendChild(s); }
+  s.className = 'qr-snack ' + (tipo || 'ok');
+  s.innerHTML = `<div class="qr-snack-txt"><b>${titulo}</b>${detalle ? `<span>${detalle}</span>` : ''}</div>${deshacer ? '<button type="button" class="qr-snack-btn">Deshacer</button>' : ''}`;
+  if (deshacer) s.querySelector('button').onclick = () => { clearTimeout(qrSnackTimer); s.classList.remove('ver'); deshacer(); };
+  requestAnimationFrame(() => s.classList.add('ver'));
+  clearTimeout(qrSnackTimer);
+  qrSnackTimer = setTimeout(() => s.classList.remove('ver'), deshacer ? 12000 : 4000);
+}
+
+let qrGuardando = false;
+window.qrGuardar = async function() {
+  if (!qr || qrGuardando) return;
+  const monto = qrNumero(qr.monto);
+  if (!(monto > 0)) { toast('Escribe el monto', 'error'); return; }
+  if (!qr.cuenta) { toast(qr.paso === 'gasto' ? 'Elige de qué cuenta salió' : 'Elige en qué cuenta entró', 'error'); return; }
+  qrGuardando = true;
+  const btn = document.querySelector('#qrSheet .qr-guardar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+  try {
+    if (qr.paso === 'gasto') await qrGuardarGasto(monto);
+    else if (qr.paso === 'abono-monto') await qrGuardarAbono(monto);
+  } catch (e) {
+    console.error(e);
+    toast('No se pudo guardar: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
+  } finally { qrGuardando = false; }
+};
+
+async function qrGuardarGasto(monto) {
+  const s = { ...qr };
+  const cot = s.cotId ? (cotsVivas || []).find(c => c.id === s.cotId) : null;
+  const [y, m] = s.fecha.split('-');
+  const desc = (s.desc || '').trim() || s.cat;
+  const data = {
+    descripcion: desc, monto, fecha: s.fecha, categoria: s.cat, cuenta: s.cuenta,
+    mes_anio: `${m}-${y}`,
+    mes_anio_evento: cot ? mesEventoDe(cot) : `${m}-${y}`,
+    cot_id: cot ? cot.id : '', cot_numero: cot?.numero || '', cot_cliente: cot?.cliente_nombre || '',
+    origen: 'rapido',
+    creado_en: serverTimestamp(),
+  };
+  const ref = doc(collection(db, 'gastos'));   // id creado en el teléfono: sirve para deshacer aunque no haya señal
+  const r = await qrConEspera(setDoc(ref, data));
+  qrGuardarPref('cat', s.cat); qrGuardarPref('cuenta_gasto', s.cuenta);
+  (qrGastosRecientes = qrGastosRecientes || []).push(data);
+  logAccion('Creó', 'Gasto', `${desc} · ${formatMoney(monto)}${cot ? ' · ' + cot.numero : ''} · registro rápido`);
+  qrCerrar();
+  qrSnack(r === 'ok' ? 'Gasto guardado ✓' : 'Guardado en el teléfono',
+    r === 'ok' ? `${escapeHtml(desc)} · ${formatMoney(monto)} · ${s.cuenta}` : 'Sin señal: se enviará solo cuando vuelva la conexión',
+    async () => {
+      try { await qrConEspera(deleteDoc(ref)); logAccion('Eliminó', 'Gasto', `${desc} · ${formatMoney(monto)} · deshecho en registro rápido`); toast('Gasto deshecho', 'info'); qrRefrescarVista(); }
+      catch (e) { toast('No se pudo deshacer: ' + e.message, 'error'); }
+    }, r === 'ok' ? 'ok' : 'local');
+  qrRefrescarVista();
+}
+
+async function qrGuardarAbono(monto) {
+  const s = { ...qr };
+  const c = (cotsVivas || []).find(x => x.id === s.cotId);
+  if (!c) throw new Error('No se encontró la cotización');
+  const antes = { abonos: Array.isArray(c.abonos) ? c.abonos : [], abono: c.abono || 0, estado: c.estado };
+  const abonos = [...abonosDe(c), { fecha: s.fecha, monto, cuenta: s.cuenta }];
+  const suma = abonos.reduce((t, a) => t + a.monto, 0);
+  let estado = c.estado;
+  if (suma > 0 && estado === 'Cotización') estado = 'Reservado';
+  if ((c.total || 0) > 0 && suma >= c.total - 0.5 && estado !== 'Realizado' && estado !== 'Anulada') estado = 'Pagada';
+  const ref = doc(db, 'cotizaciones', c.id);
+  const r = await qrConEspera(updateDoc(ref, { abonos, abono: suma, estado, actualizado_en: serverTimestamp() }));
+  qrGuardarPref('cuenta_abono', s.cuenta);
+  const cambios = [{ campo: 'Abonos', antes: formatMoney(antes.abono), despues: `${formatMoney(suma)} (+${formatMoney(monto)} ${s.cuenta}, ${fmtF(s.fecha)})` }];
+  if (estado !== c.estado) cambios.push({ campo: 'Estado', antes: c.estado, despues: estado });
+  logAccion('Editó', 'Cotización', `${c.numero || ''} · ${c.cliente_nombre || ''} · abono ${formatMoney(monto)} · registro rápido`, null, cambios);
+  qrCerrar();
+  const restante = Math.max(0, (c.total || 0) - suma);
+  qrSnack(r === 'ok' ? 'Abono guardado ✓' : 'Guardado en el teléfono',
+    r === 'ok' ? `${escapeHtml(c.cliente_nombre || '')} · ${formatMoney(monto)} · ${restante > 0.5 ? 'debe ' + formatMoney(restante) : '¡quedó saldado!'}${estado !== c.estado ? ' · ahora ' + estado : ''}`
+               : 'Sin señal: se enviará solo cuando vuelva la conexión',
+    async () => {
+      try {
+        await qrConEspera(updateDoc(ref, { ...antes, actualizado_en: serverTimestamp() }));
+        logAccion('Editó', 'Cotización', `${c.numero || ''} · ${c.cliente_nombre || ''} · se deshizo el abono de ${formatMoney(monto)} (registro rápido)`);
+        toast('Abono deshecho', 'info'); qrRefrescarVista();
+      } catch (e) { toast('No se pudo deshacer: ' + e.message, 'error'); }
+    }, r === 'ok' ? 'ok' : 'local');
+  qrRefrescarVista();
+}
+
+// ── Sacudir el teléfono para anotar (opcional, se activa por teléfono en Configuración) ──
+// Mismo criterio que Chele Pop: picos de fuerza (en g, sin la gravedad) separados 130 ms; 3 en 1,2 s (2 con sensibilidad alta).
+// En una web solo funciona con la app abierta en pantalla.
+const QR_SACUDIR = { alta: [0.5, 2], normal: [1.5, 3], baja: [3.0, 3] };
+let qrSac = { picos: [], ultPico: 0, ultDisparo: 0 };
+function qrMovimiento(e) {
+  const a = e.accelerationIncludingGravity;
+  if (!a || a.x == null) return;
+  const [umbral, necesarios] = QR_SACUDIR[qrLeer('sacudir_sens', 'normal')] || QR_SACUDIR.normal;
+  const g = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z) / 9.81;
+  const ahora = Date.now();
+  if (Math.abs(g - 1) < umbral || ahora - qrSac.ultPico < 130) return;
+  qrSac.ultPico = ahora;
+  qrSac.picos = qrSac.picos.filter(t => ahora - t <= 1200);
+  qrSac.picos.push(ahora);
+  if (qrSac.picos.length < necesarios || ahora - qrSac.ultDisparo < 2500) return;
+  qrSac.picos = []; qrSac.ultDisparo = ahora;
+  if (qr || document.visibilityState !== 'visible' || document.querySelector('.modal-overlay.open, #cotModal.open')) return;
+  try { navigator.vibrate && navigator.vibrate(40); } catch {}
+  qrAbrir();
+}
+function qrSacudirAplicar() {
+  window.removeEventListener('devicemotion', qrMovimiento);
+  if (qrLeer('sacudir', '0') === '1') window.addEventListener('devicemotion', qrMovimiento);
+}
+window.qrSacudirCambiar = async function(activo) {
+  if (activo && typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    try { if (await DeviceMotionEvent.requestPermission() !== 'granted') activo = false; } catch { activo = false; }   // iPhone pide permiso
+  }
+  qrGuardarPref('sacudir', activo ? '1' : '0');
+  qrSacudirAplicar();
+  qrPintarAjustes();
+  toast(activo ? 'Listo: sacude el teléfono para anotar' : 'Sacudir desactivado', 'info');
+};
+window.qrSensCambiar = function(v) { qrGuardarPref('sacudir_sens', v); qrPintarAjustes(); };
+function qrPintarAjustes() {
+  const el = document.getElementById('qrAjustes');
+  if (!el) return;
+  const on = qrLeer('sacudir', '0') === '1', sens = qrLeer('sacudir_sens', 'normal');
+  const hay = typeof DeviceMotionEvent !== 'undefined';
+  el.innerHTML = `
+    <label class="qr-switch"><input type="checkbox" ${on ? 'checked' : ''} ${hay ? '' : 'disabled'} onchange="qrSacudirCambiar(this.checked)"><span></span>
+      <b>Sacudir el teléfono para anotar</b></label>
+    <p class="qr-ajuste-nota">${hay ? 'Funciona con la app abierta en pantalla. Se guarda solo en este teléfono.' : 'Este dispositivo no tiene sensor de movimiento.'}</p>
+    ${on ? `<div class="qr-lbl" style="margin-top:10px">Sensibilidad</div><div class="qr-chips">${[['baja', 'Sacudida fuerte'], ['normal', 'Normal'], ['alta', 'Movimiento corto']].map(([v, t]) =>
+      `<button type="button" class="qr-chip${v === sens ? ' sel' : ''}" onclick="qrSensCambiar('${v}')">${t}</button>`).join('')}</div>` : ''}`;
+}
+
+// Con el teclado abierto en el celular, la hoja se sube encima de él para que "Guardar" siempre se vea
+function qrAjustarTeclado() {
+  const sh = document.getElementById('qrSheet'), vv = window.visualViewport;
+  if (!sh || !vv) return;
+  if (window.innerWidth > 768) { sh.style.bottom = ''; sh.style.maxHeight = ''; return; }
+  const tapado = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+  sh.style.bottom = tapado + 'px';
+  sh.style.maxHeight = Math.round(vv.height * 0.94) + 'px';
+}
+if (window.visualViewport) { visualViewport.addEventListener('resize', qrAjustarTeclado); visualViewport.addEventListener('scroll', qrAjustarTeclado); }
+
+// Arranque: botón flotante, atajos del ícono (?rapido=gasto|abono) y sacudir
+function qrIniciar() {
+  if (!document.getElementById('qrFab')) {
+    const fab = document.createElement('button');
+    fab.id = 'qrFab'; fab.type = 'button'; fab.className = 'qr-fab';
+    fab.setAttribute('aria-label', 'Anotar gasto o abono'); fab.title = 'Anotar gasto o abono';
+    fab.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+    fab.addEventListener('click', () => qrAbrir());
+    document.body.appendChild(fab);
+  }
+  qrSacudirAplicar();
+  qrPintarAjustes();
+  const p = new URLSearchParams(location.search).get('rapido');
+  if (p) {
+    history.replaceState(null, '', location.pathname);   // que al recargar no se vuelva a abrir
+    qrAbrir(p === 'gasto' || p === 'abono' ? p : undefined);
+  }
+}
+
+// ============================================================
+// CUENTAS Y CATEGORÍAS DE GASTOS EDITABLES (Configuración)
+// Se guardan en config/listas. Al cargar, se aplican sobre CUENTAS / CUENTA_COLOR / CATS_GASTO,
+// así el resto del sistema (saldos, cierres, filtros) las usa sin más cambios.
+//  - Deshabilitada: no sale para anotar cosas nuevas, pero su historial y saldos se siguen viendo.
+//  - Renombrar: se actualizan los registros que la usan (gastos, abonos, cuenta de cobro y los cierres guardados).
+//  - Borrar: si tiene movimientos, primero se pasan a otra; así nada queda "Sin asignar".
+// ============================================================
+const PALETA_CUENTA = ['#6B7280','#2E9E4F','#1D4E9E','#E6B800','#DC2626','#7C3AED','#EA580C','#0891B2','#DB2777','#78350F'];
+let listas = null;   // { cuentas:[{nombre,color,activa}], categorias:[{nombre,emoji,activa}] }
+let listasUsos = null; // { cuentas:{nombre:n}, categorias:{nombre:n} }
+
+function listasPorDefecto() {
+  return {
+    cuentas: ['Efectivo','BHD','Banreservas','Caribe'].map(n => ({ nombre: n, color: CUENTA_COLOR[n] || '#6B7280', activa: true })),
+    categorias: CATS_GASTO.map(n => ({ nombre: n, activa: true })),
+  };
+}
+function aplicarListas() {
+  CUENTAS.splice(0, CUENTAS.length, ...listas.cuentas.map(c => c.nombre));
+  Object.keys(CUENTA_COLOR).forEach(k => delete CUENTA_COLOR[k]);
+  listas.cuentas.forEach(c => { CUENTA_COLOR[c.nombre] = c.color; });
+  CATS_GASTO.splice(0, CATS_GASTO.length, ...listas.categorias.map(c => c.nombre));
+}
+async function cargarListas() {
+  listas = listasPorDefecto();
+  try {
+    const s = await getDoc(doc(db, 'config', 'listas'));
+    if (s.exists()) {
+      const d = s.data();
+      if (Array.isArray(d.cuentas) && d.cuentas.length) listas.cuentas = d.cuentas;
+      if (Array.isArray(d.categorias) && d.categorias.length) listas.categorias = d.categorias;
+    }
+  } catch (e) { console.warn('No se pudieron leer las cuentas/categorías:', e); }
+  aplicarListas();
+}
+async function guardarListas() {
+  aplicarListas();
+  await setDoc(doc(db, 'config', 'listas'), { cuentas: listas.cuentas, categorias: listas.categorias, actualizado_en: serverTimestamp() });
+}
+// Para los selectores: solo las activas (y la que ya tenga el registro que se edita, aunque esté deshabilitada)
+function cuentasActivas(sel) {
+  const l = (listas ? listas.cuentas.filter(c => c.activa !== false).map(c => c.nombre) : [...CUENTAS]);
+  return sel && !l.includes(sel) && CUENTAS.includes(sel) ? [...l, sel] : l;
+}
+function catsActivas(sel) {
+  const l = (listas ? listas.categorias.filter(c => c.activa !== false).map(c => c.nombre) : [...CATS_GASTO]);
+  return sel && !l.includes(sel) ? [...l, sel] : l;
+}
+
+// ── Cuántos registros usan cada cuenta / categoría ──
+async function contarUsos() {
+  const [gs, cs] = await Promise.all([getDocs(collection(db, 'gastos')), getDocs(collection(db, 'cotizaciones'))]);
+  const u = { cuentas: {}, categorias: {} };
+  const mas = (o, k) => { if (k) o[k] = (o[k] || 0) + 1; };
+  gs.docs.forEach(d => { const g = d.data(); mas(u.cuentas, g.cuenta); mas(u.categorias, g.categoria); });
+  cs.docs.forEach(d => {
+    const c = d.data();
+    const set = new Set((Array.isArray(c.abonos) ? c.abonos : []).map(a => a.cuenta).filter(Boolean));
+    if (c.cuenta_cobro) set.add(c.cuenta_cobro);
+    set.forEach(k => mas(u.cuentas, k));
+  });
+  listasUsos = u;
+  return u;
+}
+
+// ── Pasar los registros de una cuenta/categoría a otra (renombrar o borrar) ──
+const sumarCampos = (a, b) => { const r = { ...a }; Object.keys(b || {}).forEach(k => { r[k] = typeof b[k] === 'number' ? (Number(r[k]) || 0) + b[k] : (r[k] ?? b[k]); }); return r; };
+async function enLotes(tareas, n = 15) { for (let i = 0; i < tareas.length; i += n) await Promise.all(tareas.slice(i, i + n).map(f => f())); }
+async function migrarCuenta(vieja, nueva) {
+  const tareas = [];
+  const gs = await getDocs(query(collection(db, 'gastos'), where('cuenta', '==', vieja)));
+  gs.docs.forEach(d => tareas.push(() => updateDoc(d.ref, { cuenta: nueva })));
+  const cs = await getDocs(collection(db, 'cotizaciones'));
+  cs.docs.forEach(d => {
+    const c = d.data(), ab = Array.isArray(c.abonos) ? c.abonos : [];
+    if (!ab.some(a => a.cuenta === vieja) && c.cuenta_cobro !== vieja) return;
+    const cambio = { abonos: ab.map(a => a.cuenta === vieja ? { ...a, cuenta: nueva } : a) };
+    if (c.cuenta_cobro === vieja) cambio.cuenta_cobro = nueva;
+    tareas.push(() => updateDoc(d.ref, cambio));
+  });
+  // Cierres ya guardados: sus totales por cuenta pasan a la cuenta nueva (si ya existía, se suman)
+  const ci = await getDocs(collection(db, 'cierres'));
+  ci.docs.forEach(d => {
+    const x = d.data(), cambio = {};
+    ['por_cuenta', 'por_cuenta_eventos'].forEach(campo => {
+      const m = x[campo];
+      if (!m || !m[vieja]) return;
+      const nm = { ...m }; const v = nm[vieja]; delete nm[vieja];
+      nm[nueva] = nm[nueva] ? sumarCampos(nm[nueva], v) : v;
+      cambio[campo] = nm;
+    });
+    if (Object.keys(cambio).length) tareas.push(() => updateDoc(d.ref, cambio));
+  });
+  await enLotes(tareas);
+  return tareas.length;
+}
+async function migrarCategoria(vieja, nueva) {
+  const gs = await getDocs(query(collection(db, 'gastos'), where('categoria', '==', vieja)));
+  await enLotes(gs.docs.map(d => () => updateDoc(d.ref, { categoria: nueva })));
+  return gs.size;
+}
+
+// ── Pantalla en Configuración ──
+async function pintarListasCfg(recontar) {
+  const el = document.getElementById('listasCfg');
+  if (!el || !listas) return;
+  const fila = (tipo, x, i) => {
+    const n = listasUsos ? (listasUsos[tipo][x.nombre] || 0) : null;
+    const icoFila = tipo === 'cuentas' ? `<i class="lc-dot" style="background:${x.color}"></i>` : '';
+    return `<div class="lc-fila${x.activa === false ? ' off' : ''}">
+      ${icoFila}<div class="lc-nom"><b>${escapeHtml(x.nombre)}</b><small>${n === null ? '…' : n === 0 ? 'Sin movimientos' : n === 1 ? '1 movimiento' : n + ' movimientos'}${x.activa === false ? ' · <span class="lc-tag">Deshabilitada</span>' : ''}</small></div>
+      <div class="lc-acc">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="listaEditar('${tipo}',${i})" title="Editar" aria-label="Editar">${ico('editar', 17)}</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="listaActivar('${tipo}',${i})">${x.activa === false ? 'Habilitar' : 'Deshabilitar'}</button>
+        <button type="button" class="btn btn-ghost btn-sm lc-borrar" onclick="listaBorrar('${tipo}',${i})" title="Borrar" aria-label="Borrar">${ico('borrar', 17)}</button>
+      </div></div>`;
+  };
+  el.innerHTML = `
+    <div class="lc-sec"><div class="lc-tit">Cuentas de dinero</div>${listas.cuentas.map((x, i) => fila('cuentas', x, i)).join('')}
+      <button type="button" class="btn btn-secondary btn-sm lc-add" onclick="listaEditar('cuentas',-1)">+ Agregar cuenta</button></div>
+    <div class="lc-sec"><div class="lc-tit">Categorías de gastos</div>${listas.categorias.map((x, i) => fila('categorias', x, i)).join('')}
+      <button type="button" class="btn btn-secondary btn-sm lc-add" onclick="listaEditar('categorias',-1)">+ Agregar categoría</button></div>`;
+  if (recontar || !listasUsos) { try { await contarUsos(); pintarListasCfg(false); } catch (e) { console.warn('No se pudo contar el uso:', e); } }
+}
+const listaNombre = t => t === 'cuentas' ? 'cuenta' : 'categoría';
+function abrirModalLista(titulo, cuerpo, pie) {
+  document.getElementById('modalTitle').textContent = titulo;
+  document.getElementById('modalBody').innerHTML = cuerpo;
+  document.getElementById('modalFooter').innerHTML = pie;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+window.listaEditar = function(tipo, i) {
+  const x = i >= 0 ? listas[tipo][i] : null;
+  const esCuenta = tipo === 'cuentas';
+  const usos = x && listasUsos ? (listasUsos[tipo][x.nombre] || 0) : 0;
+  const color = x?.color || PALETA_CUENTA.find(p => !listas.cuentas.some(c => c.color === p)) || PALETA_CUENTA[0];
+  abrirModalLista(x ? `Editar ${listaNombre(tipo)}` : `Nueva ${listaNombre(tipo)}`, `
+    <div class="form-group"><label>Nombre</label>
+      <input class="input" id="lcNombre" value="${escapeHtml(x?.nombre || '')}" maxlength="30" placeholder="${esCuenta ? 'Ej.: Popular' : 'Ej.: Publicidad'}" autocomplete="off"></div>
+    ${esCuenta
+      ? `<div class="form-group"><label>Color</label><div class="lc-paleta">${PALETA_CUENTA.map(c => `<button type="button" class="lc-sw${c === color ? ' sel' : ''}" data-c="${c}" style="background:${c}" onclick="document.querySelectorAll('.lc-sw').forEach(b=>b.classList.toggle('sel',b===this))" aria-label="Color ${c}"></button>`).join('')}</div></div>`
+      : ''}
+    ${x && usos ? `<p class="lc-nota">Si cambias el nombre, sus ${usos} movimiento(s) pasan al nombre nuevo.</p>` : ''}`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="lcGuardar" onclick="listaGuardar('${tipo}',${i})">Guardar</button>`);
+  setTimeout(() => document.getElementById('lcNombre')?.focus(), 50);
+};
+window.listaGuardar = unaVez(async function(tipo, i) {
+  const nombre = document.getElementById('lcNombre').value.trim().replace(/\s+/g, ' ');
+  if (!nombre) { toast('Escribe el nombre', 'error'); return; }
+  if (/['"<>\\]/.test(nombre)) { toast('El nombre no puede llevar comillas ni < >', 'error'); return; }
+  const lista = listas[tipo];
+  if (lista.some((x, j) => j !== i && normalizarTexto(x.nombre) === normalizarTexto(nombre))) { toast(`Ya existe una ${listaNombre(tipo)} con ese nombre`, 'error'); return; }
+  const x = i >= 0 ? { ...lista[i] } : { nombre, activa: true };
+  const viejo = i >= 0 ? lista[i].nombre : null;
+  if (tipo === 'cuentas') x.color = document.querySelector('.lc-sw.sel')?.dataset.c || x.color || '#6B7280';
+  delete x.emoji;   // las categorías ya no llevan ícono
+  x.nombre = nombre;
+  const btn = document.getElementById('lcGuardar'); if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+  try {
+    let movidos = 0;
+    if (viejo && viejo !== nombre) movidos = tipo === 'cuentas' ? await migrarCuenta(viejo, nombre) : await migrarCategoria(viejo, nombre);
+    if (i >= 0) lista[i] = x; else lista.push(x);
+    await guardarListas();
+    logAccion(i >= 0 ? 'Editó' : 'Creó', tipo === 'cuentas' ? 'Cuenta' : 'Categoría de gasto',
+      viejo && viejo !== nombre ? `${viejo} → ${nombre}${movidos ? ` (${movidos} registro(s) actualizados)` : ''}` : nombre);
+    closeModal();
+    toast(i >= 0 ? `${nombre} actualizada ✓` : `${nombre} agregada ✓`);
+    pintarListasCfg(viejo && viejo !== nombre);
+  } catch (e) {
+    console.error(e); toast('No se pudo guardar: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+  }
+}, 800);
+window.listaActivar = async function(tipo, i) {
+  const x = listas[tipo][i];
+  const activas = listas[tipo].filter(y => y.activa !== false).length;
+  if (x.activa !== false && activas <= 1) { toast(`Debe quedar al menos una ${listaNombre(tipo)} habilitada`, 'error'); return; }
+  x.activa = x.activa === false;
+  try {
+    await guardarListas();
+    logAccion('Editó', tipo === 'cuentas' ? 'Cuenta' : 'Categoría de gasto', `${x.nombre}: ${x.activa ? 'habilitada' : 'deshabilitada'}`);
+    toast(x.activa ? `${x.nombre} habilitada` : `${x.nombre} deshabilitada: ya no sale para anotar, su historial se conserva`, 'info');
+  } catch (e) { x.activa = !x.activa; toast('No se pudo guardar: ' + e.message, 'error'); }
+  pintarListasCfg(false);
+};
+window.listaBorrar = async function(tipo, i) {
+  const x = listas[tipo][i];
+  if (listas[tipo].length <= 1) { toast(`Debe quedar al menos una ${listaNombre(tipo)}`, 'error'); return; }
+  if (!listasUsos) { try { await contarUsos(); } catch {} }
+  const usos = listasUsos ? (listasUsos[tipo][x.nombre] || 0) : 0;
+  const otras = listas[tipo].filter((y, j) => j !== i);
+  abrirModalLista(`Borrar ${escapeHtml(x.nombre)}`, usos
+    ? `<p style="margin-bottom:12px"><b>${escapeHtml(x.nombre)}</b> tiene <b>${usos} movimiento(s)</b>. Para borrarla, elige a qué ${listaNombre(tipo)} pasarlos:</p>
+       <select class="input" id="lcDestino">${otras.map(y => `<option value="${escapeHtml(y.nombre)}">${escapeHtml(y.nombre)}${y.activa === false ? ' (deshabilitada)' : ''}</option>`).join('')}</select>
+       <p class="lc-nota">Si prefieres conservar su historial tal cual, mejor <b>deshabilítala</b>: deja de salir para anotar y no se pierde nada.</p>`
+    : `<p>¿Borrar <b>${escapeHtml(x.nombre)}</b>? No tiene movimientos, así que no afecta nada.</p>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+     ${usos ? `<button class="btn btn-secondary" onclick="closeModal();listaActivar('${tipo}',${i})"${x.activa === false ? ' style="display:none"' : ''}>Deshabilitar</button>` : ''}
+     <button class="btn btn-danger" id="lcBorrarBtn" style="background:#DC2626;color:#fff;border-color:#DC2626" onclick="listaBorrarConfirmar('${tipo}',${i})">${usos ? 'Pasar y borrar' : 'Borrar'}</button>`);
+};
+window.listaBorrarConfirmar = unaVez(async function(tipo, i) {
+  const x = listas[tipo][i];
+  const destino = document.getElementById('lcDestino')?.value || '';
+  const btn = document.getElementById('lcBorrarBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Borrando…'; }
+  try {
+    let movidos = 0;
+    if (destino) movidos = tipo === 'cuentas' ? await migrarCuenta(x.nombre, destino) : await migrarCategoria(x.nombre, destino);
+    listas[tipo].splice(i, 1);
+    if (!listas[tipo].some(y => y.activa !== false)) listas[tipo][0].activa = true;
+    await guardarListas();
+    logAccion('Eliminó', tipo === 'cuentas' ? 'Cuenta' : 'Categoría de gasto', `${x.nombre}${destino ? ` (sus ${movidos} registro(s) pasaron a ${destino})` : ''}`);
+    closeModal();
+    toast(`${x.nombre} borrada${destino ? `; sus movimientos ahora están en ${destino}` : ''}`);
+    pintarListasCfg(true);
+  } catch (e) {
+    console.error(e); toast('No se pudo borrar: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
+  }
+}, 800);
+
 // ============================================================
 // CALENDARIO DE EVENTOS
 // Vista de mes (cada día muestra cliente y hora de sus eventos) y vista de lista agrupada por día con el
@@ -4532,7 +5390,7 @@ window.loadDashboard = async function() {
   cargarResumenCotizaciones();
 
   // Próximos eventos (mes actual) / Eventos del mes (mes pasado o futuro elegido)
-  document.getElementById('dashProximosTitulo').textContent = esMesActual ? '🎈 Próximos eventos' : `🎈 Eventos de ${etiqueta}`;
+  document.getElementById('dashProximosTitulo').textContent = esMesActual ? 'Próximos' : 'Eventos del período';
   let proximos = eventosSnap.docs
     .map(d => ({ id:d.id, ...d.data() }))
     .filter(c => c.estado==='Reservado'||c.estado==='Pagada'||c.estado==='Realizado')
@@ -4577,7 +5435,7 @@ window.loadDashboard = async function() {
           <div style="min-width:0;flex:1">
             <div style="font-size:0.8rem;font-weight:700;color:var(--morado)">${escapeHtml(c.numero||'')}</div>
             <div style="font-size:0.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.cliente_nombre||'—')}</div>
-            <div style="font-size:0.74rem;color:var(--text-secondary)">${fe ? '🎈 ' + fmtF(fe) : 'Sin fecha de evento'}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''} · ${hace(msCreada(c))}</div>
+            <div style="font-size:0.74rem;color:var(--text-secondary)">${fe ? ico('cal', 13) + fmtF(fe) : 'Sin fecha de evento'}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''} · ${hace(msCreada(c))}</div>
           </div>
           <div style="text-align:right;flex-shrink:0"><div style="font-weight:600;font-size:0.875rem">${formatMoney(c.total)}</div>${badgeHtml(c.estado)}</div>${DASH_FLECHA}
         </div>`;
@@ -4596,6 +5454,8 @@ window.dashTab = function(t) {
   document.getElementById('dashRecientes').style.display = prox ? 'none' : '';
   document.getElementById('dashProximosTitulo').classList.toggle('active', prox);
   document.getElementById('dashRecientesTab').classList.toggle('active', !prox);
+  document.getElementById('dashIrCal').style.display   = prox ? '' : 'none';   // en Próximos: ir al calendario
+  document.getElementById('dashIrTodas').style.display = prox ? 'none' : '';   // en Recientes: ver todas las cotizaciones
   try { localStorage.setItem('dashTab', prox ? 'prox' : 'rec'); } catch {}
 };
 // Al cambiar el período con el selector flotante, el contenido se actualiza sin recargar y sin saltar: se mantiene en pantalla lo que estabas viendo
@@ -4650,7 +5510,7 @@ window.renderGanancia = function() {
   };
   const bloqueMeses = meses.length > 1 ? `
     <div style="margin-top:18px">
-      <div style="font-weight:800;font-size:1rem">📊 Ganancia por mes</div>
+      <div style="font-weight:800;font-size:1rem">${ico('barras', 17)}Ganancia por mes</div>
       <div style="${meses.length > 8 ? 'max-height:460px;overflow-y:auto;' : ''}margin-top:2px">${meses.map(filaMes).join('')}</div>
       <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-weight:700"><span>Total del período</span><span style="color:${color(t.neto)}">${$(t.neto)}</span></div>
     </div>` : '';
@@ -4665,7 +5525,7 @@ window.renderGanancia = function() {
   const aviso = avisoSinCuenta(r.sin);
   const banco = `
     <details class="dash-det" style="margin-top:18px">
-      <summary><span>🏦 Para comparar con el banco</span><span style="color:var(--morado);white-space:nowrap">${$(r.total.saldo_final)} ▾</span></summary>
+      <summary><span>${ico('banco', 16)}Para comparar con el banco</span><span style="color:var(--morado);white-space:nowrap">${$(r.total.saldo_final)} ▾</span></summary>
       <div style="padding:2px 14px 14px">
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table class="table" style="font-size:0.82rem">
           <thead><tr><th>Cuenta</th><th style="text-align:right">Saldo inicial</th><th style="text-align:right">Recibido</th><th style="text-align:right">Gastado</th><th style="text-align:right">Debería haber</th></tr></thead>
