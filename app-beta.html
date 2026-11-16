@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">  
-  <link rel="stylesheet" href="main.css?v=20261106t">
+  <link rel="stylesheet" href="main.css?v=20261116c">
 </head>
 <body>
 <div style="position:fixed;top:8px;right:8px;z-index:9999;background:#D97706;color:#fff;font:700 11px/1 sans-serif;padding:6px 10px;border-radius:99px;letter-spacing:.5px;pointer-events:none">BETA · DATOS DE PRUEBA</div>
@@ -81,6 +81,11 @@
       <div class="sidebar-item active" data-page="dashboard" onclick="navTo('dashboard')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         Dashboard
+      </div>
+
+      <div class="sidebar-item" data-page="calendario" onclick="navTo('calendario')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1" fill="currentColor"/><circle cx="12" cy="15" r="1" fill="currentColor"/><circle cx="16" cy="15" r="1" fill="currentColor"/></svg>
+        Calendario
       </div>
 
       <div class="sidebar-item" data-page="cotizaciones" onclick="navTo('cotizaciones')">
@@ -195,7 +200,10 @@
             <button type="button" class="dash-tab active" id="dashProximosTitulo" onclick="dashTab('prox')">🎈 Próximos eventos</button>
             <button type="button" class="dash-tab" id="dashRecientesTab" onclick="dashTab('rec')">🕘 Recientes</button>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="navTo('cotizaciones')">Ver todas</button>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-ghost btn-sm" onclick="navTo('calendario')">📅 Calendario</button>
+            <button class="btn btn-ghost btn-sm" onclick="navTo('cotizaciones')">Ver todas</button>
+          </div>
         </div>
         <div class="card-body" id="dashProximos" style="padding-top:6px">
           <div class="loading-page"><div class="spinner"></div></div>
@@ -236,6 +244,41 @@
           <div class="loading-page"><div class="spinner"></div></div>
         </div>
       </div>
+    </div>
+
+    <!-- ── CALENDARIO ── -->
+    <div class="page" id="page-calendario">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Calendario de eventos</div>
+          <div class="page-subtitle" id="calSubtitle">Cargando...</div>
+        </div>
+        <button class="btn btn-primary" onclick="calNuevaCot()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva cotización
+        </button>
+      </div>
+
+      <div class="card cal-card">
+        <div class="cal-head">
+          <div class="cal-nav">
+            <button type="button" class="cal-flecha" onclick="calMover(-1)" aria-label="Mes anterior">‹</button>
+            <div class="cal-titulo" id="calTitulo">—</div>
+            <button type="button" class="cal-flecha" onclick="calMover(1)" aria-label="Mes siguiente">›</button>
+          </div>
+          <div class="cal-acc">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="calHoy()">Hoy</button>
+            <div class="dash-tabs">
+              <button type="button" class="dash-tab active" id="calTabMes" onclick="calVer('mes')">Mes</button>
+              <button type="button" class="dash-tab" id="calTabLista" onclick="calVer('lista')">Lista</button>
+            </div>
+          </div>
+        </div>
+        <div class="cal-filtros" id="calFiltros"></div>
+        <div id="calCuerpo"><div class="loading-page"><div class="spinner"></div></div></div>
+      </div>
+
+      <div class="card cal-dia" id="calDia" style="margin-top:16px"></div>
     </div>
 
     <!-- ── COTIZACIONES ── -->
@@ -1202,6 +1245,7 @@ function eventosVivos() {
     });
     eventosMapa = mapa;
     if (dpAbierto && dpAbierto.refrescar) dpAbierto.refrescar();
+    if (document.getElementById('page-calendario')?.classList.contains('active')) calPintar();   // el calendario se actualiza solo al guardar/editar
     const fe = document.getElementById('cotFechaEvento');
     if (fe && fe._dp && fe.value) dpAvisar(fe);
   }, e => { console.warn('No se pudo seguir los eventos en vivo:', e); eventosUnsub = null; });
@@ -1596,7 +1640,7 @@ window.navTo = function(page) {
   document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
   document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
-  const titles = { dashboard:'Dashboard', cotizaciones:'Cotizaciones', clientes:'Clientes',
+  const titles = { dashboard:'Dashboard', calendario:'Calendario', cotizaciones:'Cotizaciones', clientes:'Clientes',
     catalogo:'Catálogo', gastos:'Gastos', cuentas:'Pagos recibidos', cierres:'Cierres', galeria:'Galería',
     logs:'Registros', config:'Configuración' };
   document.getElementById('topbarTitle').textContent = titles[page] || page;
@@ -1604,6 +1648,7 @@ window.navTo = function(page) {
   mpProgramar();
 
   if (page === 'dashboard')    loadDashboard();
+  if (page === 'calendario')   loadCalendario();
   if (page === 'cotizaciones') loadCotizaciones();
   if (page === 'clientes')     loadClientes(true);
   if (page === 'catalogo')     loadCatalogo(true);
@@ -4469,6 +4514,188 @@ window.saveFoto = async function(id) {
 // ============================================================
 // DASHBOARD
 // ============================================================
+// ============================================================
+// CALENDARIO DE EVENTOS
+// Vista de mes (cada día muestra cliente y hora de sus eventos) y vista de lista agrupada por día con el
+// nombre del día ("Sábado 21 de noviembre"). Usa el mismo mapa en vivo que el selector de fecha (eventosMapa),
+// así se actualiza solo al crear o editar una cotización. Las anuladas no aparecen.
+// ============================================================
+const DIAS_LARGO = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const CAL_ESTADOS = ['Cotización','Reservado','Pagada','Realizado'];
+const calHoyD = new Date();
+let calAnio = calHoyD.getFullYear(), calMes = calHoyD.getMonth() + 1;   // mes 1-12
+let calSel = null;      // día elegido 'AAAA-MM-DD'
+let calVista = 'mes';
+let calOcultos = new Set();
+try { calVista = localStorage.getItem('calVista') === 'lista' ? 'lista' : 'mes'; calOcultos = new Set(JSON.parse(localStorage.getItem('calOcultos') || '[]')); } catch {}
+
+const calHoyIso = () => { const h = new Date(); return dpIso(h.getFullYear(), h.getMonth() + 1, h.getDate()); };
+// '4:00 PM' / '16:00' → minutos desde medianoche (para ordenar); sin hora va al final
+function calMinutos(h) {
+  const m = String(h || '').match(/(\d{1,2})(?::(\d{2}))?\s*([ap])?/i);
+  if (!m) return 9999;
+  let hh = +m[1] % 12 + (m[3] && /p/i.test(m[3]) ? 12 : 0);
+  if (!m[3] && +m[1] >= 12) hh = +m[1];
+  return hh * 60 + (+m[2] || 0);
+}
+function calDelDia(iso) {
+  return ((eventosMapa && eventosMapa[iso]) || [])
+    .filter(c => !calOcultos.has(c.estado || 'Cotización'))
+    .sort((a, b) => calMinutos(a.hora_evento) - calMinutos(b.hora_evento));
+}
+function calFechaLarga(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${DIAS_LARGO[new Date(y, m - 1, d).getDay()]} ${d} de ${MESES_LARGO[m - 1].toLowerCase()}${y !== new Date().getFullYear() ? ' de ' + y : ''}`;
+}
+function calFaltan(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const h = new Date(); h.setHours(0, 0, 0, 0);
+  const n = Math.round((new Date(y, m - 1, d) - h) / 86400000);
+  if (n === 0) return '<span class="cal-falta hoy">¡Hoy!</span>';
+  if (n === 1) return '<span class="cal-falta pronto">Mañana</span>';
+  if (n === -1) return '<span class="cal-falta pasado">Ayer</span>';
+  if (n < 0) return `<span class="cal-falta pasado">Hace ${-n} días</span>`;
+  return `<span class="cal-falta${n <= 5 ? ' pronto' : ''}">En ${n} días</span>`;
+}
+const calPrimerNombre = c => escapeHtml(String(c.cliente_nombre || c.numero || '—').trim().split(/\s+/)[0]);
+
+// Tarjeta de un evento (panel del día y vista de lista)
+function calEventoHtml(c) {
+  const saldo = saldoSinAbonos(c);
+  const pend = c.estado !== 'Cotización' && saldo > 0.5 ? `<div class="cal-ev-pend">Pendiente ${formatMoney(saldo)}</div>` : '';
+  const det = [c.tematica && '🎨 ' + escapeHtml(c.tematica), c.festejado && '🎂 ' + escapeHtml(c.festejado)].filter(Boolean).join(' · ');
+  return `<div class="cal-ev" onclick="openEditCotizacion('${c.id}')" style="--c:${ESTADO_COLOR[c.estado] || '#9CA3AF'}">
+    <div class="cal-ev-hora">${c.hora_evento ? escapeHtml(c.hora_evento) : '<span>Sin hora</span>'}</div>
+    <div class="cal-ev-info">
+      <div class="cal-ev-cli">${escapeHtml(c.cliente_nombre || '—')}</div>
+      <div class="cal-ev-det">${det || 'Sin temática'}</div>
+      <div class="cal-ev-num">${escapeHtml(c.numero || '')}${c.cliente_telefono ? ' · 📞 ' + escapeHtml(c.cliente_telefono) : ''}</div>
+    </div>
+    <div class="cal-ev-der">${badgeHtml(c.estado)}${pend}</div>
+  </div>`;
+}
+
+window.loadCalendario = async function() {
+  calPintar();
+  if (!eventosMapa) { await eventosPorDia(); calPintar(); }
+};
+window.calMover = function(n) {
+  calMes += n;
+  if (calMes < 1) { calMes = 12; calAnio--; }
+  if (calMes > 12) { calMes = 1; calAnio++; }
+  calSel = null;
+  calPintar();
+};
+window.calHoy = function() { const h = new Date(); calAnio = h.getFullYear(); calMes = h.getMonth() + 1; calSel = calHoyIso(); calPintar(); };
+window.calVer = function(v) { calVista = v; try { localStorage.setItem('calVista', v); } catch {} calPintar(); };
+window.calFiltrar = function(e) {
+  calOcultos.has(e) ? calOcultos.delete(e) : calOcultos.add(e);
+  try { localStorage.setItem('calOcultos', JSON.stringify([...calOcultos])); } catch {}
+  calPintar();
+};
+window.calElegir = function(iso) {
+  calSel = iso;
+  calPintar();
+  if (window.innerWidth <= 768) {   // en el celular el detalle queda debajo: se trae a la vista si no se ve
+    const p = document.getElementById('calDia');
+    if (p && p.getBoundingClientRect().top > window.innerHeight - 120) p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
+// Nueva cotización con la fecha del día elegido ya puesta (si no es un día pasado)
+window.calNuevaCot = function(iso) {
+  openNuevaCotizacion();
+  const f = iso || calSel;
+  if (f && f >= calHoyIso()) {
+    const fe = document.getElementById('cotFechaEvento');
+    fe.value = f;
+    fe.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+};
+
+function calPintar() {
+  const cuerpo = document.getElementById('calCuerpo');
+  if (!cuerpo) return;
+  const hoyIso = calHoyIso();
+  const prefijo = `${calAnio}-${String(calMes).padStart(2, '0')}-`;
+  const dias = new Date(calAnio, calMes, 0).getDate();
+  if (!calSel || !calSel.startsWith(prefijo)) {
+    // día por defecto: hoy si es este mes; si no, el primer día con eventos (o el 1)
+    let def = hoyIso.startsWith(prefijo) ? hoyIso : null;
+    for (let d = 1; !def && d <= dias; d++) if (calDelDia(prefijo + String(d).padStart(2, '0')).length) def = prefijo + String(d).padStart(2, '0');
+    calSel = def || prefijo + '01';
+  }
+
+  document.getElementById('calTitulo').textContent = `${MESES_LARGO[calMes - 1]} ${calAnio}`;
+  document.getElementById('calTabMes').classList.toggle('active', calVista === 'mes');
+  document.getElementById('calTabLista').classList.toggle('active', calVista === 'lista');
+
+  // Conteo del mes y filtros por estado
+  let total = 0; const porEstado = {};
+  for (let d = 1; d <= dias; d++) ((eventosMapa && eventosMapa[prefijo + String(d).padStart(2, '0')]) || []).forEach(c => { porEstado[c.estado] = (porEstado[c.estado] || 0) + 1; });
+  for (let d = 1; d <= dias; d++) total += calDelDia(prefijo + String(d).padStart(2, '0')).length;
+  document.getElementById('calSubtitle').textContent = !eventosMapa ? 'Cargando...' : total === 0 ? 'Sin eventos este mes' : total === 1 ? '1 evento este mes' : `${total} eventos este mes`;
+  document.getElementById('calFiltros').innerHTML = CAL_ESTADOS.map(e =>
+    `<button type="button" class="cal-chip${calOcultos.has(e) ? ' off' : ''}" onclick="calFiltrar('${e}')" title="${calOcultos.has(e) ? 'Mostrar' : 'Ocultar'} ${e}"><i style="background:${ESTADO_COLOR[e]}"></i>${e}<b>${porEstado[e] || 0}</b></button>`).join('');
+
+  if (!eventosMapa) { cuerpo.innerHTML = '<div class="loading-page"><div class="spinner"></div></div>'; return; }
+
+  if (calVista === 'lista') {
+    let html = '';
+    for (let d = 1; d <= dias; d++) {
+      const iso = prefijo + String(d).padStart(2, '0'), lista = calDelDia(iso);
+      if (!lista.length) continue;
+      html += `<div class="cal-l-dia${iso < hoyIso ? ' pasado' : ''}${iso === hoyIso ? ' es-hoy' : ''}">
+        <div class="cal-l-fecha"><span class="cal-l-num">${d}</span><span class="cal-l-nom">${calFechaLarga(iso)}</span>${calFaltan(iso)}</div>
+        ${lista.map(calEventoHtml).join('')}
+      </div>`;
+    }
+    cuerpo.innerHTML = html || `<div class="empty-state" style="padding:40px 0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg><p>No hay eventos en ${MESES_LARGO[calMes - 1].toLowerCase()}</p></div>`;
+    document.getElementById('calDia').style.display = 'none';
+    return;
+  }
+
+  // Vista de mes: la semana empieza el lunes
+  const primero = (new Date(calAnio, calMes - 1, 1).getDay() + 6) % 7;
+  let celdas = '';
+  for (let i = 0; i < primero; i++) celdas += '<div class="cal-c vacia"></div>';
+  for (let d = 1; d <= dias; d++) {
+    const iso = prefijo + String(d).padStart(2, '0'), lista = calDelDia(iso);
+    const dow = (primero + d - 1) % 7;
+    const max = 3, mas = lista.length - max;
+    const evs = lista.slice(0, max).map(c =>
+      `<div class="cal-mini" style="--c:${ESTADO_COLOR[c.estado] || '#9CA3AF'}" title="${escapeHtml((c.hora_evento ? c.hora_evento + ' · ' : '') + (c.cliente_nombre || '') + (c.tematica ? ' · ' + c.tematica : '') + ' (' + (c.estado || '') + ')')}">` +
+      `<span class="cal-mini-h">${c.hora_evento ? escapeHtml(c.hora_evento.replace(/\s*([AP])\.?M\.?/i, (x, p) => p.toLowerCase())) : ''}</span><span class="cal-mini-n">${calPrimerNombre(c)}</span><span class="cal-mini-full">${escapeHtml(c.cliente_nombre || '')}</span></div>`).join('');
+    celdas += `<button type="button" class="cal-c${iso === calSel ? ' sel' : ''}${iso === hoyIso ? ' hoy' : ''}${iso < hoyIso ? ' pasado' : ''}${dow >= 5 ? ' finde' : ''}${lista.length ? ' con-ev' : ''}" onclick="calElegir('${iso}')">
+      <span class="cal-num">${d}</span>${evs}${mas > 0 ? `<span class="cal-mas">+${mas} más</span>` : ''}
+    </button>`;
+  }
+  const resto = (7 - (primero + dias) % 7) % 7;
+  for (let i = 0; i < resto; i++) celdas += '<div class="cal-c vacia"></div>';
+  cuerpo.innerHTML = `<div class="cal-sem">${['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map((x, i) => `<span${i >= 5 ? ' class="finde"' : ''}>${x}</span>`).join('')}</div><div class="cal-grid">${celdas}</div>`;
+
+  // Detalle del día elegido
+  const panel = document.getElementById('calDia');
+  panel.style.display = '';
+  const lista = calDelDia(calSel);
+  panel.innerHTML = `<div class="card-header cal-dia-head">
+      <div><div class="cal-dia-nom">${calFechaLarga(calSel)}</div><div class="cal-dia-sub">${lista.length ? (lista.length === 1 ? '1 evento' : lista.length + ' eventos') : 'Sin eventos'} ${calFaltan(calSel)}</div></div>
+      ${calSel >= hoyIso ? `<button class="btn btn-secondary btn-sm" onclick="calNuevaCot('${calSel}')">+ Evento este día</button>` : ''}
+    </div>
+    <div class="card-body" style="padding-top:8px">${lista.length ? lista.map(calEventoHtml).join('') : '<div class="empty-state" style="padding:22px 0"><p>No hay eventos este día</p></div>'}</div>`;
+}
+
+// Deslizar el calendario a los lados cambia de mes (celular)
+(() => {
+  let x0 = null, y0 = null;
+  document.addEventListener('touchstart', e => { if (e.target.closest('#calCuerpo')) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } else x0 = null; }, { passive:true });
+  document.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) calMover(dx < 0 ? 1 : -1);
+    x0 = null;
+  }, { passive:true });
+})();
+
 window.loadDashboard = async function() {
   const hoy = new Date();
   const NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
