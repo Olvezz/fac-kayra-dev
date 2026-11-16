@@ -22,3 +22,6 @@ desktop.ini
 
 # Dependencies
 node_modules/
+
+# Videos demo: se guardan solo en la PC (no se suben ni se publican)
+video-demo/
