@@ -1473,3 +1473,19 @@ body.qr-abierto { overflow: hidden; }
 .toast-container { z-index: 3300; }
 body:has(.qr-fab) .toast-container { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 768px) { body:has(.qr-fab) .toast-container { left: 12px; right: 12px; align-items: center; } }
+.qr-op.cot .qr-op-ico { background: var(--morado-ghost); }
+.qr-op.cot:active, .qr-op.cot:hover { border-color: var(--morado); }
+.svc-pick-nuevo { background: var(--morado-ghost); }
+.svc-pick-nuevo .svc-pick-n { color: var(--morado); }
+/* Íconos de línea en lo nuevo (en lugar de emojis) */
+.ico { flex-shrink: 0; vertical-align: -3px; }
+.svc-pick-n .ico, .qr-vincular .ico, .btn .ico { margin-right: 6px; }
+.svc-pick-nuevo .ico { color: var(--morado); }
+.qr-op-ico .ico { margin: 0; }
+.qr-op.gasto .qr-op-ico { color: #C0262D; }
+.qr-op.abono .qr-op-ico { color: #15803D; }
+.qr-op.cot .qr-op-ico { color: var(--morado); }
+.qr-vincular { display: flex; align-items: center; justify-content: center; }
+.lc-acc .btn { color: var(--text-secondary); }
+.lc-acc .btn .ico { margin: 0; }
+.lc-acc .lc-borrar { color: #DC2626; }

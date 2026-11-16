@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">  
-  <link rel="stylesheet" href="main.css?v=20261116t">
+  <link rel="stylesheet" href="main.css?v=20261116v">
 </head>
 <body>
 <div style="position:fixed;top:8px;right:8px;z-index:9999;background:#D97706;color:#fff;font:700 11px/1 sans-serif;padding:6px 10px;border-radius:99px;letter-spacing:.5px;pointer-events:none">BETA · DATOS DE PRUEBA</div>
@@ -197,10 +197,10 @@
       <div class="card">
         <div class="card-header dash-agenda-head">
           <div class="dash-tabs">
-            <button type="button" class="dash-tab active" id="dashProximosTitulo" onclick="dashTab('prox')">🎈 Próximos</button>
-            <button type="button" class="dash-tab" id="dashRecientesTab" onclick="dashTab('rec')">🕘 Recientes</button>
+            <button type="button" class="dash-tab active" id="dashProximosTitulo" onclick="dashTab('prox')">Próximos</button>
+            <button type="button" class="dash-tab" id="dashRecientesTab" onclick="dashTab('rec')">Recientes</button>
           </div>
-          <button class="btn btn-ghost btn-sm dash-ir" id="dashIrCal" onclick="navTo('calendario')">📅 Calendario</button>
+          <button class="btn btn-ghost btn-sm dash-ir" id="dashIrCal" onclick="navTo('calendario')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-right:5px;vertical-align:-2px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendario</button>
           <button class="btn btn-ghost btn-sm dash-ir" id="dashIrTodas" onclick="navTo('cotizaciones')" style="display:none">Ver todas</button>
         </div>
         <div class="card-body" id="dashProximos" style="padding-top:6px">
@@ -2387,9 +2387,10 @@ function renderCatalogo() {
       </div>
     </div>`).join('');
 }
-window.openServicioModal = function(editId = null) {
-  const s = editId ? catalogo.find(x => x.id === editId) : null;
-  document.getElementById('modalTitle').textContent = s ? 'Editar servicio' : 'Nuevo servicio';
+window.openServicioModal = function(editId = null, opts = {}) {
+  const s = editId ? catalogo.find(x => x.id === editId) : (opts.nombre ? { nombre: opts.nombre } : null);
+  svcDesdeCot = !!opts.desdeCot;
+  document.getElementById('modalTitle').textContent = editId ? 'Editar servicio' : 'Nuevo servicio';
   const CATS = ['Animación','Decoración','Mobiliario','Dulces','Diversión','Extras','Paquetes'];
   document.getElementById('modalBody').innerHTML = `
     <div class="form-group"><label>Nombre del servicio *</label>
@@ -2407,10 +2408,12 @@ window.openServicioModal = function(editId = null) {
     <div class="form-group"><label>Precio final (calculado)</label>
       <input class="input" id="fSvcFinal" value="${formatMoney(s?.precio_final||0)}" readonly style="background:var(--bg);font-weight:700;color:var(--morado)"></div>`;
   document.getElementById('modalFooter').innerHTML = `
-    <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-primary" onclick="saveServicio(${editId?`'${editId}'`:'null'})">Guardar</button>`;
+    <button class="btn btn-secondary" onclick="${svcDesdeCot ? 'openSvcPicker()' : 'closeModal()'}">${svcDesdeCot ? '‹ Volver' : 'Cancelar'}</button>
+    <button class="btn btn-primary" id="fSvcGuardar" onclick="saveServicio(${editId?`'${editId}'`:'null'})">${svcDesdeCot ? 'Guardar y agregar' : 'Guardar'}</button>`;
   document.getElementById('modalOverlay').classList.add('open');
+  if (svcDesdeCot && !window.matchMedia('(pointer: coarse)').matches) setTimeout(() => document.getElementById(opts.nombre ? 'fSvcBase' : 'fSvcNombre')?.focus(), 120);
 };
+let svcDesdeCot = false;   // el formulario del servicio se abrió desde una cotización
 window.calcSvcFinal = function() {
   const base   = parseFloat(document.getElementById('fSvcBase').value) || 0;
   const margen = parseFloat(document.getElementById('fSvcMargen').value) / 100 || 0;
@@ -2419,6 +2422,7 @@ window.calcSvcFinal = function() {
 window.saveServicio = async function(editId) {
   const nombre = document.getElementById('fSvcNombre').value.trim();
   if (!nombre) { toast('El nombre es requerido','error'); return; }
+  if (!editId && catalogo.some(s => normalizarTexto(s.nombre) === normalizarTexto(nombre))) { toast('Ya hay un servicio con ese nombre en el catálogo', 'error'); return; }
   const base   = parseFloat(document.getElementById('fSvcBase').value)   || 0;
   const margen = parseFloat(document.getElementById('fSvcMargen').value) / 100 || 0;
   const antes  = editId ? catalogo.find(s => s.id === editId) : null;
@@ -2429,13 +2433,24 @@ window.saveServicio = async function(editId) {
     precio_base: base, margen,
     precio_final: Math.round(base * (1 + margen)),
   };
-  if (editId) await updateDoc(doc(db,'catalogo',editId), data);
-  else        await addDoc(collection(db,'catalogo'), data);
+  const btnG = document.getElementById('fSvcGuardar'); if (btnG) { btnG.disabled = true; btnG.textContent = 'Guardando…'; }
+  let nuevoId = null;
+  try {
+    if (editId) await updateDoc(doc(db,'catalogo',editId), data);
+    else        nuevoId = (await addDoc(collection(db,'catalogo'), data)).id;
+  } catch (e) {
+    toast('No se pudo guardar: ' + e.message, 'error');
+    if (btnG) { btnG.disabled = false; btnG.textContent = svcDesdeCot ? 'Guardar y agregar' : 'Guardar'; }
+    return;
+  }
   const cambios = editId ? diffCampos(antes, data, CAMPOS_SERVICIO) : null;
   logAccion(editId ? 'Editó' : 'Creó', 'Servicio', `${nombre} · ${formatMoney(data.precio_final)}`, null, cambios);
   toast(editId ? 'Servicio actualizado ✓' : 'Servicio creado ✓');
-  closeModal();
+  const aCot = svcDesdeCot && nuevoId;
+  svcDesdeCot = false;
+  if (!aCot) closeModal();
   await loadCatalogo(true);
+  if (aCot) svcPickAgregar(nuevoId);   // se agrega a la cotización abierta (y se cierra el cuadro)
 };
 window.deleteServicio = async function(id, nombre) {
   if (!confirm(`¿Eliminar "${nombre}"?`)) return;
@@ -2756,7 +2771,7 @@ window.openSvcPicker = function() {
     <input class="input" id="svcBuscar" placeholder="🔍 Toca aquí para buscar un servicio…" autocomplete="off" oninput="svcPickRender()">
     <div id="svcPickInfo" style="font-size:0.76rem;color:var(--text-secondary);margin:8px 2px"></div>
     <div id="svcPickLista" style="max-height:52vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm)"></div>`;
-  document.getElementById('modalFooter').innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>`;
+  document.getElementById('modalFooter').innerHTML = `<button class="btn btn-secondary" onclick="svcPickCrear()">${ico('mas', 15)} Nuevo servicio</button><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>`;
   const overlay = document.getElementById('modalOverlay');
   overlay.style.zIndex = '300'; // se apila arriba del modal de cotización
   overlay.classList.add('open');
@@ -2773,7 +2788,7 @@ window.svcPickRender = function() {
   const lista = catalogoAZ().filter(s => !q || normalizarTexto((s.nombre||'') + ' ' + (s.categoria||'')).includes(q)).slice(0, 80);
   const exacto = catalogo.some(s => normalizarTexto(s.nombre) === q);
   const y = cont.scrollTop;
-  cont.innerHTML = (texto && !exacto ? `<div class="svc-pick" onclick="svcPickLibre()"><div style="min-width:0;flex:1"><div class="svc-pick-n">➕ Agregar “${escapeHtml(texto)}” como servicio libre</div><div class="svc-pick-s">No está en el catálogo; podrás ponerle el precio</div></div></div>` : '')
+  cont.innerHTML = (texto && !exacto ? `<div class="svc-pick svc-pick-nuevo" onclick="svcPickCrear()"><div style="min-width:0;flex:1"><div class="svc-pick-n">${ico('caja', 16)} Crear “${escapeHtml(texto)}” en el catálogo</div><div class="svc-pick-s">Queda guardado para las próximas cotizaciones y se agrega a esta</div></div></div><div class="svc-pick" onclick="svcPickLibre()"><div style="min-width:0;flex:1"><div class="svc-pick-n">${ico('mas', 16)} Agregar “${escapeHtml(texto)}” solo a esta cotización</div><div class="svc-pick-s">No se guarda en el catálogo; podrás ponerle el precio</div></div></div>` : '')
     + (lista.length ? lista.map(s => {
         const n = svcEnCotizacion(s.id).reduce((t, r) => t + (parseFloat(r.querySelector('.inp-cant').value) || 0), 0);
         return `<div class="svc-pick" onclick="svcPickAgregar('${s.id}')">
@@ -2802,6 +2817,12 @@ window.svcPickAgregar = function(id) {
   } else {
     svcMostrar(addItemRow({ catalogo_id: s.id, nombre: s.nombre, cantidad: 1, precio_unitario: s.precio_final, descuento: 0, subtotal: s.precio_final }, { arriba: true, abierto: true }));
   }
+};
+// Crear un servicio del catálogo desde la cotización: se abre el formulario del catálogo encima (la cotización no se toca),
+// y al guardar se agrega a la cotización. "Cancelar" vuelve a la lista de servicios.
+window.svcPickCrear = function() {
+  const nombre = (document.getElementById('svcBuscar')?.value || '').trim();
+  openServicioModal(null, { desdeCot: true, nombre });
 };
 window.svcPickLibre = function() {
   const nombre = document.getElementById('svcBuscar').value.trim(); if (!nombre) return;
@@ -4543,6 +4564,18 @@ window.saveFoto = async function(id) {
 //  - Deshacer durante unos segundos. Sin señal, se guarda en el teléfono (caché de Firestore) y se envía solo al volver.
 // Entradas: botón flotante, app-beta.html?rapido=gasto|abono (atajos del ícono en Android) y sacudir (opcional, por teléfono).
 // ============================================================
+// Íconos de línea (mismo trazo que los del menú). ico('gasto') → <svg>
+const ICONOS = {
+  gasto: '<line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/>',
+  abono: '<line x1="17" y1="7" x2="7" y2="17"/><polyline points="16 17 7 17 7 8"/>',
+  cot: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+  cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  editar: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  borrar: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  mas: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  caja: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><polyline points="3 8 3 16 12 21 21 16 21 8"/><line x1="12" y1="13" x2="12" y2="21"/>',
+};
+function ico(n, t = 18) { return `<svg class="ico" width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[n] || ''}</svg>`; }
 const CATS_GASTO = ['Mobiliario','Decoración','Comida','Transporte','Insumos','Ayudante','Gastos de casa','Devolución','Otro'];
 const CAT_EMOJI = { 'Mobiliario':'🪑','Decoración':'🎈','Comida':'🍽️','Transporte':'🚚','Insumos':'📦','Ayudante':'🙋','Gastos de casa':'🏠','Devolución':'↩️','Otro':'✳️' };
 const QR_ESPERA_RED = 2500;   // si el servidor no confirma en este tiempo, se avisa que quedó guardado en el teléfono
@@ -4613,7 +4646,7 @@ function qrLista(campo, opciones, sel, icono, vacio) {
   return `<button type="button" class="qr-select${abierta ? ' abierta' : ''}${sel ? '' : ' vacia'}" data-abrir="${campo}" aria-expanded="${abierta}">${sel ? icono(sel) : ''}<span class="qr-select-txt">${escapeHtml(sel || vacio)}</span>${QR_FLECHA}</button>
     ${abierta ? `<div class="qr-opts" role="listbox">${opciones.map(o => `<button type="button" class="qr-opt${o === sel ? ' sel' : ''}" data-${campo}="${escapeHtml(o)}" role="option" aria-selected="${o === sel}">${icono(o)}${escapeHtml(o)}${o === sel ? '<b>✓</b>' : ''}</button>`).join('')}</div>` : ''}`;
 }
-const qrIcoCat = c => `<span class="qr-select-ico">${CAT_EMOJI[c] || ''}</span>`;
+const qrIcoCat = () => '';   // las categorías van solo con texto
 const qrIcoCuenta = c => `<span class="qr-select-ico"><i class="qr-dot" style="background:${CUENTA_COLOR[c] || '#9CA3AF'}"></i></span>`;
 const qrFechaHtml = () => `<input type="date" class="input qr-fecha" max="${qrHoy()}" value="${qr.fecha || qrHoy()}" required>`;
 const qrChipsCuenta = sel => cuentasActivas(sel).map(c =>
@@ -4701,14 +4734,15 @@ function qrPintarSugerencias() {
 
 // ── Pintar ──
 function qrHtml() {
-  const cerrar = `<button type="button" class="qr-x" data-cerrar="1" aria-label="Cerrar">✕</button>`;
+  const cerrar = `<button type="button" class="qr-x" data-cerrar="1" aria-label="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
   let html = '';
 
   if (qr.paso === 'elegir') {
     html = `<div class="qr-head"><div class="qr-titulo">¿Qué quieres anotar?</div>${cerrar}</div>
       <div class="qr-body"><div class="qr-opciones">
-        <button type="button" class="qr-op gasto" data-ir="gasto"><span class="qr-op-ico">💸</span><span><b>Gasto</b><small>Salió dinero: compras, pagos, transporte…</small></span></button>
-        <button type="button" class="qr-op abono" data-ir="abono-lista"><span class="qr-op-ico">💰</span><span><b>Abono de un evento</b><small>Entró dinero de una cotización</small></span></button>
+        <button type="button" class="qr-op gasto" data-ir="gasto"><span class="qr-op-ico">${ico('gasto', 26)}</span><span><b>Gasto</b><small>Salió dinero: compras, pagos, transporte…</small></span></button>
+        <button type="button" class="qr-op abono" data-ir="abono-lista"><span class="qr-op-ico">${ico('abono', 26)}</span><span><b>Abono de un evento</b><small>Entró dinero de una cotización</small></span></button>
+        <button type="button" class="qr-op cot" data-nueva-cot="1"><span class="qr-op-ico">${ico('cot', 24)}</span><span><b>Nueva cotización</b><small>Cliente, servicios y fecha del evento</small></span></button>
       </div></div>`;
   }
 
@@ -4721,7 +4755,7 @@ function qrHtml() {
         <div class="qr-buscar"><input class="input qr-buscar-inp" placeholder="Buscar cliente, temática, número…" value="${escapeHtml(qr.busca)}" autocomplete="off"></div>
         <div class="qr-body qr-lista" id="qrLista">${lista.length ? lista.map(c => qrFilaCot(c, false)).join('') : '<div class="qr-vacio">No hay eventos que coincidan</div>'}</div>`;
     } else {
-      html = `<div class="qr-head"><div class="qr-titulo"><span class="qr-tag gasto">💸 Gasto</span></div>${cerrar}</div>
+      html = `<div class="qr-head"><div class="qr-titulo"><span class="qr-tag gasto">Gasto</span></div>${cerrar}</div>
         <div class="qr-body">
           <label class="qr-monto gasto"><span>RD$</span><input class="qr-monto-inp" inputmode="decimal" enterkeyhint="done" placeholder="0" value="${escapeHtml(qr.monto)}" autocomplete="off" aria-label="Monto del gasto"></label>
           <div class="qr-lbl">Categoría</div>
@@ -4734,8 +4768,8 @@ function qrHtml() {
           <input class="input qr-desc" placeholder="${escapeHtml(qr.cat)}" value="${escapeHtml(qr.desc)}" maxlength="120" autocomplete="off">
           <div class="qr-sugs" id="qrSug"></div>
           <div class="qr-lbl">Evento <small>(opcional)</small></div>
-          ${cot ? `<div class="qr-cot-elegida">${qrFilaCot(cot, false)}<button type="button" class="qr-quitar" data-cot-quitar="1" aria-label="Quitar evento">✕</button></div>`
-                : `<button type="button" class="qr-vincular" data-cot-elegir="1">🎈 Vincular a un evento</button>`}
+          ${cot ? `<div class="qr-cot-elegida">${qrFilaCot(cot, false)}<button type="button" class="qr-quitar" data-cot-quitar="1" aria-label="Quitar evento"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>`
+                : `<button type="button" class="qr-vincular" data-cot-elegir="1">${ico('cal', 16)} Vincular a un evento</button>`}
         </div>
         <div class="qr-foot"><button type="button" class="btn btn-primary qr-guardar gasto" data-guardar="1"${m > 0 && qr.cuenta ? '' : ' disabled'}>${m > 0 ? 'Guardar gasto · ' + formatMoney(m) : 'Escribe el monto'}</button>
           ${m > 0 && !qr.cuenta ? '<div class="qr-falta">Elige de qué cuenta salió</div>' : ''}</div>`;
@@ -4744,10 +4778,10 @@ function qrHtml() {
 
   else if (qr.paso === 'abono-lista') {
     const lista = qrCotsAbono(qr.busca);
-    html = `<div class="qr-head">${qr.desdeElegir ? '<button type="button" class="qr-atras" data-ir="elegir" aria-label="Volver">‹</button>' : ''}<div class="qr-titulo"><span class="qr-tag abono">💰 Abono</span> ¿De qué evento?</div>${cerrar}</div>
+    html = `<div class="qr-head">${qr.desdeElegir ? '<button type="button" class="qr-atras" data-ir="elegir" aria-label="Volver">‹</button>' : ''}<div class="qr-titulo"><span class="qr-tag abono">Abono</span> ¿De qué evento?</div>${cerrar}</div>
       <div class="qr-buscar"><input class="input qr-buscar-inp" placeholder="Buscar cliente, temática, número…" value="${escapeHtml(qr.busca)}" autocomplete="off"></div>
       <div class="qr-body qr-lista" id="qrLista">${!cotsVivas ? '<div class="loading-page"><div class="spinner"></div></div>'
-        : lista.length ? lista.map(c => qrFilaCot(c, true)).join('') : `<div class="qr-vacio">${qr.busca ? 'Ningún evento con saldo coincide con la búsqueda' : 'No hay eventos con saldo pendiente 🎉'}</div>`}</div>`;
+        : lista.length ? lista.map(c => qrFilaCot(c, true)).join('') : `<div class="qr-vacio">${qr.busca ? 'Ningún evento con saldo coincide con la búsqueda' : 'No hay eventos con saldo pendiente'}</div>`}</div>`;
   }
 
   else if (qr.paso === 'abono-monto') {
@@ -4755,11 +4789,11 @@ function qrHtml() {
     if (!c) { qr.paso = 'abono-lista'; return qrHtml(); }
     const saldo = qrSaldo(c), m = qrNumero(qr.monto), f = fechaEventoISO(c);
     const abonado = abonosDe(c).reduce((s, a) => s + a.monto, 0);
-    html = `<div class="qr-head"><button type="button" class="qr-atras" data-ir="abono-lista" aria-label="Volver">‹</button><div class="qr-titulo"><span class="qr-tag abono">💰 Abono</span></div>${cerrar}</div>
+    html = `<div class="qr-head"><button type="button" class="qr-atras" data-ir="abono-lista" aria-label="Volver">‹</button><div class="qr-titulo"><span class="qr-tag abono">Abono</span></div>${cerrar}</div>
       <div class="qr-body">
         <div class="qr-evento" style="--c:${ESTADO_COLOR[c.estado] || '#9CA3AF'}">
           <div class="qr-evento-cli">${escapeHtml(c.cliente_nombre || '—')}</div>
-          <div class="qr-evento-sub">${f ? '🎈 ' + escapeHtml(calFechaLarga(f)) : 'Sin fecha de evento'}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''} · ${escapeHtml(c.numero || '')}</div>
+          <div class="qr-evento-sub">${f ? escapeHtml(calFechaLarga(f)) : 'Sin fecha de evento'}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''} · ${escapeHtml(c.numero || '')}</div>
           <div class="qr-evento-nums"><span>Total<b>${formatMoney(c.total)}</b></span><span>Abonado<b>${formatMoney(abonado)}</b></span><span class="debe">Debe<b>${formatMoney(saldo)}</b></span></div>
         </div>
         <label class="qr-monto abono"><span>RD$</span><input class="qr-monto-inp" inputmode="decimal" enterkeyhint="done" placeholder="0" value="${escapeHtml(qr.monto)}" autocomplete="off" aria-label="Monto del abono"></label>
@@ -4825,6 +4859,7 @@ function qrClick(e) {
   if (!t || !qr) return;
   const d = t.dataset;
   if (d.cerrar) return qrCerrar();
+  if (d.nuevaCot) { qrCerrar(); setTimeout(() => openNuevaCotizacion(), 220); return; }
   if (d.ir) {
     if (d.ir === 'gasto') { qrIniciarGasto(); }
     else if (d.ir === 'abono-lista') { if (qr.paso === 'elegir') qr.desdeElegir = true; qr.busca = ''; qr.paso = 'abono-lista'; }
@@ -5164,13 +5199,13 @@ async function pintarListasCfg(recontar) {
   if (!el || !listas) return;
   const fila = (tipo, x, i) => {
     const n = listasUsos ? (listasUsos[tipo][x.nombre] || 0) : null;
-    const ico = tipo === 'cuentas' ? `<i class="lc-dot" style="background:${x.color}"></i>` : `<span class="lc-emoji">${x.emoji || '✳️'}</span>`;
+    const icoFila = tipo === 'cuentas' ? `<i class="lc-dot" style="background:${x.color}"></i>` : '';
     return `<div class="lc-fila${x.activa === false ? ' off' : ''}">
-      ${ico}<div class="lc-nom"><b>${escapeHtml(x.nombre)}</b><small>${n === null ? '…' : n === 0 ? 'Sin movimientos' : n === 1 ? '1 movimiento' : n + ' movimientos'}${x.activa === false ? ' · <span class="lc-tag">Deshabilitada</span>' : ''}</small></div>
+      ${icoFila}<div class="lc-nom"><b>${escapeHtml(x.nombre)}</b><small>${n === null ? '…' : n === 0 ? 'Sin movimientos' : n === 1 ? '1 movimiento' : n + ' movimientos'}${x.activa === false ? ' · <span class="lc-tag">Deshabilitada</span>' : ''}</small></div>
       <div class="lc-acc">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="listaEditar('${tipo}',${i})" title="Editar">✏️</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="listaEditar('${tipo}',${i})" title="Editar" aria-label="Editar">${ico('editar', 17)}</button>
         <button type="button" class="btn btn-ghost btn-sm" onclick="listaActivar('${tipo}',${i})">${x.activa === false ? 'Habilitar' : 'Deshabilitar'}</button>
-        <button type="button" class="btn btn-ghost btn-sm lc-borrar" onclick="listaBorrar('${tipo}',${i})" title="Borrar">🗑</button>
+        <button type="button" class="btn btn-ghost btn-sm lc-borrar" onclick="listaBorrar('${tipo}',${i})" title="Borrar" aria-label="Borrar">${ico('borrar', 17)}</button>
       </div></div>`;
   };
   el.innerHTML = `
@@ -5198,7 +5233,7 @@ window.listaEditar = function(tipo, i) {
       <input class="input" id="lcNombre" value="${escapeHtml(x?.nombre || '')}" maxlength="30" placeholder="${esCuenta ? 'Ej.: Popular' : 'Ej.: Publicidad'}" autocomplete="off"></div>
     ${esCuenta
       ? `<div class="form-group"><label>Color</label><div class="lc-paleta">${PALETA_CUENTA.map(([c]) => `<button type="button" class="lc-sw${c === color ? ' sel' : ''}" data-c="${c}" style="background:${c}" onclick="document.querySelectorAll('.lc-sw').forEach(b=>b.classList.toggle('sel',b===this))" aria-label="Color ${c}"></button>`).join('')}</div></div>`
-      : `<div class="form-group"><label>Ícono</label><div class="lc-paleta">${EMOJIS_CAT.map(e => `<button type="button" class="lc-em${e === emoji ? ' sel' : ''}" data-e="${e}" onclick="document.querySelectorAll('.lc-em').forEach(b=>b.classList.toggle('sel',b===this))">${e}</button>`).join('')}</div></div>`}
+      : ''}
     ${x && usos ? `<p class="lc-nota">Si cambias el nombre, sus ${usos} movimiento(s) pasan al nombre nuevo.</p>` : ''}`,
     `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="lcGuardar" onclick="listaGuardar('${tipo}',${i})">Guardar</button>`);
   setTimeout(() => document.getElementById('lcNombre')?.focus(), 50);
@@ -5250,7 +5285,7 @@ window.listaBorrar = async function(tipo, i) {
   const otras = listas[tipo].filter((y, j) => j !== i);
   abrirModalLista(`Borrar ${escapeHtml(x.nombre)}`, usos
     ? `<p style="margin-bottom:12px"><b>${escapeHtml(x.nombre)}</b> tiene <b>${usos} movimiento(s)</b>. Para borrarla, elige a qué ${listaNombre(tipo)} pasarlos:</p>
-       <select class="input" id="lcDestino">${otras.map(y => `<option value="${escapeHtml(y.nombre)}">${tipo === 'cuentas' ? emojiDeColor(y.color) : (y.emoji || '')} ${escapeHtml(y.nombre)}${y.activa === false ? ' (deshabilitada)' : ''}</option>`).join('')}</select>
+       <select class="input" id="lcDestino">${otras.map(y => `<option value="${escapeHtml(y.nombre)}">${escapeHtml(y.nombre)}${y.activa === false ? ' (deshabilitada)' : ''}</option>`).join('')}</select>
        <p class="lc-nota">Si prefieres conservar su historial tal cual, mejor <b>deshabilítala</b>: deja de salir para anotar y no se pierde nada.</p>`
     : `<p>¿Borrar <b>${escapeHtml(x.nombre)}</b>? No tiene movimientos, así que no afecta nada.</p>`,
     `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
@@ -5326,13 +5361,13 @@ const calPrimerNombre = c => escapeHtml(String(c.cliente_nombre || c.numero || '
 function calEventoHtml(c) {
   const saldo = saldoSinAbonos(c);
   const pend = c.estado !== 'Cotización' && saldo > 0.5 ? `<div class="cal-ev-pend">Pendiente ${formatMoney(saldo)}</div>` : '';
-  const det = [c.tematica && '🎨 ' + escapeHtml(c.tematica), c.festejado && '🎂 ' + escapeHtml(c.festejado)].filter(Boolean).join(' · ');
+  const det = [c.tematica && escapeHtml(c.tematica), c.festejado && escapeHtml(c.festejado)].filter(Boolean).join(' · ');
   return `<div class="cal-ev" onclick="openEditCotizacion('${c.id}')" style="--c:${ESTADO_COLOR[c.estado] || '#9CA3AF'}">
     <div class="cal-ev-hora">${c.hora_evento ? escapeHtml(c.hora_evento) : '<span>Sin hora</span>'}</div>
     <div class="cal-ev-info">
       <div class="cal-ev-cli">${escapeHtml(c.cliente_nombre || '—')}</div>
       <div class="cal-ev-det">${det || 'Sin temática'}</div>
-      <div class="cal-ev-num">${escapeHtml(c.numero || '')}${c.cliente_telefono ? ' · 📞 ' + escapeHtml(c.cliente_telefono) : ''}</div>
+      <div class="cal-ev-num">${escapeHtml(c.numero || '')}${c.cliente_telefono ? ' · ' + escapeHtml(c.cliente_telefono) : ''}</div>
     </div>
     <div class="cal-ev-der">${badgeHtml(c.estado)}${pend}</div>
   </div>`;
@@ -5512,7 +5547,7 @@ window.loadDashboard = async function() {
   cargarResumenCotizaciones();
 
   // Próximos eventos (mes actual) / Eventos del mes (mes pasado o futuro elegido)
-  document.getElementById('dashProximosTitulo').textContent = esMesActual ? '🎈 Próximos' : '🎈 Eventos del período';
+  document.getElementById('dashProximosTitulo').textContent = esMesActual ? 'Próximos' : 'Eventos del período';
   let proximos = eventosSnap.docs
     .map(d => ({ id:d.id, ...d.data() }))
     .filter(c => c.estado==='Reservado'||c.estado==='Pagada'||c.estado==='Realizado')
