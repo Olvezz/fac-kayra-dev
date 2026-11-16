@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">  
-  <link rel="stylesheet" href="main.css?v=20261116c">
+  <link rel="stylesheet" href="main.css?v=20261116t">
 </head>
 <body>
 <div style="position:fixed;top:8px;right:8px;z-index:9999;background:#D97706;color:#fff;font:700 11px/1 sans-serif;padding:6px 10px;border-radius:99px;letter-spacing:.5px;pointer-events:none">BETA · DATOS DE PRUEBA</div>
@@ -195,15 +195,13 @@
 
       <!-- Agenda: próximos eventos y recientes en un solo cuadro -->
       <div class="card">
-        <div class="card-header" style="gap:8px;flex-wrap:wrap">
+        <div class="card-header dash-agenda-head">
           <div class="dash-tabs">
-            <button type="button" class="dash-tab active" id="dashProximosTitulo" onclick="dashTab('prox')">🎈 Próximos eventos</button>
+            <button type="button" class="dash-tab active" id="dashProximosTitulo" onclick="dashTab('prox')">🎈 Próximos</button>
             <button type="button" class="dash-tab" id="dashRecientesTab" onclick="dashTab('rec')">🕘 Recientes</button>
           </div>
-          <div style="display:flex;gap:4px">
-            <button class="btn btn-ghost btn-sm" onclick="navTo('calendario')">📅 Calendario</button>
-            <button class="btn btn-ghost btn-sm" onclick="navTo('cotizaciones')">Ver todas</button>
-          </div>
+          <button class="btn btn-ghost btn-sm dash-ir" id="dashIrCal" onclick="navTo('calendario')">📅 Calendario</button>
+          <button class="btn btn-ghost btn-sm dash-ir" id="dashIrTodas" onclick="navTo('cotizaciones')" style="display:none">Ver todas</button>
         </div>
         <div class="card-body" id="dashProximos" style="padding-top:6px">
           <div class="loading-page"><div class="spinner"></div></div>
@@ -507,6 +505,20 @@
       </div>
       <div class="card" style="max-width:600px;margin-bottom:16px">
         <div class="card-body">
+          <strong class="font-display">Registro rápido</strong>
+          <p style="font-size:0.85rem;color:var(--text-secondary);margin:6px 0 12px">El botón <b>+</b> de abajo a la derecha anota un gasto o un abono en pocos toques. En Android, con la app instalada, mantén presionado el ícono de Kayra para ver <b>Anotar gasto</b> y <b>Anotar abono</b>; puedes arrastrarlos a la pantalla de inicio.</p>
+          <div id="qrAjustes"></div>
+        </div>
+      </div>
+      <div class="card" style="max-width:600px;margin-bottom:16px">
+        <div class="card-body">
+          <strong class="font-display">Cuentas y categorías de gastos</strong>
+          <p style="font-size:0.85rem;color:var(--text-secondary);margin:6px 0 4px">Edita, agrega, deshabilita o borra. Una deshabilitada ya no sale para anotar, pero su historial y sus saldos se siguen viendo.</p>
+          <div id="listasCfg"><div class="loading-page"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+      <div class="card" style="max-width:600px;margin-bottom:16px">
+        <div class="card-body">
           <strong class="font-display">Correos autorizados</strong>
           <p style="font-size:0.85rem;color:var(--text-secondary);margin:6px 0 12px">Cuentas de Google que pueden entrar al sistema. Los correos fijos no se pueden quitar.</p>
           <div id="accesosLista" style="margin-bottom:12px"></div>
@@ -745,7 +757,7 @@ import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.0/fir
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signOut }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
-  getFirestore, collection as _collection, doc as _doc, getDoc, getDocs, addDoc, setDoc,
+  getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection as _collection, doc as _doc, getDoc, getDocs, addDoc, setDoc,
   updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, runTransaction, onSnapshot
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
@@ -760,7 +772,10 @@ const firebaseConfig = {
 };
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db   = getFirestore(app);
+// Caché en el teléfono: lo que se anota sin señal queda guardado y se envía solo al volver la conexión (aunque se cierre la app).
+let db;
+try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
+catch (e) { console.warn('Sin caché local de Firestore:', e); db = getFirestore(app); }
 
 // ── BETA: todas las colecciones llevan prefijo, así nunca toca los datos reales ──
 const COL_PREFIX = 'beta_';
@@ -805,7 +820,7 @@ function chipCuenta(c) {
   return '<span style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:' + (CUENTA_COLOR[c] || '#9CA3AF') + '"></span>' + escapeHtml(c) + '</span>';
 }
 const CUENTA_OPTS = (sel, vacio) => `<option value="">${vacio}</option>` +
-  CUENTAS.map(c => `<option value="${c}"${sel===c?' selected':''}>${CUENTA_EMOJI[c]} ${c}</option>`).join('');
+  cuentasActivas(sel).map(c => `<option value="${c}"${sel===c?' selected':''}>${CUENTA_EMOJI[c]} ${c}</option>`).join('');
 function abonosDe(c) {
   return Array.isArray(c.abonos) ? c.abonos.map(a => ({ fecha:a.fecha, monto:Number(a.monto)||0, cuenta:a.cuenta||'' })) : [];
 }
@@ -1233,10 +1248,12 @@ window.addEventListener('resize', () => dpCerrar());
 // Eventos ya agendados por día (cotizaciones no anuladas), para marcarlos en el calendario de la fecha del evento.
 // Se mantienen al día en vivo (onSnapshot): así el calendario abre al instante y el aviso sale sin esperar.
 let eventosMapa = null, eventosUnsub = null;
+let cotsVivas = null;   // todas las cotizaciones (también sin fecha y anuladas), en vivo: las usa el registro rápido
 function eventosVivos() {
   if (eventosUnsub) return;
   eventosUnsub = onSnapshot(collection(db, 'cotizaciones'), snap => {
     const mapa = {};
+    cotsVivas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     snap.docs.forEach(d => {
       const c = { id: d.id, ...d.data() };
       if (c.estado === 'Anulada') return;
@@ -1246,6 +1263,7 @@ function eventosVivos() {
     eventosMapa = mapa;
     if (dpAbierto && dpAbierto.refrescar) dpAbierto.refrescar();
     if (document.getElementById('page-calendario')?.classList.contains('active')) calPintar();   // el calendario se actualiza solo al guardar/editar
+    if (typeof qrAlCambiarCots === 'function') qrAlCambiarCots();
     const fe = document.getElementById('cotFechaEvento');
     if (fe && fe._dp && fe.value) dpAvisar(fe);
   }, e => { console.warn('No se pudo seguir los eventos en vivo:', e); eventosUnsub = null; });
@@ -1449,7 +1467,8 @@ window.logout = () => signOut(auth).then(() => { window.location.href = 'index.h
 
 // ── Init ──
 async function init() {
-  appConfig = await loadConfig();
+  [appConfig] = await Promise.all([loadConfig(), cargarListas()]);   // config y cuentas/categorías de gastos (editables en Configuración), a la vez
+  qrIniciar();               // botón "+", atajos del ícono (?rapido=) y sacudir: lo antes posible, para que el atajo abra rápido
   await Promise.all([loadClientes(), loadCatalogo()].map(p => p.catch(e => console.warn('Carga inicial:', e.message))));
   await migrarMesAnioEvento();
   await autoAnularVencidas();
@@ -2171,6 +2190,7 @@ window.quitarAcceso = async function(email) {
 };
 
 function loadConfigForm() {
+  pintarListasCfg(true);
   cargarAccesos();
   document.getElementById('cfgNombre').value     = appConfig.nombre_negocio || '';
   document.getElementById('cfgTelefono').value   = appConfig.telefono || '';
@@ -3374,7 +3394,7 @@ window.openGastoModal = async function(editId = null, cotPreset = null, fechaPre
   let g = null;
   if (editId) { const s = await getDoc(doc(db,'gastos',editId)); g = s.data(); }
   editingGastoAntes = g; // se usa al guardar, para armar el detalle de qué cambió
-  const CATS = ['Mobiliario','Decoración','Comida','Transporte','Insumos','Ayudante','Gastos de casa','Devolución','Otro'];
+  const CATS = catsActivas(g?.categoria);
   gastoCotOpciones = await cotizacionesParaSelect();
   // la lista del selector trae solo las 300 más recientes: si la cotización pedida no está, se agrega
   if (cotPreset && !gastoCotOpciones.some(c => c.id === cotPreset)) {
@@ -4515,6 +4535,748 @@ window.saveFoto = async function(id) {
 // DASHBOARD
 // ============================================================
 // ============================================================
+// REGISTRO RÁPIDO (botón "+", atajos del ícono y sacudir)
+// Pensado para el celular: anotar un gasto o un abono de una cotización en pocos toques.
+//  - Gasto: monto, categoría, cuenta, fecha (Hoy/Ayer/otra), descripción y evento opcionales. Mismo formato que "Nuevo gasto".
+//  - Abono: se elige el evento con saldo pendiente y se anota monto + cuenta. El estado avanza igual que en la cotización
+//    (primer abono → Reservado; cubre el total → Pagada).
+//  - Deshacer durante unos segundos. Sin señal, se guarda en el teléfono (caché de Firestore) y se envía solo al volver.
+// Entradas: botón flotante, app-beta.html?rapido=gasto|abono (atajos del ícono en Android) y sacudir (opcional, por teléfono).
+// ============================================================
+const CATS_GASTO = ['Mobiliario','Decoración','Comida','Transporte','Insumos','Ayudante','Gastos de casa','Devolución','Otro'];
+const CAT_EMOJI = { 'Mobiliario':'🪑','Decoración':'🎈','Comida':'🍽️','Transporte':'🚚','Insumos':'📦','Ayudante':'🙋','Gastos de casa':'🏠','Devolución':'↩️','Otro':'✳️' };
+const QR_ESPERA_RED = 2500;   // si el servidor no confirma en este tiempo, se avisa que quedó guardado en el teléfono
+let qr = null;                // estado de la hoja abierta
+let qrGastosRecientes = null; // gastos de este mes y el anterior (para sugerir descripciones)
+
+const qrLeer = (k, def) => { try { return localStorage.getItem('qr_' + k) || def; } catch { return def; } };
+const qrGuardarPref = (k, v) => { try { localStorage.setItem('qr_' + k, v); } catch {} };
+const qrHoy = () => calHoyIso();
+const qrAyer = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dpIso(d.getFullYear(), d.getMonth() + 1, d.getDate()); };
+// "1,500.50" / "1500,5" / "RD$ 2 000" → número (la coma de miles o decimal se interpreta como en RD)
+function qrNumero(txt) {
+  let s = String(txt || '').replace(/[^\d.,]/g, '');
+  if (!s) return 0;
+  if (s.includes('.') && s.includes(',')) s = s.replace(/,/g, '');
+  else if (s.includes(',')) s = /,\d{1,2}$/.test(s) ? s.replace(',', '.') : s.replace(/,/g, '');
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+}
+function qrFechaCorta(iso) {
+  if (!iso) return 'Sin fecha de evento';
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${DIAS_CORTO[new Date(y, m - 1, d).getDay()]} ${d} ${MESES_CORTO[m - 1]}${y !== new Date().getFullYear() ? ' ' + y : ''}`;
+}
+const qrSaldo = c => Math.max(0, Math.round(saldoSinAbonos(c) * 100) / 100);
+
+// Cotizaciones a las que se les puede abonar: no anuladas y con saldo. Primero los eventos más cercanos (de hoy en adelante),
+// luego los pasados que todavía deben, y al final las que no tienen fecha.
+function qrCotsAbono(texto) {
+  const hoy = qrHoy(), q = normalizarTexto(texto || '');
+  return (cotsVivas || [])
+    .filter(c => c.estado !== 'Anulada' && (c.total || 0) > 0 && qrSaldo(c) > 0.5)
+    .filter(c => !q || normalizarTexto([c.cliente_nombre, c.numero, c.tematica, c.festejado].join(' ')).includes(q))
+    .map(c => ({ c, f: fechaEventoISO(c) }))
+    .sort((a, b) => {
+      const ga = !a.f ? 2 : a.f >= hoy ? 0 : 1, gb = !b.f ? 2 : b.f >= hoy ? 0 : 1;
+      if (ga !== gb) return ga - gb;
+      return ga === 0 ? a.f.localeCompare(b.f) : (b.f || '').localeCompare(a.f || '');
+    })
+    .map(x => x.c);
+}
+// Eventos para vincular un gasto: no anulados, del último mes en adelante (y los que se busquen por nombre, de cualquier fecha)
+function qrCotsGasto(texto) {
+  const q = normalizarTexto(texto || '');
+  const d = new Date(); d.setDate(d.getDate() - 35);
+  const desde = dpIso(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  return (cotsVivas || [])
+    .filter(c => c.estado !== 'Anulada' && c.estado !== 'Cotización')
+    .filter(c => q ? normalizarTexto([c.cliente_nombre, c.numero, c.tematica, c.festejado].join(' ')).includes(q) : (fechaEventoISO(c) || '') >= desde)
+    .sort((a, b) => Math.abs(new Date(fechaEventoISO(a) || 0) - Date.now()) - Math.abs(new Date(fechaEventoISO(b) || 0) - Date.now()))
+    .slice(0, 40);
+}
+function qrFilaCot(c, conSaldo) {
+  const f = fechaEventoISO(c);
+  return `<button type="button" class="qr-cot" data-id="${c.id}" style="--c:${ESTADO_COLOR[c.estado] || '#9CA3AF'}">
+    <span class="qr-cot-fecha">${f ? `<b>${Number(f.slice(8, 10))}</b><small>${MESES_CORTO[Number(f.slice(5, 7)) - 1]}</small>` : '<small>s/f</small>'}</span>
+    <span class="qr-cot-info"><span class="qr-cot-cli">${escapeHtml(c.cliente_nombre || '—')}</span>
+      <span class="qr-cot-sub">${escapeHtml(qrFechaCorta(f))}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''}</span></span>
+    ${conSaldo ? `<span class="qr-cot-saldo"><small>Debe</small>${formatMoney(qrSaldo(c))}</span>` : ''}
+  </button>`;
+}
+const qrChips = (lista, sel, attr, extra = () => '') => lista.map(v =>
+  `<button type="button" class="qr-chip${v === sel ? ' sel' : ''}" data-${attr}="${escapeHtml(v)}"${extra(v)}>${escapeHtml(v)}</button>`).join('');
+// Lista desplegable de la hoja: un renglón con lo elegido; al tocarlo se abre la lista vertical
+const QR_FLECHA = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>';
+function qrLista(campo, opciones, sel, icono, vacio) {
+  const abierta = qr.abierta === campo;
+  return `<button type="button" class="qr-select${abierta ? ' abierta' : ''}${sel ? '' : ' vacia'}" data-abrir="${campo}" aria-expanded="${abierta}">${sel ? icono(sel) : ''}<span class="qr-select-txt">${escapeHtml(sel || vacio)}</span>${QR_FLECHA}</button>
+    ${abierta ? `<div class="qr-opts" role="listbox">${opciones.map(o => `<button type="button" class="qr-opt${o === sel ? ' sel' : ''}" data-${campo}="${escapeHtml(o)}" role="option" aria-selected="${o === sel}">${icono(o)}${escapeHtml(o)}${o === sel ? '<b>✓</b>' : ''}</button>`).join('')}</div>` : ''}`;
+}
+const qrIcoCat = c => `<span class="qr-select-ico">${CAT_EMOJI[c] || ''}</span>`;
+const qrIcoCuenta = c => `<span class="qr-select-ico"><i class="qr-dot" style="background:${CUENTA_COLOR[c] || '#9CA3AF'}"></i></span>`;
+const qrFechaHtml = () => `<input type="date" class="input qr-fecha" max="${qrHoy()}" value="${qr.fecha || qrHoy()}" required>`;
+const qrChipsCuenta = sel => cuentasActivas(sel).map(c =>
+  `<button type="button" class="qr-chip qr-cuenta${c === sel ? ' sel' : ''}" data-cuenta="${c}" style="--c:${CUENTA_COLOR[c]}"><i></i>${c}</button>`).join('');
+function qrChipsFecha(sel) {
+  const hoy = qrHoy(), ayer = qrAyer(), otra = sel && sel !== hoy && sel !== ayer;
+  return `<button type="button" class="qr-chip${sel === hoy ? ' sel' : ''}" data-fecha="${hoy}">Hoy</button>
+    <button type="button" class="qr-chip${sel === ayer ? ' sel' : ''}" data-fecha="${ayer}">Ayer</button>
+    <button type="button" class="qr-chip${otra ? ' sel' : ''}" data-fecha-otra="1">📅 ${otra ? qrFechaCorta(sel) : 'Otra fecha'}</button>
+    <input type="date" class="qr-fecha-nativa" max="${hoy}" value="${sel || ''}" data-nativo="1" tabindex="-1" aria-hidden="true">`;
+}
+
+// ── Abrir / cerrar la hoja ──
+function qrMontar() {
+  if (document.getElementById('qrSheet')) return;
+  const back = document.createElement('div');
+  back.id = 'qrBack'; back.className = 'qr-back';
+  back.addEventListener('click', () => qrCerrar());
+  const sh = document.createElement('div');
+  sh.id = 'qrSheet'; sh.className = 'qr-sheet'; sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true');
+  sh.addEventListener('click', qrClick);
+  sh.addEventListener('input', qrInput);
+  sh.addEventListener('change', qrInput);
+  document.body.append(back, sh);
+}
+window.qrAbrir = function(tipo) {
+  if (!currentUser) return;
+  qrMontar();
+  dpCerrar(); selCerrar(); closeSidebar();
+  eventosVivos();
+  qr = { paso: tipo === 'gasto' ? 'gasto' : tipo === 'abono' ? 'abono-lista' : 'elegir', busca: '' };
+  if (qr.paso === 'gasto') qrIniciarGasto();
+  document.getElementById('qrBack').classList.add('open');
+  document.getElementById('qrSheet').classList.add('open');
+  document.body.classList.add('qr-abierto');
+  qrPintar(true);
+  if (!history.state || !history.state.qr) history.pushState({ qr: 1 }, '');   // el botón "atrás" del teléfono cierra la hoja
+};
+window.qrCerrar = function(desdeAtras) {
+  if (!qr) return;
+  dpCerrar();
+  qr = null;
+  document.getElementById('qrBack')?.classList.remove('open');
+  document.getElementById('qrSheet')?.classList.remove('open');
+  document.body.classList.remove('qr-abierto');
+  if (!desdeAtras && history.state && history.state.qr) history.back();
+};
+window.addEventListener('popstate', () => {
+  if (!qr) return;
+  if (qr.paso === 'abono-monto') { qr.paso = 'abono-lista'; history.pushState({ qr: 1 }, ''); qrPintar(); return; }   // atrás: un paso
+  qrCerrar(true);
+});
+window.addEventListener('keydown', e => {
+  if (!qr) return;
+  if (e.key === 'Escape') qrCerrar();
+  if (e.key === 'Enter' && e.target.matches('.qr-monto-inp')) { e.preventDefault(); qrGuardar(); }
+});
+function qrIniciarGasto() {
+  Object.assign(qr, { paso: 'gasto', monto: '', cat: qrLeer('cat', 'Insumos'), cuenta: qrLeer('cuenta_gasto', ''), fecha: qrHoy(), desc: '', cotId: '', eligiendoCot: false });
+  if (!catsActivas().includes(qr.cat)) qr.cat = catsActivas()[0] || 'Otro';
+  if (qr.cuenta && !cuentasActivas().includes(qr.cuenta)) qr.cuenta = '';
+  if (!qrGastosRecientes) {
+    const d = new Date(), mA = `${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+    d.setMonth(d.getMonth() - 1);
+    const mB = `${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+    getDocs(query(collection(db, 'gastos'), where('mes_anio', 'in', [mA, mB])))
+      .then(s => { qrGastosRecientes = s.docs.map(x => x.data()); if (qr && qr.paso === 'gasto') qrPintarSugerencias(); })
+      .catch(() => { qrGastosRecientes = []; });
+  }
+}
+// Descripciones usadas antes en la categoría elegida (las más frecuentes primero)
+function qrSugerencias() {
+  const cuenta = {};
+  (qrGastosRecientes || []).filter(g => g.categoria === qr.cat && g.descripcion).forEach(g => {
+    const k = String(g.descripcion).trim(); cuenta[k] = (cuenta[k] || 0) + 1;
+  });
+  return Object.entries(cuenta).sort((a, b) => b[1] - a[1]).slice(0, 6).map(x => x[0]);
+}
+function qrPintarSugerencias() {
+  const el = document.getElementById('qrSug');
+  if (!el) return;
+  const s = qrSugerencias().filter(x => x !== qr.desc);
+  el.innerHTML = s.map(x => `<button type="button" class="qr-sug" data-sug="${escapeHtml(x)}">${escapeHtml(x)}</button>`).join('');
+}
+
+// ── Pintar ──
+function qrHtml() {
+  const cerrar = `<button type="button" class="qr-x" data-cerrar="1" aria-label="Cerrar">✕</button>`;
+  let html = '';
+
+  if (qr.paso === 'elegir') {
+    html = `<div class="qr-head"><div class="qr-titulo">¿Qué quieres anotar?</div>${cerrar}</div>
+      <div class="qr-body"><div class="qr-opciones">
+        <button type="button" class="qr-op gasto" data-ir="gasto"><span class="qr-op-ico">💸</span><span><b>Gasto</b><small>Salió dinero: compras, pagos, transporte…</small></span></button>
+        <button type="button" class="qr-op abono" data-ir="abono-lista"><span class="qr-op-ico">💰</span><span><b>Abono de un evento</b><small>Entró dinero de una cotización</small></span></button>
+      </div></div>`;
+  }
+
+  else if (qr.paso === 'gasto') {
+    const m = qrNumero(qr.monto);
+    const cot = qr.cotId ? (cotsVivas || []).find(c => c.id === qr.cotId) : null;
+    if (qr.eligiendoCot) {
+      const lista = qrCotsGasto(qr.busca);
+      html = `<div class="qr-head"><button type="button" class="qr-atras" data-cot-cancelar="1" aria-label="Volver">‹</button><div class="qr-titulo">¿De qué evento es el gasto?</div>${cerrar}</div>
+        <div class="qr-buscar"><input class="input qr-buscar-inp" placeholder="Buscar cliente, temática, número…" value="${escapeHtml(qr.busca)}" autocomplete="off"></div>
+        <div class="qr-body qr-lista" id="qrLista">${lista.length ? lista.map(c => qrFilaCot(c, false)).join('') : '<div class="qr-vacio">No hay eventos que coincidan</div>'}</div>`;
+    } else {
+      html = `<div class="qr-head"><div class="qr-titulo"><span class="qr-tag gasto">💸 Gasto</span></div>${cerrar}</div>
+        <div class="qr-body">
+          <label class="qr-monto gasto"><span>RD$</span><input class="qr-monto-inp" inputmode="decimal" enterkeyhint="done" placeholder="0" value="${escapeHtml(qr.monto)}" autocomplete="off" aria-label="Monto del gasto"></label>
+          <div class="qr-lbl">Categoría</div>
+          ${qrLista('cat', catsActivas(qr.cat), qr.cat, qrIcoCat, 'Elige la categoría')}
+          <div class="qr-lbl">¿De qué cuenta salió?</div>
+          ${qrLista('cuenta', cuentasActivas(qr.cuenta), qr.cuenta, qrIcoCuenta, 'Elige la cuenta')}
+          <div class="qr-lbl">Fecha</div>
+          ${qrFechaHtml()}
+          <div class="qr-lbl">Descripción <small>(opcional)</small></div>
+          <input class="input qr-desc" placeholder="${escapeHtml(qr.cat)}" value="${escapeHtml(qr.desc)}" maxlength="120" autocomplete="off">
+          <div class="qr-sugs" id="qrSug"></div>
+          <div class="qr-lbl">Evento <small>(opcional)</small></div>
+          ${cot ? `<div class="qr-cot-elegida">${qrFilaCot(cot, false)}<button type="button" class="qr-quitar" data-cot-quitar="1" aria-label="Quitar evento">✕</button></div>`
+                : `<button type="button" class="qr-vincular" data-cot-elegir="1">🎈 Vincular a un evento</button>`}
+        </div>
+        <div class="qr-foot"><button type="button" class="btn btn-primary qr-guardar gasto" data-guardar="1"${m > 0 && qr.cuenta ? '' : ' disabled'}>${m > 0 ? 'Guardar gasto · ' + formatMoney(m) : 'Escribe el monto'}</button>
+          ${m > 0 && !qr.cuenta ? '<div class="qr-falta">Elige de qué cuenta salió</div>' : ''}</div>`;
+    }
+  }
+
+  else if (qr.paso === 'abono-lista') {
+    const lista = qrCotsAbono(qr.busca);
+    html = `<div class="qr-head">${qr.desdeElegir ? '<button type="button" class="qr-atras" data-ir="elegir" aria-label="Volver">‹</button>' : ''}<div class="qr-titulo"><span class="qr-tag abono">💰 Abono</span> ¿De qué evento?</div>${cerrar}</div>
+      <div class="qr-buscar"><input class="input qr-buscar-inp" placeholder="Buscar cliente, temática, número…" value="${escapeHtml(qr.busca)}" autocomplete="off"></div>
+      <div class="qr-body qr-lista" id="qrLista">${!cotsVivas ? '<div class="loading-page"><div class="spinner"></div></div>'
+        : lista.length ? lista.map(c => qrFilaCot(c, true)).join('') : `<div class="qr-vacio">${qr.busca ? 'Ningún evento con saldo coincide con la búsqueda' : 'No hay eventos con saldo pendiente 🎉'}</div>`}</div>`;
+  }
+
+  else if (qr.paso === 'abono-monto') {
+    const c = (cotsVivas || []).find(x => x.id === qr.cotId);
+    if (!c) { qr.paso = 'abono-lista'; return qrHtml(); }
+    const saldo = qrSaldo(c), m = qrNumero(qr.monto), f = fechaEventoISO(c);
+    const abonado = abonosDe(c).reduce((s, a) => s + a.monto, 0);
+    html = `<div class="qr-head"><button type="button" class="qr-atras" data-ir="abono-lista" aria-label="Volver">‹</button><div class="qr-titulo"><span class="qr-tag abono">💰 Abono</span></div>${cerrar}</div>
+      <div class="qr-body">
+        <div class="qr-evento" style="--c:${ESTADO_COLOR[c.estado] || '#9CA3AF'}">
+          <div class="qr-evento-cli">${escapeHtml(c.cliente_nombre || '—')}</div>
+          <div class="qr-evento-sub">${f ? '🎈 ' + escapeHtml(calFechaLarga(f)) : 'Sin fecha de evento'}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''} · ${escapeHtml(c.numero || '')}</div>
+          <div class="qr-evento-nums"><span>Total<b>${formatMoney(c.total)}</b></span><span>Abonado<b>${formatMoney(abonado)}</b></span><span class="debe">Debe<b>${formatMoney(saldo)}</b></span></div>
+        </div>
+        <label class="qr-monto abono"><span>RD$</span><input class="qr-monto-inp" inputmode="decimal" enterkeyhint="done" placeholder="0" value="${escapeHtml(qr.monto)}" autocomplete="off" aria-label="Monto del abono"></label>
+        <div class="qr-chips qr-rapidos">
+          <button type="button" class="qr-chip" data-monto="${saldo}">Todo lo que debe · ${formatMoney(saldo)}</button>
+          ${saldo >= 2 ? `<button type="button" class="qr-chip" data-monto="${Math.round(saldo / 2)}">La mitad · ${formatMoney(Math.round(saldo / 2))}</button>` : ''}
+        </div>
+        ${m > saldo + 0.5 ? `<div class="qr-aviso">⚠ Es más de lo que debe (${formatMoney(saldo)}). Revisa el monto.</div>` : ''}
+        <div class="qr-lbl">¿En qué cuenta entró?</div>
+        ${qrLista('cuenta', cuentasActivas(qr.cuenta), qr.cuenta, qrIcoCuenta, 'Elige la cuenta')}
+        <div class="qr-lbl">Fecha del pago</div>
+        ${qrFechaHtml()}
+      </div>
+      <div class="qr-foot"><button type="button" class="btn btn-primary qr-guardar abono" data-guardar="1"${m > 0 && qr.cuenta ? '' : ' disabled'}>${m > 0 ? 'Guardar abono · ' + formatMoney(m) : 'Escribe el monto'}</button>
+        ${m > 0 && !qr.cuenta ? '<div class="qr-falta">Elige en qué cuenta entró</div>' : ''}</div>`;
+  }
+
+  return html;
+}
+function qrPintar(enfocar) {
+  const sh = document.getElementById('qrSheet');
+  if (!sh || !qr) return;
+  const html = qrHtml();
+  sh.dataset.paso = qr.paso + (qr.eligiendoCot ? '-cot' : '');
+  sh.innerHTML = html;
+  const fe = sh.querySelector('.qr-fecha');   // el mismo calendario de fechas del resto de Kayra
+  if (fe) { dpMejorar(fe); fe.addEventListener('change', () => { if (fe.value) qr.fecha = fe.value > qrHoy() ? qrHoy() : fe.value; }); }
+  if (qr.paso === 'gasto' && !qr.eligiendoCot) qrPintarSugerencias();
+  if (enfocar) {
+    const foco = sh.querySelector('.qr-monto-inp') || (window.innerWidth > 768 ? sh.querySelector('.qr-buscar-inp') : null);
+    if (foco) { foco.focus({ preventScroll: true }); const n = foco.value.length; try { foco.setSelectionRange(n, n); } catch {} }
+  }
+}
+// Repinta sin perder el foco ni lo escrito (solo el botón Guardar y avisos dependen del monto)
+function qrRefrescarPie() {
+  const sh = document.getElementById('qrSheet');
+  if (!sh || !qr) return;
+  const viejo = sh.querySelector('.qr-foot'), aviso = sh.querySelector('.qr-aviso');
+  const tmp = document.createElement('div');
+  tmp.innerHTML = qrHtml();
+  const nuevo = tmp.querySelector('.qr-foot');
+  if (viejo && nuevo) viejo.replaceWith(nuevo);
+  const nuevoAviso = tmp.querySelector('.qr-aviso');
+  if (aviso && !nuevoAviso) aviso.remove();
+  else if (!aviso && nuevoAviso) sh.querySelector('.qr-rapidos')?.insertAdjacentElement('afterend', nuevoAviso);
+  else if (aviso && nuevoAviso) aviso.replaceWith(nuevoAviso);
+}
+window.qrAlCambiarCots = function() {
+  if (!qr) return;
+  if (qr.paso === 'abono-lista' || qr.eligiendoCot) {
+    const l = document.getElementById('qrLista'); if (!l) return;
+    const st = l.scrollTop;
+    const lista = qr.paso === 'abono-lista' ? qrCotsAbono(qr.busca) : qrCotsGasto(qr.busca);
+    l.innerHTML = lista.length ? lista.map(c => qrFilaCot(c, qr.paso === 'abono-lista')).join('') : '<div class="qr-vacio">No hay eventos que coincidan</div>';
+    l.scrollTop = st;
+  }
+};
+
+// ── Interacción ──
+function qrClick(e) {
+  const t = e.target.closest('button');
+  if (!t || !qr) return;
+  const d = t.dataset;
+  if (d.cerrar) return qrCerrar();
+  if (d.ir) {
+    if (d.ir === 'gasto') { qrIniciarGasto(); }
+    else if (d.ir === 'abono-lista') { if (qr.paso === 'elegir') qr.desdeElegir = true; qr.busca = ''; qr.paso = 'abono-lista'; }
+    else qr.paso = d.ir;
+    return qrPintar(d.ir === 'gasto');
+  }
+  if (t.classList.contains('qr-cot') && d.id) {
+    if (qr.paso === 'abono-lista') {
+      Object.assign(qr, { paso: 'abono-monto', cotId: d.id, monto: '', cuenta: qrLeer('cuenta_abono', ''), fecha: qrHoy() });
+      if (qr.cuenta && !cuentasActivas().includes(qr.cuenta)) qr.cuenta = '';
+      return qrPintar(true);
+    }
+    if (qr.eligiendoCot) { qr.cotId = d.id; qr.eligiendoCot = false; qr.busca = ''; return qrPintar(); }
+    return;
+  }
+  if (d.abrir) { qr.abierta = qr.abierta === d.abrir ? '' : d.abrir; return qrPintar(); }
+  if (d.cat) { qr.cat = d.cat; qr.abierta = ''; return qrPintar(); }
+  if (d.cuenta) { qr.cuenta = d.cuenta; qr.abierta = ''; return qrPintar(); }
+  if (d.fecha) { qr.fecha = d.fecha; return qrPintar(); }
+  if (d.fechaOtra) {
+    const fn = document.querySelector('#qrSheet .qr-fecha-nativa');
+    if (fn) { try { fn.showPicker(); } catch { fn.focus(); fn.click(); } }
+    return;
+  }
+  if (d.monto) { qr.monto = String(d.monto); const i = document.querySelector('#qrSheet .qr-monto-inp'); if (i) i.value = qr.monto; return qrRefrescarPie(); }
+  if (d.sug) { qr.desc = d.sug; const i = document.querySelector('#qrSheet .qr-desc'); if (i) i.value = d.sug; return qrPintarSugerencias(); }
+  if (d.cotElegir) { qr.eligiendoCot = true; qr.busca = ''; return qrPintar(); }
+  if (d.cotCancelar) { qr.eligiendoCot = false; qr.busca = ''; return qrPintar(); }
+  if (d.cotQuitar) { qr.cotId = ''; return qrPintar(); }
+  if (d.guardar) return qrGuardar();
+}
+function qrInput(e) {
+  if (!qr) return;
+  const el = e.target;
+  if (el.matches('.qr-monto-inp')) {
+    const limpio = el.value.replace(/[^\d.,]/g, '');
+    if (limpio !== el.value) el.value = limpio;
+    qr.monto = limpio;
+    qrRefrescarPie();
+  } else if (el.matches('.qr-desc')) {
+    qr.desc = el.value;
+  } else if (el.matches('.qr-buscar-inp') && e.type === 'input') {
+    qr.busca = el.value;
+    qrAlCambiarCots();
+  }
+}
+
+// ── Guardar, deshacer y avisos ──
+// Espera la confirmación del servidor un rato; si no llega (sin señal), Firestore ya lo dejó guardado en el teléfono.
+const qrConEspera = p => Promise.race([p.then(() => 'ok'), new Promise(r => setTimeout(() => r('local'), QR_ESPERA_RED))]);
+function qrRefrescarVista() {
+  const activa = document.querySelector('.page.active')?.id || '';
+  if (activa === 'page-dashboard') loadDashboard();
+  if (activa === 'page-gastos') loadGastos();
+  if (activa === 'page-cotizaciones') loadCotizaciones();
+  if (activa === 'page-cuentas') loadCuentas();
+  refrescarCierreAbierto();
+}
+let qrSnackTimer = null;
+function qrSnack(titulo, detalle, deshacer, tipo) {
+  let s = document.getElementById('qrSnack');
+  if (!s) { s = document.createElement('div'); s.id = 'qrSnack'; s.className = 'qr-snack'; document.body.appendChild(s); }
+  s.className = 'qr-snack ' + (tipo || 'ok');
+  s.innerHTML = `<div class="qr-snack-txt"><b>${titulo}</b>${detalle ? `<span>${detalle}</span>` : ''}</div>${deshacer ? '<button type="button" class="qr-snack-btn">Deshacer</button>' : ''}`;
+  if (deshacer) s.querySelector('button').onclick = () => { clearTimeout(qrSnackTimer); s.classList.remove('ver'); deshacer(); };
+  requestAnimationFrame(() => s.classList.add('ver'));
+  clearTimeout(qrSnackTimer);
+  qrSnackTimer = setTimeout(() => s.classList.remove('ver'), deshacer ? 12000 : 4000);
+}
+
+let qrGuardando = false;
+window.qrGuardar = async function() {
+  if (!qr || qrGuardando) return;
+  const monto = qrNumero(qr.monto);
+  if (!(monto > 0)) { toast('Escribe el monto', 'error'); return; }
+  if (!qr.cuenta) { toast(qr.paso === 'gasto' ? 'Elige de qué cuenta salió' : 'Elige en qué cuenta entró', 'error'); return; }
+  qrGuardando = true;
+  const btn = document.querySelector('#qrSheet .qr-guardar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+  try {
+    if (qr.paso === 'gasto') await qrGuardarGasto(monto);
+    else if (qr.paso === 'abono-monto') await qrGuardarAbono(monto);
+  } catch (e) {
+    console.error(e);
+    toast('No se pudo guardar: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
+  } finally { qrGuardando = false; }
+};
+
+async function qrGuardarGasto(monto) {
+  const s = { ...qr };
+  const cot = s.cotId ? (cotsVivas || []).find(c => c.id === s.cotId) : null;
+  const [y, m] = s.fecha.split('-');
+  const desc = (s.desc || '').trim() || s.cat;
+  const data = {
+    descripcion: desc, monto, fecha: s.fecha, categoria: s.cat, cuenta: s.cuenta,
+    mes_anio: `${m}-${y}`,
+    mes_anio_evento: cot ? mesEventoDe(cot) : `${m}-${y}`,
+    cot_id: cot ? cot.id : '', cot_numero: cot?.numero || '', cot_cliente: cot?.cliente_nombre || '',
+    origen: 'rapido',
+    creado_en: serverTimestamp(),
+  };
+  const ref = _doc(collection(db, 'gastos'));   // id creado en el teléfono: sirve para deshacer aunque no haya señal
+  const r = await qrConEspera(setDoc(ref, data));
+  qrGuardarPref('cat', s.cat); qrGuardarPref('cuenta_gasto', s.cuenta);
+  (qrGastosRecientes = qrGastosRecientes || []).push(data);
+  logAccion('Creó', 'Gasto', `${desc} · ${formatMoney(monto)}${cot ? ' · ' + cot.numero : ''} · registro rápido`);
+  qrCerrar();
+  qrSnack(r === 'ok' ? 'Gasto guardado ✓' : 'Guardado en el teléfono',
+    r === 'ok' ? `${escapeHtml(desc)} · ${formatMoney(monto)} · ${s.cuenta}` : 'Sin señal: se enviará solo cuando vuelva la conexión',
+    async () => {
+      try { await qrConEspera(deleteDoc(ref)); logAccion('Eliminó', 'Gasto', `${desc} · ${formatMoney(monto)} · deshecho en registro rápido`); toast('Gasto deshecho', 'info'); qrRefrescarVista(); }
+      catch (e) { toast('No se pudo deshacer: ' + e.message, 'error'); }
+    }, r === 'ok' ? 'ok' : 'local');
+  qrRefrescarVista();
+}
+
+async function qrGuardarAbono(monto) {
+  const s = { ...qr };
+  const c = (cotsVivas || []).find(x => x.id === s.cotId);
+  if (!c) throw new Error('No se encontró la cotización');
+  const antes = { abonos: Array.isArray(c.abonos) ? c.abonos : [], abono: c.abono || 0, estado: c.estado };
+  const abonos = [...abonosDe(c), { fecha: s.fecha, monto, cuenta: s.cuenta }];
+  const suma = abonos.reduce((t, a) => t + a.monto, 0);
+  let estado = c.estado;
+  if (suma > 0 && estado === 'Cotización') estado = 'Reservado';
+  if ((c.total || 0) > 0 && suma >= c.total - 0.5 && estado !== 'Realizado' && estado !== 'Anulada') estado = 'Pagada';
+  const ref = doc(db, 'cotizaciones', c.id);
+  const r = await qrConEspera(updateDoc(ref, { abonos, abono: suma, estado, actualizado_en: serverTimestamp() }));
+  qrGuardarPref('cuenta_abono', s.cuenta);
+  const cambios = [{ campo: 'Abonos', antes: formatMoney(antes.abono), despues: `${formatMoney(suma)} (+${formatMoney(monto)} ${s.cuenta}, ${fmtF(s.fecha)})` }];
+  if (estado !== c.estado) cambios.push({ campo: 'Estado', antes: c.estado, despues: estado });
+  logAccion('Editó', 'Cotización', `${c.numero || ''} · ${c.cliente_nombre || ''} · abono ${formatMoney(monto)} · registro rápido`, null, cambios);
+  qrCerrar();
+  const restante = Math.max(0, (c.total || 0) - suma);
+  qrSnack(r === 'ok' ? 'Abono guardado ✓' : 'Guardado en el teléfono',
+    r === 'ok' ? `${escapeHtml(c.cliente_nombre || '')} · ${formatMoney(monto)} · ${restante > 0.5 ? 'debe ' + formatMoney(restante) : '¡quedó saldado!'}${estado !== c.estado ? ' · ahora ' + estado : ''}`
+               : 'Sin señal: se enviará solo cuando vuelva la conexión',
+    async () => {
+      try {
+        await qrConEspera(updateDoc(ref, { ...antes, actualizado_en: serverTimestamp() }));
+        logAccion('Editó', 'Cotización', `${c.numero || ''} · ${c.cliente_nombre || ''} · se deshizo el abono de ${formatMoney(monto)} (registro rápido)`);
+        toast('Abono deshecho', 'info'); qrRefrescarVista();
+      } catch (e) { toast('No se pudo deshacer: ' + e.message, 'error'); }
+    }, r === 'ok' ? 'ok' : 'local');
+  qrRefrescarVista();
+}
+
+// ── Sacudir el teléfono para anotar (opcional, se activa por teléfono en Configuración) ──
+// Mismo criterio que Chele Pop: picos de fuerza (en g, sin la gravedad) separados 130 ms; 3 en 1,2 s (2 con sensibilidad alta).
+// En una web solo funciona con la app abierta en pantalla.
+const QR_SACUDIR = { alta: [0.5, 2], normal: [1.5, 3], baja: [3.0, 3] };
+let qrSac = { picos: [], ultPico: 0, ultDisparo: 0 };
+function qrMovimiento(e) {
+  const a = e.accelerationIncludingGravity;
+  if (!a || a.x == null) return;
+  const [umbral, necesarios] = QR_SACUDIR[qrLeer('sacudir_sens', 'normal')] || QR_SACUDIR.normal;
+  const g = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z) / 9.81;
+  const ahora = Date.now();
+  if (Math.abs(g - 1) < umbral || ahora - qrSac.ultPico < 130) return;
+  qrSac.ultPico = ahora;
+  qrSac.picos = qrSac.picos.filter(t => ahora - t <= 1200);
+  qrSac.picos.push(ahora);
+  if (qrSac.picos.length < necesarios || ahora - qrSac.ultDisparo < 2500) return;
+  qrSac.picos = []; qrSac.ultDisparo = ahora;
+  if (qr || document.visibilityState !== 'visible' || document.querySelector('.modal-overlay.open, #cotModal.open')) return;
+  try { navigator.vibrate && navigator.vibrate(40); } catch {}
+  qrAbrir();
+}
+function qrSacudirAplicar() {
+  window.removeEventListener('devicemotion', qrMovimiento);
+  if (qrLeer('sacudir', '0') === '1') window.addEventListener('devicemotion', qrMovimiento);
+}
+window.qrSacudirCambiar = async function(activo) {
+  if (activo && typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    try { if (await DeviceMotionEvent.requestPermission() !== 'granted') activo = false; } catch { activo = false; }   // iPhone pide permiso
+  }
+  qrGuardarPref('sacudir', activo ? '1' : '0');
+  qrSacudirAplicar();
+  qrPintarAjustes();
+  toast(activo ? 'Listo: sacude el teléfono para anotar' : 'Sacudir desactivado', 'info');
+};
+window.qrSensCambiar = function(v) { qrGuardarPref('sacudir_sens', v); qrPintarAjustes(); };
+function qrPintarAjustes() {
+  const el = document.getElementById('qrAjustes');
+  if (!el) return;
+  const on = qrLeer('sacudir', '0') === '1', sens = qrLeer('sacudir_sens', 'normal');
+  const hay = typeof DeviceMotionEvent !== 'undefined';
+  el.innerHTML = `
+    <label class="qr-switch"><input type="checkbox" ${on ? 'checked' : ''} ${hay ? '' : 'disabled'} onchange="qrSacudirCambiar(this.checked)"><span></span>
+      <b>Sacudir el teléfono para anotar</b></label>
+    <p class="qr-ajuste-nota">${hay ? 'Funciona con la app abierta en pantalla. Se guarda solo en este teléfono.' : 'Este dispositivo no tiene sensor de movimiento.'}</p>
+    ${on ? `<div class="qr-lbl" style="margin-top:10px">Sensibilidad</div><div class="qr-chips">${[['baja', 'Sacudida fuerte'], ['normal', 'Normal'], ['alta', 'Movimiento corto']].map(([v, t]) =>
+      `<button type="button" class="qr-chip${v === sens ? ' sel' : ''}" onclick="qrSensCambiar('${v}')">${t}</button>`).join('')}</div>` : ''}`;
+}
+
+// Con el teclado abierto en el celular, la hoja se sube encima de él para que "Guardar" siempre se vea
+function qrAjustarTeclado() {
+  const sh = document.getElementById('qrSheet'), vv = window.visualViewport;
+  if (!sh || !vv) return;
+  if (window.innerWidth > 768) { sh.style.bottom = ''; sh.style.maxHeight = ''; return; }
+  const tapado = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+  sh.style.bottom = tapado + 'px';
+  sh.style.maxHeight = Math.round(vv.height * 0.94) + 'px';
+}
+if (window.visualViewport) { visualViewport.addEventListener('resize', qrAjustarTeclado); visualViewport.addEventListener('scroll', qrAjustarTeclado); }
+
+// Arranque: botón flotante, atajos del ícono (?rapido=gasto|abono) y sacudir
+function qrIniciar() {
+  if (!document.getElementById('qrFab')) {
+    const fab = document.createElement('button');
+    fab.id = 'qrFab'; fab.type = 'button'; fab.className = 'qr-fab';
+    fab.setAttribute('aria-label', 'Anotar gasto o abono'); fab.title = 'Anotar gasto o abono';
+    fab.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+    fab.addEventListener('click', () => qrAbrir());
+    document.body.appendChild(fab);
+  }
+  qrSacudirAplicar();
+  qrPintarAjustes();
+  const p = new URLSearchParams(location.search).get('rapido');
+  if (p) {
+    history.replaceState(null, '', location.pathname);   // que al recargar no se vuelva a abrir
+    qrAbrir(p === 'gasto' || p === 'abono' ? p : undefined);
+  }
+}
+
+// ============================================================
+// CUENTAS Y CATEGORÍAS DE GASTOS EDITABLES (Configuración)
+// Se guardan en config/listas. Al cargar, se aplican sobre CUENTAS / CUENTA_COLOR / CUENTA_EMOJI / CATS_GASTO / CAT_EMOJI,
+// así el resto del sistema (saldos, cierres, filtros) las usa sin más cambios.
+//  - Deshabilitada: no sale para anotar cosas nuevas, pero su historial y saldos se siguen viendo.
+//  - Renombrar: se actualizan los registros que la usan (gastos, abonos, cuenta de cobro y los cierres guardados).
+//  - Borrar: si tiene movimientos, primero se pasan a otra; así nada queda "Sin asignar".
+// ============================================================
+const PALETA_CUENTA = [['#6B7280','⚪'],['#2E9E4F','🟢'],['#1D4E9E','🔵'],['#E6B800','🟡'],['#DC2626','🔴'],['#7C3AED','🟣'],['#EA580C','🟠'],['#0891B2','🔵'],['#DB2777','🟣'],['#78350F','🟤']];
+const EMOJIS_CAT = ['🪑','🎈','🍽️','🚚','📦','🙋','🏠','↩️','✳️','🎂','🧁','🎁','🔌','🧹','⛽','📣','🧾','💡','🛠️','🎨','👕','📱'];
+const emojiDeColor = c => (PALETA_CUENTA.find(p => p[0].toLowerCase() === String(c || '').toLowerCase()) || [0, '⚪'])[1];
+let listas = null;   // { cuentas:[{nombre,color,activa}], categorias:[{nombre,emoji,activa}] }
+let listasUsos = null; // { cuentas:{nombre:n}, categorias:{nombre:n} }
+
+function listasPorDefecto() {
+  return {
+    cuentas: ['Efectivo','BHD','Banreservas','Caribe'].map(n => ({ nombre: n, color: CUENTA_COLOR[n] || '#6B7280', activa: true })),
+    categorias: CATS_GASTO.map(n => ({ nombre: n, emoji: CAT_EMOJI[n] || '✳️', activa: true })),
+  };
+}
+function aplicarListas() {
+  CUENTAS.splice(0, CUENTAS.length, ...listas.cuentas.map(c => c.nombre));
+  Object.keys(CUENTA_COLOR).forEach(k => delete CUENTA_COLOR[k]);
+  Object.keys(CUENTA_EMOJI).forEach(k => delete CUENTA_EMOJI[k]);
+  listas.cuentas.forEach(c => { CUENTA_COLOR[c.nombre] = c.color; CUENTA_EMOJI[c.nombre] = emojiDeColor(c.color); });
+  CATS_GASTO.splice(0, CATS_GASTO.length, ...listas.categorias.map(c => c.nombre));
+  listas.categorias.forEach(c => { CAT_EMOJI[c.nombre] = c.emoji || '✳️'; });
+}
+async function cargarListas() {
+  listas = listasPorDefecto();
+  try {
+    const s = await getDoc(doc(db, 'config', 'listas'));
+    if (s.exists()) {
+      const d = s.data();
+      if (Array.isArray(d.cuentas) && d.cuentas.length) listas.cuentas = d.cuentas;
+      if (Array.isArray(d.categorias) && d.categorias.length) listas.categorias = d.categorias;
+    }
+  } catch (e) { console.warn('No se pudieron leer las cuentas/categorías:', e); }
+  aplicarListas();
+}
+async function guardarListas() {
+  aplicarListas();
+  await setDoc(doc(db, 'config', 'listas'), { cuentas: listas.cuentas, categorias: listas.categorias, actualizado_en: serverTimestamp() });
+}
+// Para los selectores: solo las activas (y la que ya tenga el registro que se edita, aunque esté deshabilitada)
+function cuentasActivas(sel) {
+  const l = (listas ? listas.cuentas.filter(c => c.activa !== false).map(c => c.nombre) : [...CUENTAS]);
+  return sel && !l.includes(sel) && CUENTAS.includes(sel) ? [...l, sel] : l;
+}
+function catsActivas(sel) {
+  const l = (listas ? listas.categorias.filter(c => c.activa !== false).map(c => c.nombre) : [...CATS_GASTO]);
+  return sel && !l.includes(sel) ? [...l, sel] : l;
+}
+
+// ── Cuántos registros usan cada cuenta / categoría ──
+async function contarUsos() {
+  const [gs, cs] = await Promise.all([getDocs(collection(db, 'gastos')), getDocs(collection(db, 'cotizaciones'))]);
+  const u = { cuentas: {}, categorias: {} };
+  const mas = (o, k) => { if (k) o[k] = (o[k] || 0) + 1; };
+  gs.docs.forEach(d => { const g = d.data(); mas(u.cuentas, g.cuenta); mas(u.categorias, g.categoria); });
+  cs.docs.forEach(d => {
+    const c = d.data();
+    const set = new Set((Array.isArray(c.abonos) ? c.abonos : []).map(a => a.cuenta).filter(Boolean));
+    if (c.cuenta_cobro) set.add(c.cuenta_cobro);
+    set.forEach(k => mas(u.cuentas, k));
+  });
+  listasUsos = u;
+  return u;
+}
+
+// ── Pasar los registros de una cuenta/categoría a otra (renombrar o borrar) ──
+const sumarCampos = (a, b) => { const r = { ...a }; Object.keys(b || {}).forEach(k => { r[k] = typeof b[k] === 'number' ? (Number(r[k]) || 0) + b[k] : (r[k] ?? b[k]); }); return r; };
+async function enLotes(tareas, n = 15) { for (let i = 0; i < tareas.length; i += n) await Promise.all(tareas.slice(i, i + n).map(f => f())); }
+async function migrarCuenta(vieja, nueva) {
+  const tareas = [];
+  const gs = await getDocs(query(collection(db, 'gastos'), where('cuenta', '==', vieja)));
+  gs.docs.forEach(d => tareas.push(() => updateDoc(d.ref, { cuenta: nueva })));
+  const cs = await getDocs(collection(db, 'cotizaciones'));
+  cs.docs.forEach(d => {
+    const c = d.data(), ab = Array.isArray(c.abonos) ? c.abonos : [];
+    if (!ab.some(a => a.cuenta === vieja) && c.cuenta_cobro !== vieja) return;
+    const cambio = { abonos: ab.map(a => a.cuenta === vieja ? { ...a, cuenta: nueva } : a) };
+    if (c.cuenta_cobro === vieja) cambio.cuenta_cobro = nueva;
+    tareas.push(() => updateDoc(d.ref, cambio));
+  });
+  // Cierres ya guardados: sus totales por cuenta pasan a la cuenta nueva (si ya existía, se suman)
+  const ci = await getDocs(collection(db, 'cierres'));
+  ci.docs.forEach(d => {
+    const x = d.data(), cambio = {};
+    ['por_cuenta', 'por_cuenta_eventos'].forEach(campo => {
+      const m = x[campo];
+      if (!m || !m[vieja]) return;
+      const nm = { ...m }; const v = nm[vieja]; delete nm[vieja];
+      nm[nueva] = nm[nueva] ? sumarCampos(nm[nueva], v) : v;
+      cambio[campo] = nm;
+    });
+    if (Object.keys(cambio).length) tareas.push(() => updateDoc(d.ref, cambio));
+  });
+  await enLotes(tareas);
+  return tareas.length;
+}
+async function migrarCategoria(vieja, nueva) {
+  const gs = await getDocs(query(collection(db, 'gastos'), where('categoria', '==', vieja)));
+  await enLotes(gs.docs.map(d => () => updateDoc(d.ref, { categoria: nueva })));
+  return gs.size;
+}
+
+// ── Pantalla en Configuración ──
+async function pintarListasCfg(recontar) {
+  const el = document.getElementById('listasCfg');
+  if (!el || !listas) return;
+  const fila = (tipo, x, i) => {
+    const n = listasUsos ? (listasUsos[tipo][x.nombre] || 0) : null;
+    const ico = tipo === 'cuentas' ? `<i class="lc-dot" style="background:${x.color}"></i>` : `<span class="lc-emoji">${x.emoji || '✳️'}</span>`;
+    return `<div class="lc-fila${x.activa === false ? ' off' : ''}">
+      ${ico}<div class="lc-nom"><b>${escapeHtml(x.nombre)}</b><small>${n === null ? '…' : n === 0 ? 'Sin movimientos' : n === 1 ? '1 movimiento' : n + ' movimientos'}${x.activa === false ? ' · <span class="lc-tag">Deshabilitada</span>' : ''}</small></div>
+      <div class="lc-acc">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="listaEditar('${tipo}',${i})" title="Editar">✏️</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="listaActivar('${tipo}',${i})">${x.activa === false ? 'Habilitar' : 'Deshabilitar'}</button>
+        <button type="button" class="btn btn-ghost btn-sm lc-borrar" onclick="listaBorrar('${tipo}',${i})" title="Borrar">🗑</button>
+      </div></div>`;
+  };
+  el.innerHTML = `
+    <div class="lc-sec"><div class="lc-tit">Cuentas de dinero</div>${listas.cuentas.map((x, i) => fila('cuentas', x, i)).join('')}
+      <button type="button" class="btn btn-secondary btn-sm lc-add" onclick="listaEditar('cuentas',-1)">+ Agregar cuenta</button></div>
+    <div class="lc-sec"><div class="lc-tit">Categorías de gastos</div>${listas.categorias.map((x, i) => fila('categorias', x, i)).join('')}
+      <button type="button" class="btn btn-secondary btn-sm lc-add" onclick="listaEditar('categorias',-1)">+ Agregar categoría</button></div>`;
+  if (recontar || !listasUsos) { try { await contarUsos(); pintarListasCfg(false); } catch (e) { console.warn('No se pudo contar el uso:', e); } }
+}
+const listaNombre = t => t === 'cuentas' ? 'cuenta' : 'categoría';
+function abrirModalLista(titulo, cuerpo, pie) {
+  document.getElementById('modalTitle').textContent = titulo;
+  document.getElementById('modalBody').innerHTML = cuerpo;
+  document.getElementById('modalFooter').innerHTML = pie;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+window.listaEditar = function(tipo, i) {
+  const x = i >= 0 ? listas[tipo][i] : null;
+  const esCuenta = tipo === 'cuentas';
+  const usos = x && listasUsos ? (listasUsos[tipo][x.nombre] || 0) : 0;
+  const color = x?.color || PALETA_CUENTA.find(p => !listas.cuentas.some(c => c.color === p[0]))?.[0] || PALETA_CUENTA[0][0];
+  const emoji = x?.emoji || '✳️';
+  abrirModalLista(x ? `Editar ${listaNombre(tipo)}` : `Nueva ${listaNombre(tipo)}`, `
+    <div class="form-group"><label>Nombre</label>
+      <input class="input" id="lcNombre" value="${escapeHtml(x?.nombre || '')}" maxlength="30" placeholder="${esCuenta ? 'Ej.: Popular' : 'Ej.: Publicidad'}" autocomplete="off"></div>
+    ${esCuenta
+      ? `<div class="form-group"><label>Color</label><div class="lc-paleta">${PALETA_CUENTA.map(([c]) => `<button type="button" class="lc-sw${c === color ? ' sel' : ''}" data-c="${c}" style="background:${c}" onclick="document.querySelectorAll('.lc-sw').forEach(b=>b.classList.toggle('sel',b===this))" aria-label="Color ${c}"></button>`).join('')}</div></div>`
+      : `<div class="form-group"><label>Ícono</label><div class="lc-paleta">${EMOJIS_CAT.map(e => `<button type="button" class="lc-em${e === emoji ? ' sel' : ''}" data-e="${e}" onclick="document.querySelectorAll('.lc-em').forEach(b=>b.classList.toggle('sel',b===this))">${e}</button>`).join('')}</div></div>`}
+    ${x && usos ? `<p class="lc-nota">Si cambias el nombre, sus ${usos} movimiento(s) pasan al nombre nuevo.</p>` : ''}`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="lcGuardar" onclick="listaGuardar('${tipo}',${i})">Guardar</button>`);
+  setTimeout(() => document.getElementById('lcNombre')?.focus(), 50);
+};
+window.listaGuardar = unaVez(async function(tipo, i) {
+  const nombre = document.getElementById('lcNombre').value.trim().replace(/\s+/g, ' ');
+  if (!nombre) { toast('Escribe el nombre', 'error'); return; }
+  if (/['"<>\\]/.test(nombre)) { toast('El nombre no puede llevar comillas ni < >', 'error'); return; }
+  const lista = listas[tipo];
+  if (lista.some((x, j) => j !== i && normalizarTexto(x.nombre) === normalizarTexto(nombre))) { toast(`Ya existe una ${listaNombre(tipo)} con ese nombre`, 'error'); return; }
+  const x = i >= 0 ? { ...lista[i] } : { nombre, activa: true };
+  const viejo = i >= 0 ? lista[i].nombre : null;
+  if (tipo === 'cuentas') x.color = document.querySelector('.lc-sw.sel')?.dataset.c || x.color || '#6B7280';
+  else x.emoji = document.querySelector('.lc-em.sel')?.dataset.e || x.emoji || '✳️';
+  x.nombre = nombre;
+  const btn = document.getElementById('lcGuardar'); if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+  try {
+    let movidos = 0;
+    if (viejo && viejo !== nombre) movidos = tipo === 'cuentas' ? await migrarCuenta(viejo, nombre) : await migrarCategoria(viejo, nombre);
+    if (i >= 0) lista[i] = x; else lista.push(x);
+    await guardarListas();
+    logAccion(i >= 0 ? 'Editó' : 'Creó', tipo === 'cuentas' ? 'Cuenta' : 'Categoría de gasto',
+      viejo && viejo !== nombre ? `${viejo} → ${nombre}${movidos ? ` (${movidos} registro(s) actualizados)` : ''}` : nombre);
+    closeModal();
+    toast(i >= 0 ? `${nombre} actualizada ✓` : `${nombre} agregada ✓`);
+    pintarListasCfg(viejo && viejo !== nombre);
+  } catch (e) {
+    console.error(e); toast('No se pudo guardar: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar'; }
+  }
+}, 800);
+window.listaActivar = async function(tipo, i) {
+  const x = listas[tipo][i];
+  const activas = listas[tipo].filter(y => y.activa !== false).length;
+  if (x.activa !== false && activas <= 1) { toast(`Debe quedar al menos una ${listaNombre(tipo)} habilitada`, 'error'); return; }
+  x.activa = x.activa === false;
+  try {
+    await guardarListas();
+    logAccion('Editó', tipo === 'cuentas' ? 'Cuenta' : 'Categoría de gasto', `${x.nombre}: ${x.activa ? 'habilitada' : 'deshabilitada'}`);
+    toast(x.activa ? `${x.nombre} habilitada` : `${x.nombre} deshabilitada: ya no sale para anotar, su historial se conserva`, 'info');
+  } catch (e) { x.activa = !x.activa; toast('No se pudo guardar: ' + e.message, 'error'); }
+  pintarListasCfg(false);
+};
+window.listaBorrar = async function(tipo, i) {
+  const x = listas[tipo][i];
+  if (listas[tipo].length <= 1) { toast(`Debe quedar al menos una ${listaNombre(tipo)}`, 'error'); return; }
+  if (!listasUsos) { try { await contarUsos(); } catch {} }
+  const usos = listasUsos ? (listasUsos[tipo][x.nombre] || 0) : 0;
+  const otras = listas[tipo].filter((y, j) => j !== i);
+  abrirModalLista(`Borrar ${escapeHtml(x.nombre)}`, usos
+    ? `<p style="margin-bottom:12px"><b>${escapeHtml(x.nombre)}</b> tiene <b>${usos} movimiento(s)</b>. Para borrarla, elige a qué ${listaNombre(tipo)} pasarlos:</p>
+       <select class="input" id="lcDestino">${otras.map(y => `<option value="${escapeHtml(y.nombre)}">${tipo === 'cuentas' ? emojiDeColor(y.color) : (y.emoji || '')} ${escapeHtml(y.nombre)}${y.activa === false ? ' (deshabilitada)' : ''}</option>`).join('')}</select>
+       <p class="lc-nota">Si prefieres conservar su historial tal cual, mejor <b>deshabilítala</b>: deja de salir para anotar y no se pierde nada.</p>`
+    : `<p>¿Borrar <b>${escapeHtml(x.nombre)}</b>? No tiene movimientos, así que no afecta nada.</p>`,
+    `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+     ${usos ? `<button class="btn btn-secondary" onclick="closeModal();listaActivar('${tipo}',${i})"${x.activa === false ? ' style="display:none"' : ''}>Deshabilitar</button>` : ''}
+     <button class="btn btn-danger" id="lcBorrarBtn" style="background:#DC2626;color:#fff;border-color:#DC2626" onclick="listaBorrarConfirmar('${tipo}',${i})">${usos ? 'Pasar y borrar' : 'Borrar'}</button>`);
+};
+window.listaBorrarConfirmar = unaVez(async function(tipo, i) {
+  const x = listas[tipo][i];
+  const destino = document.getElementById('lcDestino')?.value || '';
+  const btn = document.getElementById('lcBorrarBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Borrando…'; }
+  try {
+    let movidos = 0;
+    if (destino) movidos = tipo === 'cuentas' ? await migrarCuenta(x.nombre, destino) : await migrarCategoria(x.nombre, destino);
+    listas[tipo].splice(i, 1);
+    if (!listas[tipo].some(y => y.activa !== false)) listas[tipo][0].activa = true;
+    await guardarListas();
+    logAccion('Eliminó', tipo === 'cuentas' ? 'Cuenta' : 'Categoría de gasto', `${x.nombre}${destino ? ` (sus ${movidos} registro(s) pasaron a ${destino})` : ''}`);
+    closeModal();
+    toast(`${x.nombre} borrada${destino ? `; sus movimientos ahora están en ${destino}` : ''}`);
+    pintarListasCfg(true);
+  } catch (e) {
+    console.error(e); toast('No se pudo borrar: ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
+  }
+}, 800);
+
+// ============================================================
 // CALENDARIO DE EVENTOS
 // Vista de mes (cada día muestra cliente y hora de sus eventos) y vista de lista agrupada por día con el
 // nombre del día ("Sábado 21 de noviembre"). Usa el mismo mapa en vivo que el selector de fecha (eventosMapa),
@@ -4749,7 +5511,7 @@ window.loadDashboard = async function() {
   cargarResumenCotizaciones();
 
   // Próximos eventos (mes actual) / Eventos del mes (mes pasado o futuro elegido)
-  document.getElementById('dashProximosTitulo').textContent = esMesActual ? '🎈 Próximos eventos' : `🎈 Eventos de ${etiqueta}`;
+  document.getElementById('dashProximosTitulo').textContent = esMesActual ? '🎈 Próximos' : '🎈 Eventos del período';
   let proximos = eventosSnap.docs
     .map(d => ({ id:d.id, ...d.data() }))
     .filter(c => c.estado==='Reservado'||c.estado==='Pagada'||c.estado==='Realizado')
@@ -4813,6 +5575,8 @@ window.dashTab = function(t) {
   document.getElementById('dashRecientes').style.display = prox ? 'none' : '';
   document.getElementById('dashProximosTitulo').classList.toggle('active', prox);
   document.getElementById('dashRecientesTab').classList.toggle('active', !prox);
+  document.getElementById('dashIrCal').style.display   = prox ? '' : 'none';   // en Próximos: ir al calendario
+  document.getElementById('dashIrTodas').style.display = prox ? 'none' : '';   // en Recientes: ver todas las cotizaciones
   try { localStorage.setItem('dashTab', prox ? 'prox' : 'rec'); } catch {}
 };
 // Al cambiar el período con el selector flotante, el contenido se actualiza sin recargar y sin saltar: se mantiene en pantalla lo que estabas viendo
