@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">  
-  <link rel="stylesheet" href="main.css?v=20261116w">
+  <link rel="stylesheet" href="main.css?v=20261116z">
 </head>
 <body>
 <div style="position:fixed;top:8px;right:8px;z-index:9999;background:#D97706;color:#fff;font:700 11px/1 sans-serif;padding:6px 10px;border-radius:99px;letter-spacing:.5px;pointer-events:none">BETA · DATOS DE PRUEBA</div>
@@ -214,7 +214,7 @@
       <!-- Dinero por cuenta -->
       <div class="card" style="margin-top:20px">
         <div class="card-header">
-          <span class="card-title">💰 Dinero por cuenta (período elegido)</span>
+          <span class="card-title"><svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--morado)"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Dinero por cuenta (período elegido)</span>
           <button class="btn btn-ghost btn-sm" onclick="navTo('cuentas')">Ver detalle</button>
         </div>
         <div class="card-body"><div class="grid-4" id="dashCuentas"></div></div>
@@ -223,7 +223,7 @@
       <!-- Ganancia general: visor independiente del mes elegido arriba (solo lee, no afecta nada) -->
       <div class="card" style="margin-top:20px">
         <div class="card-header" style="flex-wrap:wrap;gap:8px">
-          <span class="card-title">📈 Ganancia general</span>
+          <span class="card-title"><svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--morado)"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Ganancia general</span>
           <input type="month" class="input" id="filtroGanancia" data-range="1" data-clear="1" data-clear-label="Todo el historial" data-vacio="Todo el historial" oninput="renderGanancia()">
         </div>
         <div class="card-body" id="dashGanancia"><div class="loading-page"><div class="spinner"></div></div></div>
@@ -232,7 +232,7 @@
       <!-- Resumen de cotizaciones por estado -->
       <div class="card" style="margin-top:20px">
         <div class="card-header">
-          <span class="card-title">📊 Resumen de cotizaciones</span>
+          <span class="card-title"><svg class="ico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--morado)"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Resumen de cotizaciones</span>
           <div style="display:flex;gap:6px">
             <button class="btn btn-secondary btn-sm" id="dashResumenBtnMes" onclick="setDashResumenAlcance('mes')">Período elegido</button>
             <button class="btn btn-secondary btn-sm" id="dashResumenBtnTodas" onclick="setDashResumenAlcance('todas')">Todas</button>
@@ -617,14 +617,14 @@
         </div>
 
         <div class="form-row" id="cotClienteInfo" style="display:none">
-          <div><span style="font-size:0.8rem;color:var(--text-secondary)">📱 </span><span id="cotClienteTel" style="font-size:0.85rem"></span></div>
-          <div><span style="font-size:0.8rem;color:var(--text-secondary)">📧 </span><span id="cotClienteEmail" style="font-size:0.85rem"></span></div>
+          <div><span style="color:var(--text-secondary)"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></span><span id="cotClienteTel" style="font-size:0.85rem"></span></div>
+          <div><span style="color:var(--text-secondary)"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 6 12 13 2 6"/></svg></span><span id="cotClienteEmail" style="font-size:0.85rem"></span></div>
         </div>
 
         <hr class="divider">
 
         <!-- Datos del evento -->
-        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary);margin-bottom:12px">🎈 Datos del evento</div>
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary);margin-bottom:12px"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Datos del evento</div>
         <div class="form-row-3">
           <div class="form-group">
             <label>Fecha del evento</label>
@@ -646,7 +646,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Temática 🎨</label>
+            <label>Temática</label>
             <input type="text" class="input" id="cotTematica" placeholder="Ej: Frozen, Spiderman...">
           </div>
         </div>
@@ -660,7 +660,7 @@
 
         <!-- Items -->
         <div class="svc-head-row">
-          <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary)">📋 Servicios <span id="svcCount"></span></span>
+          <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary)"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>Servicios <span id="svcCount"></span></span>
           <div class="svc-acc">
             <button type="button" class="btn btn-secondary btn-sm" id="svcToggleTodos" onclick="toggleSvcTodos()" style="display:none">⇕ Contraer</button>
             <button type="button" class="btn btn-secondary btn-sm" onclick="openSvcPicker()">+ Agregar servicio</button>
@@ -709,7 +709,7 @@
             <label>Cuenta donde se cobrará</label>
             <select class="input" id="cotCuentaCobro" autocomplete="off" data-lpignore="true">
               <option value="">— Por definir —</option>
-              <option value="Efectivo">⚪ Efectivo</option><option value="BHD">🟢 BHD</option><option value="Banreservas">🔵 Banreservas</option><option value="Caribe">🟡 Caribe</option>
+              <option value="Efectivo">Efectivo</option><option value="BHD">BHD</option><option value="Banreservas">Banreservas</option><option value="Caribe">Caribe</option>
             </select>
             <small style="color:var(--text-secondary)">Cuenta prevista; los abonos pueden ir a otra. Alimenta "Pagos recibidos".</small>
           </div>
@@ -717,7 +717,7 @@
 
         <hr class="divider">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary)">💰 Abonos recibidos <small style="text-transform:none;font-weight:400">— uso interno, en el PDF/WhatsApp solo se ve el total</small></span>
+          <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-secondary)"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Abonos recibidos <small style="text-transform:none;font-weight:400">— uso interno, en el PDF/WhatsApp solo se ve el total</small></span>
           <button type="button" class="btn btn-secondary btn-sm" onclick="openAbonoModal()">+ Agregar abono</button>
         </div>
         <div id="cotAbonosProg"></div>
@@ -814,13 +814,12 @@ function contarEstados(lista) {
 const CUENTAS = ['Efectivo','BHD','Banreservas','Caribe'];
 // Un color por cuenta para no confundirlas (BHD verde, Banreservas azul, Caribe amarillo (logo verde y amarillo), Efectivo gris)
 const CUENTA_COLOR = { Efectivo:'#6B7280', BHD:'#2E9E4F', Banreservas:'#1D4E9E', Caribe:'#E6B800' };
-const CUENTA_EMOJI = { Efectivo:'⚪', BHD:'🟢', Banreservas:'🔵', Caribe:'🟡' };
 function chipCuenta(c) {
   if (!c) return '';
   return '<span style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:' + (CUENTA_COLOR[c] || '#9CA3AF') + '"></span>' + escapeHtml(c) + '</span>';
 }
 const CUENTA_OPTS = (sel, vacio) => `<option value="">${vacio}</option>` +
-  cuentasActivas(sel).map(c => `<option value="${c}"${sel===c?' selected':''}>${CUENTA_EMOJI[c]} ${c}</option>`).join('');
+  cuentasActivas(sel).map(c => `<option value="${c}"${sel===c?' selected':''}>${c}</option>`).join('');   // el selector propio pinta el punto de color
 function abonosDe(c) {
   return Array.isArray(c.abonos) ? c.abonos.map(a => ({ fecha:a.fecha, monto:Number(a.monto)||0, cuenta:a.cuenta||'' })) : [];
 }
@@ -1209,7 +1208,7 @@ function dpAbrir(inp) {
       <div class="dp-sem">${['L','M','M','J','V','S','D'].map(x => `<span>${x}</span>`).join('')}</div>
       <div class="dp-grid">${celdas}</div>
       ${mapa ? '<div class="dp-ley"><i></i> Los puntos marcan días que ya tienen eventos (color = estado)</div>' : ''}
-      ${min ? '<div class="dp-ley">🔒 Las fechas pasadas no están disponibles</div>' : ''}
+      ${min ? '<div class="dp-ley">' + ico('candado', 13) + 'Las fechas pasadas no están disponibles</div>' : ''}
       <div class="mp-foot"><button type="button" class="mp-chip" data-hoy="1">Hoy</button>${inp.required ? '' : '<button type="button" class="mp-chip limpiar" data-limpiar="1">Quitar fecha</button>'}</div>`;
   };
   const elegir = v => {
@@ -1278,7 +1277,7 @@ function eventosPorDia() {
 }
 // Los de otras cotizaciones (la que se está editando no cuenta contra sí misma)
 const eventosDelDia = (mapa, iso) => ((mapa && mapa[iso]) || []).filter(c => c.id !== editingCotId);
-const lineaEvento = c => `<div class="dp-av-i"><i style="background:${ESTADO_COLOR[c.estado] || '#9CA3AF'}"></i><span>${escapeHtml(c.numero || '')} · ${escapeHtml(c.cliente_nombre || '')}${c.hora_evento ? ' · 🕒 ' + escapeHtml(c.hora_evento) : ''}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''} <small>(${escapeHtml(c.estado || '')})</small></span></div>`;
+const lineaEvento = c => `<div class="dp-av-i"><i style="background:${ESTADO_COLOR[c.estado] || '#9CA3AF'}"></i><span>${escapeHtml(c.numero || '')} · ${escapeHtml(c.cliente_nombre || '')}${c.hora_evento ? ' · ' + ico('reloj', 13) + escapeHtml(c.hora_evento) : ''}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''} <small>(${escapeHtml(c.estado || '')})</small></span></div>`;
 function avisoDe(el, ancla) {
   let a = el._aviso;
   if (!a) { a = document.createElement('div'); a.className = 'dp-aviso'; a.style.display = 'none'; ancla.insertAdjacentElement('afterend', a); el._aviso = a; }
@@ -1294,7 +1293,7 @@ async function dpAvisar(inp) {
   if (inp.value !== v) return;   // mientras tanto se eligió otra fecha
   const lista = eventosDelDia(mapa, v);
   if (!lista.length) { a.style.display = 'none'; horaAvisar(); return; }
-  a.innerHTML = `<div class="dp-av-t">⚠ Ese día ya hay ${lista.length === 1 ? '1 evento' : lista.length + ' eventos'}:</div>` + lista.map(lineaEvento).join('');
+  a.innerHTML = `<div class="dp-av-t">${ico('alerta', 14)}Ese día ya hay ${lista.length === 1 ? '1 evento' : lista.length + ' eventos'}:</div>` + lista.map(lineaEvento).join('');
   a.style.display = '';
   horaAvisar();
 }
@@ -1312,7 +1311,7 @@ function horaAvisar() {
   const a = avisoDe(hs, hs._sl.btn);
   const choca = hs.value && fe.value && eventosMapa ? eventosDelDia(eventosMapa, fe.value).filter(c => c.hora_evento === hs.value) : [];
   if (!choca.length) { a.style.display = 'none'; return; }
-  a.innerHTML = `<div class="dp-av-t">⚠ A esa hora ya hay ${choca.length === 1 ? 'un evento' : choca.length + ' eventos'}:</div>` + choca.map(lineaEvento).join('');
+  a.innerHTML = `<div class="dp-av-t">${ico('alerta', 14)}A esa hora ya hay ${choca.length === 1 ? 'un evento' : choca.length + ' eventos'}:</div>` + choca.map(lineaEvento).join('');
   a.style.display = '';
 }
 function dpMejorar(inp) {
@@ -2296,7 +2295,7 @@ window.saveCliente = async function(editId) {
   if (telNorm) {
     const dup = clientes.find(c => c.id !== editId && normalizarTel(c.telefono) === telNorm);
     if (dup) {
-      toast(`⚠️ El cliente “${dup.nombre}” ya está registrado con el número ${dup.telefono || telefono}. Cambia el número o déjalo vacío.`, 'error');
+      toast(`El cliente “${dup.nombre}” ya está registrado con el número ${dup.telefono || telefono}. Cambia el número o déjalo vacío.`, 'error');
       const inp = document.getElementById('fClienteTelefono');
       inp?.focus(); inp?.select();
       return;
@@ -2768,7 +2767,7 @@ window.removeItemRow = function(btn) {
 window.openSvcPicker = function() {
   document.getElementById('modalTitle').textContent = 'Agregar servicios';
   document.getElementById('modalBody').innerHTML = `
-    <input class="input" id="svcBuscar" placeholder="🔍 Toca aquí para buscar un servicio…" autocomplete="off" oninput="svcPickRender()">
+    <input class="input" id="svcBuscar" placeholder="Toca aquí para buscar un servicio…" autocomplete="off" oninput="svcPickRender()">
     <div id="svcPickInfo" style="font-size:0.76rem;color:var(--text-secondary);margin:8px 2px"></div>
     <div id="svcPickLista" style="max-height:52vh;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm)"></div>`;
   document.getElementById('modalFooter').innerHTML = `<button class="btn btn-secondary" onclick="svcPickCrear()">${ico('mas', 15)} Nuevo servicio</button><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>`;
@@ -2899,7 +2898,7 @@ function renderCotAbonos(total) {
         <div class="ab-main">
           <div class="ab-fecha">${formatDate(a.fecha ? a.fecha + 'T12:00:00' : '')}</div>
           <div class="ab-monto">${formatMoney(a.monto)}</div>
-          <div class="ab-cta">${a.cuenta ? `<span class="ab-rec">Recibido en </span><b>${escapeHtml(a.cuenta)}</b>` : '<span class="warn">⚠ Sin asignar cuenta</span>'}</div>
+          <div class="ab-cta">${a.cuenta ? `<span class="ab-rec">Recibido en </span><b>${escapeHtml(a.cuenta)}</b>` : '<span class="warn">' + ico('alerta', 14) + 'Sin asignar cuenta</span>'}</div>
         </div>
         <div class="ab-act">
           <button type="button" title="Editar" onclick="openAbonoModal(${idx})">${icoEditar}</button>
@@ -3021,7 +3020,7 @@ window.saveCotizacion = async function() {
         return firma && firma === firmaNueva;
       });
       if (similar) {
-        const ok = confirm(`⚠️ Ya existe una cotización similar para ${cliente?.nombre||'este cliente'}:\n\n${similar.numero} — ${formatMoney(similar.total)} (${similar.estado})\ncon los mismos servicios.\n\n¿Quieres crearla de todos modos?`);
+        const ok = confirm(`Ya existe una cotización similar para ${cliente?.nombre||'este cliente'}:\n\n${similar.numero} — ${formatMoney(similar.total)} (${similar.estado})\ncon los mismos servicios.\n\n¿Quieres crearla de todos modos?`);
         if (!ok) return;
       }
     } catch(e) { console.warn('No se pudo verificar duplicados de cotización:', e); }
@@ -3500,7 +3499,7 @@ window.saveGasto = async function(editId) {
       );
       if (dup) {
         const ref = cotNumero ? `la cotización ${cotNumero}` : 'un gasto general';
-        const ok = confirm(`⚠️ Ya existe un gasto de ${formatMoney(monto)} para ${ref} este mes ("${dup.descripcion}").\n\n¿Registrarlo de todos modos?`);
+        const ok = confirm(`Ya existe un gasto de ${formatMoney(monto)} para ${ref} este mes ("${dup.descripcion}").\n\n¿Registrarlo de todos modos?`);
         if (!ok) return;
       }
     } catch(e) { console.warn('No se pudo verificar duplicados de gasto:', e); }
@@ -3595,7 +3594,7 @@ window.ordenarCuentas = function(campo) {
 };
 function renderMovsCuentas() {
   document.getElementById('cuentasFiltros').innerHTML = ['', ...CUENTAS].map(c =>
-    `<button class="btn ${cuentasFiltro===c?'btn-primary':'btn-secondary'} btn-sm" onclick="filtrarCuenta('${c}')">${c ? (CUENTA_EMOJI[c] + ' ' + c) : 'Todas'}</button>`).join('');
+    `<button class="btn ${cuentasFiltro===c?'btn-primary':'btn-secondary'} btn-sm" onclick="filtrarCuenta('${c}')">${c ? chipCuenta(c) : 'Todas'}</button>`).join('');
   const base = cuentasFiltro ? cuentasMovs.filter(x => x.cuenta === cuentasFiltro) : cuentasMovs;
   const { campo, dir } = cuentasOrden;
   const lista = [...base].sort((a, b) => {
@@ -3610,7 +3609,7 @@ function renderMovsCuentas() {
       <td style="white-space:nowrap">${x.fecha ? formatDate(x.fecha + 'T12:00:00') : '—'}</td>
       <td><span class="badge ${x.tipo==='Ingreso'?'badge-pagada':'badge-anulada'}">${x.tipo}</span></td>
       <td>${x.cotId ? `<a href="#" title="Abrir cotización" onclick="event.preventDefault();openEditCotizacion('${x.cotId}')" style="color:inherit;cursor:pointer">${escapeHtml(x.detalle)}</a>` : escapeHtml(x.detalle)}</td>
-      <td>${x.cuenta ? chipCuenta(x.cuenta) : '<span style="color:#D97706">⚠ Sin asignar</span>'}</td>
+      <td>${x.cuenta ? chipCuenta(x.cuenta) : '<span style="color:#D97706">' + ico('alerta', 14) + 'Sin asignar</span>'}</td>
       <td><strong style="color:${x.tipo==='Ingreso'?'#16A34A':'#EF4444'}">${x.tipo==='Ingreso'?'+':'−'}${formatMoney(x.monto)}</strong></td>
     </tr>`).join('')
     : `<tr><td colspan="5"><div class="empty-state"><h3>Sin movimientos</h3><p>Los abonos y gastos con cuenta asignada aparecerán aquí</p></div></td></tr>`;
@@ -3640,7 +3639,7 @@ async function loadCierres() {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
           </button>
         </td>
-        <td style="white-space:nowrap"><strong>${String(c.mes).padStart(2,'0')}-${c.anio}</strong>${c.automatico ? '<div style="font-size:0.68rem;color:var(--text-secondary)">⚙ automático</div>' : ''}</td>
+        <td style="white-space:nowrap"><strong>${String(c.mes).padStart(2,'0')}-${c.anio}</strong>${c.automatico ? '<div style="font-size:0.68rem;color:var(--text-secondary)">' + ico('engrane', 12) + 'automático</div>' : ''}</td>
         <td>${c.n_cotizaciones||0}</td>
         <td>${c.n_solo_cotizadas ?? '—'}</td>
         <td>${c.n_reservadas ?? '—'}</td>
@@ -3903,8 +3902,8 @@ function cierreHtml(d, mesLabel) {
   const rojo = '#EF4444', verde = '#16A34A';
   const color = n => n >= 0 ? 'var(--morado)' : rojo;
   const link = c => `<a href="#" onclick="event.preventDefault();event.stopPropagation();openEditCotizacion('${c.id}')" style="color:inherit;cursor:pointer">${escapeHtml(c.numero||'')} · ${escapeHtml(c.cliente_nombre||'')}</a>`;
-  const infoEv = c => { const fe = fechaEventoISO(c); return (fe ? '🎈 ' + escapeHtml(fmtF(fe)) : '') + (c.tematica ? ' · ' + escapeHtml(c.tematica) : ''); };
-  const selCuenta = (tipo, ref) => `<select class="input" style="width:auto;max-width:140px;padding:3px 6px;font-size:0.76rem;border-color:#D97706;color:#B45309" onclick="event.stopPropagation()" onchange="asignarCuentaCierre(this,'${tipo}','${ref}')">${CUENTA_OPTS('', '⚠ Asignar…')}</select>`;
+  const infoEv = c => { const fe = fechaEventoISO(c); return (fe ? ico('cal', 13) + escapeHtml(fmtF(fe)) : '') + (c.tematica ? ' · ' + escapeHtml(c.tematica) : ''); };
+  const selCuenta = (tipo, ref) => `<select class="input" style="width:auto;max-width:140px;padding:3px 6px;font-size:0.76rem;border-color:#D97706;color:#B45309" onclick="event.stopPropagation()" onchange="asignarCuentaCierre(this,'${tipo}','${ref}')">${CUENTA_OPTS('', 'Asignar cuenta…')}</select>`;
   const kpi = (t, v, c, sub) => `<div class="metric-card"><div class="metric-label">${t}</div><div class="metric-value" style="color:${c};font-size:1.25rem">${v}</div>${sub ? `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">${sub}</div>` : ''}</div>`;
   // Sección plegable: el título y su total siempre se ven, aunque esté cerrada
   const secD = (id, titulo, resumen, cuerpo, def) => `<details class="cz-sec" id="${id}" data-k="${id}" ${cAbre(id, def) ? 'open' : ''} ontoggle="cierreToggle(this)">
@@ -3928,8 +3927,8 @@ function cierreHtml(d, mesLabel) {
       ${kpi('Eventos del mes', d.eventos.length, 'var(--morado)', d.conteo['Anulada'] ? `${d.conteo['Anulada']} anulada(s)` : '')}
     </div>
     ${(sinGastos || aviso) ? `<div class="cz-aviso">
-      ${sinGastos ? `<div>⚠ <strong>${sinGastos}</strong> evento(s) sin gastos registrados <button type="button" class="cz-ver" onclick="cierreIr('cz-eventos')">Ver</button></div>` : ''}
-      ${aviso ? `<div>⚠ ${escapeHtml(aviso)}</div>` : ''}</div>` : ''}
+      ${sinGastos ? `<div>${ico('alerta', 14)}<strong>${sinGastos}</strong> evento(s) sin gastos registrados <button type="button" class="cz-ver" onclick="cierreIr('cz-eventos')">Ver</button></div>` : ''}
+      ${aviso ? `<div>${ico('alerta', 14)}${escapeHtml(aviso)}</div>` : ''}</div>` : ''}
     <p style="font-size:0.76rem;color:var(--text-secondary);margin:10px 0 0">El dinero cuenta en el mes en que <strong>entró</strong> y los gastos en el mes en que se <strong>pagaron</strong>, sin importar la fecha del evento.</p></div>`;
 
   // ── Eventos del mes: cada uno compacto; al tocarlo se ve el desglose (gastos, totales y abonos con su fecha) ──
@@ -3942,12 +3941,12 @@ function cierreHtml(d, mesLabel) {
     return `<details class="cz-ev" data-k="${k}" ${cAbre(k, false) ? 'open' : ''} ontoggle="cierreToggle(this)">
       <summary>
         <div class="cz-ev-l"><div class="cz-ev-n">${escapeHtml(e.cot.numero||'')} · ${escapeHtml(e.cot.cliente_nombre||'')}</div>
-          <div class="cz-ev-s">${infoEv(e.cot)} ${badgeHtml(e.cot.estado)}${e.gastosDet.length ? '' : ' <span class="cz-warn">⚠ sin gastos</span>'}</div></div>
+          <div class="cz-ev-s">${infoEv(e.cot)} ${badgeHtml(e.cot.estado)}${e.gastosDet.length ? '' : ' <span class="cz-warn">' + ico('alerta', 13) + 'sin gastos</span>'}</div></div>
         <div class="cz-ev-r"><div style="font-weight:800;color:${color(e.utilidad)}">${$(e.utilidad)}</div><div class="cz-mini">neto</div></div>
       </summary>
       <div class="cz-ev-b">
-        <div style="padding:4px 0 2px">${e.gastosDet.length ? e.gastosDet.map(x => filaG(x.g)).join('') : '<div style="margin:4px 14px;padding:8px 10px;border-radius:var(--radius-sm);background:#FFF7E6;color:#B45309;font-size:0.82rem">⚠ Este evento aún no tiene gastos registrados. Agrega uno nuevo o vincula uno que ya exista.</div>'}</div>
-        <div class="acc-row" style="padding:2px 14px 12px"><button type="button" class="btn btn-secondary btn-sm acc-btn" onclick="openGastoModal(null,'${e.cot.id}',fechaCierre())"><span class="ic">＋</span>Gasto nuevo</button><button type="button" class="btn btn-secondary btn-sm acc-btn" onclick="vincularGastos('${e.cot.id}')"><span class="ic">🔗</span>Vincular existente</button><button type="button" class="btn btn-secondary btn-sm acc-btn" onclick="openEditCotizacion('${e.cot.id}')"><span class="ic">📄</span>Abrir cotización</button></div>
+        <div style="padding:4px 0 2px">${e.gastosDet.length ? e.gastosDet.map(x => filaG(x.g)).join('') : '<div style="margin:4px 14px;padding:8px 10px;border-radius:var(--radius-sm);background:#FFF7E6;color:#B45309;font-size:0.82rem">' + ico('alerta', 14) + 'Este evento aún no tiene gastos registrados. Agrega uno nuevo o vincula uno que ya exista.</div>'}</div>
+        <div class="acc-row" style="padding:2px 14px 12px"><button type="button" class="btn btn-secondary btn-sm acc-btn" onclick="openGastoModal(null,'${e.cot.id}',fechaCierre())"><span class="ic">${ico('mas', 16)}</span>Gasto nuevo</button><button type="button" class="btn btn-secondary btn-sm acc-btn" onclick="vincularGastos('${e.cot.id}')"><span class="ic">${ico('enlace', 16)}</span>Vincular existente</button><button type="button" class="btn btn-secondary btn-sm acc-btn" onclick="openEditCotizacion('${e.cot.id}')"><span class="ic">${ico('cot', 16)}</span>Abrir cotización</button></div>
         <div style="display:flex;justify-content:flex-end;padding:10px 14px;border-top:1px solid var(--border)"><div style="min-width:min(270px,100%);display:grid;gap:5px">
           ${filaT('Total de la cotización', $(e.total), 'inherit')}
           ${filaT('Cobrado', $(e.cobrado), 'inherit')}
@@ -3962,7 +3961,7 @@ function cierreHtml(d, mesLabel) {
         </div></div></details>`;
   }).join('');
   h += secD('cz-eventos', 'Eventos del mes',
-    `${d.eventos.length} evento(s)${sinGastos ? ` · <span class="cz-warn">⚠ ${sinGastos} sin gastos</span>` : ''}`,
+    `${d.eventos.length} evento(s)${sinGastos ? ` · <span class="cz-warn">${ico('alerta', 13)}${sinGastos} sin gastos</span>` : ''}`,
     `<div class="cz-sub">Toca un evento para ver sus gastos y abonos con fecha.</div>` + (d.eventos.length ? evHtml : vacio('No hubo eventos reservados, pagados o realizados ese mes.')), true);
 
   // ── Ingresos: una línea por aporte (fecha, evento, tipo y cuenta) ──
@@ -4001,7 +4000,7 @@ function cierreHtml(d, mesLabel) {
   const tarjetaEv = (nombre, x, total) => `<div class="cz-cta${total ? ' tot' : ''}">
     <div class="cz-cta-h">${total ? '<strong>TOTAL</strong>' : chipCuenta(nombre)}<strong style="color:${color(x.neto)}">${$(x.neto)}</strong></div>
     <div class="cz-cta-g"><div class="cz-kv"><span>Cobrado</span><span style="color:${verde}">${$(x.cobrado)}</span></div><div class="cz-kv"><span>Gastos</span><span style="color:${rojo}">${$(x.gastos)}</span></div>${verPorCobrar ? `<div class="cz-kv"><span>Por cobrar</span><span style="color:#D97706">${$(x.por_cobrar)}</span></div>` : ''}</div></div>`;
-  const sinTarjeta = (t, filas) => `<div class="cz-cta" style="border-color:#D97706;background:#FFFBF2"><div class="cz-cta-h"><strong style="color:#B45309">⚠ Sin asignar</strong><strong style="color:${color(t.neto)}">${$(t.neto)}</strong></div><div class="cz-cta-g">${filas}</div></div>`;
+  const sinTarjeta = (t, filas) => `<div class="cz-cta" style="border-color:#D97706;background:#FFFBF2"><div class="cz-cta-h"><strong style="color:#B45309">${ico('alerta', 14)}Sin asignar</strong><strong style="color:${color(t.neto)}">${$(t.neto)}</strong></div><div class="cz-cta-g">${filas}</div></div>`;
   const kv = (l, v, c) => `<div class="cz-kv"><span>${l}</span><span style="color:${c}">${$(v)}</span></div>`;
   const sEv = sinAsignarTot(d.sinEv), sCu = sinAsignarTot(d.sin);
   h += secD('cz-cuentas-ev', 'Dinero por eventos del mes', `Neto ${$(d.totalEv.neto)}`,
@@ -4037,10 +4036,10 @@ window.verCierre = async function(mesAnio, mesLabel) {
   document.getElementById('cierreBody').innerHTML = '<div class="loading-page"><div class="spinner"></div></div>';
   const puedeCompartir = !!(navigator.canShare && navigator.share);
   document.getElementById('cierreFooter').innerHTML = `
-    <button class="btn btn-secondary acc-btn" onclick="closeCierre()"><span class="ic">✕</span>Cerrar</button>
-    ${puedeCompartir ? `<button class="btn btn-secondary acc-btn" onclick="descargarPDFCierre('${mesAnio}','${mesLabel}',true)"><span class="ic">↗</span>Compartir</button>` : ''}
-    <button class="btn btn-secondary acc-btn" onclick="guardarCierreDesdeVista()" title="Guarda o actualiza el cierre de este mes con los datos actuales"><span class="ic">💾</span>Guardar cierre</button>
-    <button class="btn btn-primary acc-btn" onclick="descargarPDFCierre('${mesAnio}','${mesLabel}')"><span class="ic">⬇</span>Descargar PDF</button>`;
+    <button class="btn btn-secondary acc-btn" onclick="closeCierre()"><span class="ic">${ico('cerrar', 16)}</span>Cerrar</button>
+    ${puedeCompartir ? `<button class="btn btn-secondary acc-btn" onclick="descargarPDFCierre('${mesAnio}','${mesLabel}',true)"><span class="ic">${ico('compartir', 16)}</span>Compartir</button>` : ''}
+    <button class="btn btn-secondary acc-btn" onclick="guardarCierreDesdeVista()" title="Guarda o actualiza el cierre de este mes con los datos actuales"><span class="ic">${ico('guardar', 16)}</span>Guardar cierre</button>
+    <button class="btn btn-primary acc-btn" onclick="descargarPDFCierre('${mesAnio}','${mesLabel}')"><span class="ic">${ico('descargar', 16)}</span>Descargar PDF</button>`;
   document.getElementById('cierreBody').scrollTop = 0;
   document.getElementById('cierreOverlay').classList.add('open');
   try { await pintarCierre(); }
@@ -4574,6 +4573,23 @@ const ICONOS = {
   borrar: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
   mas: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
   caja: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><polyline points="3 8 3 16 12 21 21 16 21 8"/><line x1="12" y1="13" x2="12" y2="21"/>',
+  billetera: '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>',
+  tendencia: '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  barras: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+  banco: '<line x1="3" y1="21" x2="21" y2="21"/><line x1="5" y1="18" x2="5" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="19" y1="18" x2="19" y2="11"/><polygon points="12 3 21 8 3 8"/>',
+  telefono: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+  correo: '<rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 6 12 13 2 6"/>',
+  lista: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
+  dinero: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  candado: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  reloj: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>',
+  alerta: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  engrane: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9 7 7M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+  enlace: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  cerrar: '<path d="M18 6 6 18M6 6l12 12"/>',
+  compartir: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/>',
+  guardar: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+  descargar: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
 };
 function ico(n, t = 18) { return `<svg class="ico" width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[n] || ''}</svg>`; }
 const CATS_GASTO = ['Mobiliario','Decoración','Comida','Transporte','Insumos','Ayudante','Gastos de casa','Devolución','Otro'];
@@ -4787,7 +4803,7 @@ function qrHtml() {
           <button type="button" class="qr-chip" data-monto="${saldo}">Todo lo que debe · ${formatMoney(saldo)}</button>
           ${saldo >= 2 ? `<button type="button" class="qr-chip" data-monto="${Math.round(saldo / 2)}">La mitad · ${formatMoney(Math.round(saldo / 2))}</button>` : ''}
         </div>
-        ${m > saldo + 0.5 ? `<div class="qr-aviso">⚠ Es más de lo que debe (${formatMoney(saldo)}). Revisa el monto.</div>` : ''}
+        ${m > saldo + 0.5 ? `<div class="qr-aviso">${ico('alerta', 14)}Es más de lo que debe (${formatMoney(saldo)}). Revisa el monto.</div>` : ''}
         <div class="qr-lbl">¿En qué cuenta entró?</div>
         ${qrLista('cuenta', cuentasActivas(qr.cuenta), qr.cuenta, qrIcoCuenta, 'Elige la cuenta')}
         <div class="qr-lbl">Fecha del pago</div>
@@ -5068,14 +5084,13 @@ function qrIniciar() {
 
 // ============================================================
 // CUENTAS Y CATEGORÍAS DE GASTOS EDITABLES (Configuración)
-// Se guardan en config/listas. Al cargar, se aplican sobre CUENTAS / CUENTA_COLOR / CUENTA_EMOJI / CATS_GASTO,
+// Se guardan en config/listas. Al cargar, se aplican sobre CUENTAS / CUENTA_COLOR / CATS_GASTO,
 // así el resto del sistema (saldos, cierres, filtros) las usa sin más cambios.
 //  - Deshabilitada: no sale para anotar cosas nuevas, pero su historial y saldos se siguen viendo.
 //  - Renombrar: se actualizan los registros que la usan (gastos, abonos, cuenta de cobro y los cierres guardados).
 //  - Borrar: si tiene movimientos, primero se pasan a otra; así nada queda "Sin asignar".
 // ============================================================
-const PALETA_CUENTA = [['#6B7280','⚪'],['#2E9E4F','🟢'],['#1D4E9E','🔵'],['#E6B800','🟡'],['#DC2626','🔴'],['#7C3AED','🟣'],['#EA580C','🟠'],['#0891B2','🔵'],['#DB2777','🟣'],['#78350F','🟤']];
-const emojiDeColor = c => (PALETA_CUENTA.find(p => p[0].toLowerCase() === String(c || '').toLowerCase()) || [0, '⚪'])[1];
+const PALETA_CUENTA = ['#6B7280','#2E9E4F','#1D4E9E','#E6B800','#DC2626','#7C3AED','#EA580C','#0891B2','#DB2777','#78350F'];
 let listas = null;   // { cuentas:[{nombre,color,activa}], categorias:[{nombre,emoji,activa}] }
 let listasUsos = null; // { cuentas:{nombre:n}, categorias:{nombre:n} }
 
@@ -5088,8 +5103,7 @@ function listasPorDefecto() {
 function aplicarListas() {
   CUENTAS.splice(0, CUENTAS.length, ...listas.cuentas.map(c => c.nombre));
   Object.keys(CUENTA_COLOR).forEach(k => delete CUENTA_COLOR[k]);
-  Object.keys(CUENTA_EMOJI).forEach(k => delete CUENTA_EMOJI[k]);
-  listas.cuentas.forEach(c => { CUENTA_COLOR[c.nombre] = c.color; CUENTA_EMOJI[c.nombre] = emojiDeColor(c.color); });
+  listas.cuentas.forEach(c => { CUENTA_COLOR[c.nombre] = c.color; });
   CATS_GASTO.splice(0, CATS_GASTO.length, ...listas.categorias.map(c => c.nombre));
 }
 async function cargarListas() {
@@ -5204,12 +5218,12 @@ window.listaEditar = function(tipo, i) {
   const x = i >= 0 ? listas[tipo][i] : null;
   const esCuenta = tipo === 'cuentas';
   const usos = x && listasUsos ? (listasUsos[tipo][x.nombre] || 0) : 0;
-  const color = x?.color || PALETA_CUENTA.find(p => !listas.cuentas.some(c => c.color === p[0]))?.[0] || PALETA_CUENTA[0][0];
+  const color = x?.color || PALETA_CUENTA.find(p => !listas.cuentas.some(c => c.color === p)) || PALETA_CUENTA[0];
   abrirModalLista(x ? `Editar ${listaNombre(tipo)}` : `Nueva ${listaNombre(tipo)}`, `
     <div class="form-group"><label>Nombre</label>
       <input class="input" id="lcNombre" value="${escapeHtml(x?.nombre || '')}" maxlength="30" placeholder="${esCuenta ? 'Ej.: Popular' : 'Ej.: Publicidad'}" autocomplete="off"></div>
     ${esCuenta
-      ? `<div class="form-group"><label>Color</label><div class="lc-paleta">${PALETA_CUENTA.map(([c]) => `<button type="button" class="lc-sw${c === color ? ' sel' : ''}" data-c="${c}" style="background:${c}" onclick="document.querySelectorAll('.lc-sw').forEach(b=>b.classList.toggle('sel',b===this))" aria-label="Color ${c}"></button>`).join('')}</div></div>`
+      ? `<div class="form-group"><label>Color</label><div class="lc-paleta">${PALETA_CUENTA.map(c => `<button type="button" class="lc-sw${c === color ? ' sel' : ''}" data-c="${c}" style="background:${c}" onclick="document.querySelectorAll('.lc-sw').forEach(b=>b.classList.toggle('sel',b===this))" aria-label="Color ${c}"></button>`).join('')}</div></div>`
       : ''}
     ${x && usos ? `<p class="lc-nota">Si cambias el nombre, sus ${usos} movimiento(s) pasan al nombre nuevo.</p>` : ''}`,
     `<button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" id="lcGuardar" onclick="listaGuardar('${tipo}',${i})">Guardar</button>`);
@@ -5569,7 +5583,7 @@ window.loadDashboard = async function() {
           <div style="min-width:0;flex:1">
             <div style="font-size:0.8rem;font-weight:700;color:var(--morado)">${escapeHtml(c.numero||'')}</div>
             <div style="font-size:0.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(c.cliente_nombre||'—')}</div>
-            <div style="font-size:0.74rem;color:var(--text-secondary)">${fe ? '🎈 ' + fmtF(fe) : 'Sin fecha de evento'}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''} · ${hace(msCreada(c))}</div>
+            <div style="font-size:0.74rem;color:var(--text-secondary)">${fe ? ico('cal', 13) + fmtF(fe) : 'Sin fecha de evento'}${c.tematica ? ' · ' + escapeHtml(c.tematica) : ''} · ${hace(msCreada(c))}</div>
           </div>
           <div style="text-align:right;flex-shrink:0"><div style="font-weight:600;font-size:0.875rem">${formatMoney(c.total)}</div>${badgeHtml(c.estado)}</div>${DASH_FLECHA}
         </div>`;
@@ -5644,7 +5658,7 @@ window.renderGanancia = function() {
   };
   const bloqueMeses = meses.length > 1 ? `
     <div style="margin-top:18px">
-      <div style="font-weight:800;font-size:1rem">📊 Ganancia por mes</div>
+      <div style="font-weight:800;font-size:1rem">${ico('barras', 17)}Ganancia por mes</div>
       <div style="${meses.length > 8 ? 'max-height:460px;overflow-y:auto;' : ''}margin-top:2px">${meses.map(filaMes).join('')}</div>
       <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-weight:700"><span>Total del período</span><span style="color:${color(t.neto)}">${$(t.neto)}</span></div>
     </div>` : '';
@@ -5659,7 +5673,7 @@ window.renderGanancia = function() {
   const aviso = avisoSinCuenta(r.sin);
   const banco = `
     <details class="dash-det" style="margin-top:18px">
-      <summary><span>🏦 Para comparar con el banco</span><span style="color:var(--morado);white-space:nowrap">${$(r.total.saldo_final)} ▾</span></summary>
+      <summary><span>${ico('banco', 16)}Para comparar con el banco</span><span style="color:var(--morado);white-space:nowrap">${$(r.total.saldo_final)} ▾</span></summary>
       <div style="padding:2px 14px 14px">
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table class="table" style="font-size:0.82rem">
           <thead><tr><th>Cuenta</th><th style="text-align:right">Saldo inicial</th><th style="text-align:right">Recibido</th><th style="text-align:right">Gastado</th><th style="text-align:right">Debería haber</th></tr></thead>

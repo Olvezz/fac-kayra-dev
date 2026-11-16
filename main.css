@@ -1482,7 +1482,9 @@ body:has(.qr-fab) .toast-container { bottom: calc(92px + env(safe-area-inset-bot
 .svc-pick-nuevo .svc-pick-n { color: var(--morado); }
 
 /* ── Íconos de línea (en lugar de emojis) ── */
-.ico { flex-shrink: 0; vertical-align: -3px; }
+.ico { flex-shrink: 0; vertical-align: -0.18em; margin-right: 0.35em; }   /* ícono junto a un texto */
 .svc-pick-n .ico, .qr-vincular .ico, .btn .ico { margin-right: 6px; }
 .svc-pick-nuevo .ico { color: var(--morado); }
 .qr-op-ico .ico, .lc-acc .btn .ico { margin: 0; }
+
+.acc-btn .ic .ico { margin: 0; vertical-align: -3px; }   /* ícono solo (botones del cierre) */
