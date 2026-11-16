@@ -9,7 +9,8 @@
       ".firebaserc",
       "**/.*",
       "**/node_modules/**",
-      "scripts/**"
+      "scripts/**",
+      "video-demo/**"
     ]
   }
 }

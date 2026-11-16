@@ -14,7 +14,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">  
-  <link rel="stylesheet" href="main.css?v=20261116v">
+  <link rel="stylesheet" href="main.css?v=20261116w">
 </head>
 <body>
 <div style="position:fixed;top:8px;right:8px;z-index:9999;background:#D97706;color:#fff;font:700 11px/1 sans-serif;padding:6px 10px;border-radius:99px;letter-spacing:.5px;pointer-events:none">BETA · DATOS DE PRUEBA</div>
@@ -4577,7 +4577,6 @@ const ICONOS = {
 };
 function ico(n, t = 18) { return `<svg class="ico" width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[n] || ''}</svg>`; }
 const CATS_GASTO = ['Mobiliario','Decoración','Comida','Transporte','Insumos','Ayudante','Gastos de casa','Devolución','Otro'];
-const CAT_EMOJI = { 'Mobiliario':'🪑','Decoración':'🎈','Comida':'🍽️','Transporte':'🚚','Insumos':'📦','Ayudante':'🙋','Gastos de casa':'🏠','Devolución':'↩️','Otro':'✳️' };
 const QR_ESPERA_RED = 2500;   // si el servidor no confirma en este tiempo, se avisa que quedó guardado en el teléfono
 let qr = null;                // estado de la hoja abierta
 let qrGastosRecientes = null; // gastos de este mes y el anterior (para sugerir descripciones)
@@ -4585,7 +4584,6 @@ let qrGastosRecientes = null; // gastos de este mes y el anterior (para sugerir 
 const qrLeer = (k, def) => { try { return localStorage.getItem('qr_' + k) || def; } catch { return def; } };
 const qrGuardarPref = (k, v) => { try { localStorage.setItem('qr_' + k, v); } catch {} };
 const qrHoy = () => calHoyIso();
-const qrAyer = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dpIso(d.getFullYear(), d.getMonth() + 1, d.getDate()); };
 // "1,500.50" / "1500,5" / "RD$ 2 000" → número (la coma de miles o decimal se interpreta como en RD)
 function qrNumero(txt) {
   let s = String(txt || '').replace(/[^\d.,]/g, '');
@@ -4637,27 +4635,15 @@ function qrFilaCot(c, conSaldo) {
     ${conSaldo ? `<span class="qr-cot-saldo"><small>Debe</small>${formatMoney(qrSaldo(c))}</span>` : ''}
   </button>`;
 }
-const qrChips = (lista, sel, attr, extra = () => '') => lista.map(v =>
-  `<button type="button" class="qr-chip${v === sel ? ' sel' : ''}" data-${attr}="${escapeHtml(v)}"${extra(v)}>${escapeHtml(v)}</button>`).join('');
 // Lista desplegable de la hoja: un renglón con lo elegido; al tocarlo se abre la lista vertical
 const QR_FLECHA = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>';
 function qrLista(campo, opciones, sel, icono, vacio) {
   const abierta = qr.abierta === campo;
-  return `<button type="button" class="qr-select${abierta ? ' abierta' : ''}${sel ? '' : ' vacia'}" data-abrir="${campo}" aria-expanded="${abierta}">${sel ? icono(sel) : ''}<span class="qr-select-txt">${escapeHtml(sel || vacio)}</span>${QR_FLECHA}</button>
-    ${abierta ? `<div class="qr-opts" role="listbox">${opciones.map(o => `<button type="button" class="qr-opt${o === sel ? ' sel' : ''}" data-${campo}="${escapeHtml(o)}" role="option" aria-selected="${o === sel}">${icono(o)}${escapeHtml(o)}${o === sel ? '<b>✓</b>' : ''}</button>`).join('')}</div>` : ''}`;
+  return `<button type="button" class="qr-select${abierta ? ' abierta' : ''}${sel ? '' : ' vacia'}" data-abrir="${campo}" aria-expanded="${abierta}">${sel && icono ? icono(sel) : ''}<span class="qr-select-txt">${escapeHtml(sel || vacio)}</span>${QR_FLECHA}</button>
+    ${abierta ? `<div class="qr-opts" role="listbox">${opciones.map(o => `<button type="button" class="qr-opt${o === sel ? ' sel' : ''}" data-${campo}="${escapeHtml(o)}" role="option" aria-selected="${o === sel}">${icono ? icono(o) : ''}${escapeHtml(o)}${o === sel ? '<b>✓</b>' : ''}</button>`).join('')}</div>` : ''}`;
 }
-const qrIcoCat = () => '';   // las categorías van solo con texto
 const qrIcoCuenta = c => `<span class="qr-select-ico"><i class="qr-dot" style="background:${CUENTA_COLOR[c] || '#9CA3AF'}"></i></span>`;
 const qrFechaHtml = () => `<input type="date" class="input qr-fecha" max="${qrHoy()}" value="${qr.fecha || qrHoy()}" required>`;
-const qrChipsCuenta = sel => cuentasActivas(sel).map(c =>
-  `<button type="button" class="qr-chip qr-cuenta${c === sel ? ' sel' : ''}" data-cuenta="${c}" style="--c:${CUENTA_COLOR[c]}"><i></i>${c}</button>`).join('');
-function qrChipsFecha(sel) {
-  const hoy = qrHoy(), ayer = qrAyer(), otra = sel && sel !== hoy && sel !== ayer;
-  return `<button type="button" class="qr-chip${sel === hoy ? ' sel' : ''}" data-fecha="${hoy}">Hoy</button>
-    <button type="button" class="qr-chip${sel === ayer ? ' sel' : ''}" data-fecha="${ayer}">Ayer</button>
-    <button type="button" class="qr-chip${otra ? ' sel' : ''}" data-fecha-otra="1">📅 ${otra ? qrFechaCorta(sel) : 'Otra fecha'}</button>
-    <input type="date" class="qr-fecha-nativa" max="${hoy}" value="${sel || ''}" data-nativo="1" tabindex="-1" aria-hidden="true">`;
-}
 
 // ── Abrir / cerrar la hoja ──
 function qrMontar() {
@@ -4759,7 +4745,7 @@ function qrHtml() {
         <div class="qr-body">
           <label class="qr-monto gasto"><span>RD$</span><input class="qr-monto-inp" inputmode="decimal" enterkeyhint="done" placeholder="0" value="${escapeHtml(qr.monto)}" autocomplete="off" aria-label="Monto del gasto"></label>
           <div class="qr-lbl">Categoría</div>
-          ${qrLista('cat', catsActivas(qr.cat), qr.cat, qrIcoCat, 'Elige la categoría')}
+          ${qrLista('cat', catsActivas(qr.cat), qr.cat, null, 'Elige la categoría')}
           <div class="qr-lbl">¿De qué cuenta salió?</div>
           ${qrLista('cuenta', cuentasActivas(qr.cuenta), qr.cuenta, qrIcoCuenta, 'Elige la cuenta')}
           <div class="qr-lbl">Fecha</div>
@@ -4878,12 +4864,6 @@ function qrClick(e) {
   if (d.abrir) { qr.abierta = qr.abierta === d.abrir ? '' : d.abrir; return qrPintar(); }
   if (d.cat) { qr.cat = d.cat; qr.abierta = ''; return qrPintar(); }
   if (d.cuenta) { qr.cuenta = d.cuenta; qr.abierta = ''; return qrPintar(); }
-  if (d.fecha) { qr.fecha = d.fecha; return qrPintar(); }
-  if (d.fechaOtra) {
-    const fn = document.querySelector('#qrSheet .qr-fecha-nativa');
-    if (fn) { try { fn.showPicker(); } catch { fn.focus(); fn.click(); } }
-    return;
-  }
   if (d.monto) { qr.monto = String(d.monto); const i = document.querySelector('#qrSheet .qr-monto-inp'); if (i) i.value = qr.monto; return qrRefrescarPie(); }
   if (d.sug) { qr.desc = d.sug; const i = document.querySelector('#qrSheet .qr-desc'); if (i) i.value = d.sug; return qrPintarSugerencias(); }
   if (d.cotElegir) { qr.eligiendoCot = true; qr.busca = ''; return qrPintar(); }
@@ -5088,14 +5068,13 @@ function qrIniciar() {
 
 // ============================================================
 // CUENTAS Y CATEGORÍAS DE GASTOS EDITABLES (Configuración)
-// Se guardan en config/listas. Al cargar, se aplican sobre CUENTAS / CUENTA_COLOR / CUENTA_EMOJI / CATS_GASTO / CAT_EMOJI,
+// Se guardan en config/listas. Al cargar, se aplican sobre CUENTAS / CUENTA_COLOR / CUENTA_EMOJI / CATS_GASTO,
 // así el resto del sistema (saldos, cierres, filtros) las usa sin más cambios.
 //  - Deshabilitada: no sale para anotar cosas nuevas, pero su historial y saldos se siguen viendo.
 //  - Renombrar: se actualizan los registros que la usan (gastos, abonos, cuenta de cobro y los cierres guardados).
 //  - Borrar: si tiene movimientos, primero se pasan a otra; así nada queda "Sin asignar".
 // ============================================================
 const PALETA_CUENTA = [['#6B7280','⚪'],['#2E9E4F','🟢'],['#1D4E9E','🔵'],['#E6B800','🟡'],['#DC2626','🔴'],['#7C3AED','🟣'],['#EA580C','🟠'],['#0891B2','🔵'],['#DB2777','🟣'],['#78350F','🟤']];
-const EMOJIS_CAT = ['🪑','🎈','🍽️','🚚','📦','🙋','🏠','↩️','✳️','🎂','🧁','🎁','🔌','🧹','⛽','📣','🧾','💡','🛠️','🎨','👕','📱'];
 const emojiDeColor = c => (PALETA_CUENTA.find(p => p[0].toLowerCase() === String(c || '').toLowerCase()) || [0, '⚪'])[1];
 let listas = null;   // { cuentas:[{nombre,color,activa}], categorias:[{nombre,emoji,activa}] }
 let listasUsos = null; // { cuentas:{nombre:n}, categorias:{nombre:n} }
@@ -5103,7 +5082,7 @@ let listasUsos = null; // { cuentas:{nombre:n}, categorias:{nombre:n} }
 function listasPorDefecto() {
   return {
     cuentas: ['Efectivo','BHD','Banreservas','Caribe'].map(n => ({ nombre: n, color: CUENTA_COLOR[n] || '#6B7280', activa: true })),
-    categorias: CATS_GASTO.map(n => ({ nombre: n, emoji: CAT_EMOJI[n] || '✳️', activa: true })),
+    categorias: CATS_GASTO.map(n => ({ nombre: n, activa: true })),
   };
 }
 function aplicarListas() {
@@ -5112,7 +5091,6 @@ function aplicarListas() {
   Object.keys(CUENTA_EMOJI).forEach(k => delete CUENTA_EMOJI[k]);
   listas.cuentas.forEach(c => { CUENTA_COLOR[c.nombre] = c.color; CUENTA_EMOJI[c.nombre] = emojiDeColor(c.color); });
   CATS_GASTO.splice(0, CATS_GASTO.length, ...listas.categorias.map(c => c.nombre));
-  listas.categorias.forEach(c => { CAT_EMOJI[c.nombre] = c.emoji || '✳️'; });
 }
 async function cargarListas() {
   listas = listasPorDefecto();
@@ -5227,7 +5205,6 @@ window.listaEditar = function(tipo, i) {
   const esCuenta = tipo === 'cuentas';
   const usos = x && listasUsos ? (listasUsos[tipo][x.nombre] || 0) : 0;
   const color = x?.color || PALETA_CUENTA.find(p => !listas.cuentas.some(c => c.color === p[0]))?.[0] || PALETA_CUENTA[0][0];
-  const emoji = x?.emoji || '✳️';
   abrirModalLista(x ? `Editar ${listaNombre(tipo)}` : `Nueva ${listaNombre(tipo)}`, `
     <div class="form-group"><label>Nombre</label>
       <input class="input" id="lcNombre" value="${escapeHtml(x?.nombre || '')}" maxlength="30" placeholder="${esCuenta ? 'Ej.: Popular' : 'Ej.: Publicidad'}" autocomplete="off"></div>
@@ -5247,7 +5224,7 @@ window.listaGuardar = unaVez(async function(tipo, i) {
   const x = i >= 0 ? { ...lista[i] } : { nombre, activa: true };
   const viejo = i >= 0 ? lista[i].nombre : null;
   if (tipo === 'cuentas') x.color = document.querySelector('.lc-sw.sel')?.dataset.c || x.color || '#6B7280';
-  else x.emoji = document.querySelector('.lc-em.sel')?.dataset.e || x.emoji || '✳️';
+  delete x.emoji;   // las categorías ya no llevan ícono
   x.nombre = nombre;
   const btn = document.getElementById('lcGuardar'); if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
   try {

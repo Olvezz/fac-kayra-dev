@@ -1291,7 +1291,7 @@ body.menu-abierto { overflow: hidden !important; }
   .cal-l-dia { padding: 12px; }
 }
 
-/* ── Registro rápido (botón +, hoja de gasto/abono) ── */
+/* ── Registro rápido: botón +, hoja de Gasto / Abono / Nueva cotización ── */
 .qr-fab {
   position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 900;
   width: 58px; height: 58px; border-radius: 50%; border: none; background: var(--morado); color: #fff;
@@ -1301,10 +1301,12 @@ body.menu-abierto { overflow: hidden !important; }
 .qr-fab:hover { background: var(--morado-dark); }
 .qr-fab:active { transform: scale(.92); }
 body.menu-abierto .qr-fab, body.qr-abierto .qr-fab, body:has(.modal-overlay.open) .qr-fab, body:has(#cotModal.open) .qr-fab, body:has(#cierreOverlay.open) .qr-fab { display: none; }
-.qr-back { position: fixed; inset: 0; z-index: 3100; background: rgba(15, 15, 30, .45); opacity: 0; pointer-events: none; transition: opacity .18s; }
+body.qr-abierto { overflow: hidden; }
+/* La hoja queda por debajo de los desplegables propios de Kayra (calendario: 3000), así la fecha se abre encima */
+.qr-back { position: fixed; inset: 0; z-index: 2990; background: rgba(15, 15, 30, .45); opacity: 0; pointer-events: none; transition: opacity .18s; }
 .qr-back.open { opacity: 1; pointer-events: auto; }
 .qr-sheet {
-  position: fixed; z-index: 3101; left: 50%; top: 50%; width: min(460px, calc(100vw - 32px)); max-height: min(86vh, 760px);
+  position: fixed; z-index: 2995; left: 50%; top: 50%; width: min(460px, calc(100vw - 32px)); max-height: min(86vh, 760px);
   display: flex; flex-direction: column; background: #fff; border-radius: 18px; box-shadow: var(--shadow-lg);
   transform: translate(-50%, -46%); opacity: 0; pointer-events: none; transition: transform .2s ease, opacity .18s;
 }
@@ -1323,37 +1325,65 @@ body.menu-abierto .qr-fab, body.qr-abierto .qr-fab, body:has(.modal-overlay.open
 .qr-guardar.abono { background: #15803D; border-color: #15803D; }
 .qr-guardar:disabled { opacity: .45; }
 .qr-falta { margin-top: 6px; text-align: center; font-size: 0.78rem; color: #D97706; font-weight: 600; }
+
+/* Selector inicial */
 .qr-opciones { display: grid; gap: 12px; padding: 4px 0 8px; }
 .qr-op { display: flex; align-items: center; gap: 14px; padding: 18px 16px; border: 2px solid var(--border); border-radius: 16px; background: #fff; text-align: left; transition: border-color var(--transition), background var(--transition); }
 .qr-op b { display: block; font-size: 1.05rem; font-family: 'Fira Sans', sans-serif; }
 .qr-op small { display: block; margin-top: 2px; color: var(--text-secondary); font-size: 0.82rem; }
-.qr-op-ico { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0; }
-.qr-op.gasto .qr-op-ico { background: #FDECEC; }
-.qr-op.abono .qr-op-ico { background: #E7F7EE; }
+.qr-op-ico { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.qr-op.gasto .qr-op-ico { background: #FDECEC; color: #C0262D; }
+.qr-op.abono .qr-op-ico { background: #E7F7EE; color: #15803D; }
+.qr-op.cot .qr-op-ico { background: var(--morado-ghost); color: var(--morado); }
 .qr-op.gasto:active, .qr-op.gasto:hover { border-color: #C0262D; }
 .qr-op.abono:active, .qr-op.abono:hover { border-color: #15803D; }
-.qr-monto { display: flex; align-items: baseline; gap: 8px; padding: 10px 14px; border: 2px solid var(--border); border-radius: 16px; cursor: text; }
+.qr-op.cot:active, .qr-op.cot:hover { border-color: var(--morado); }
+
+/* Monto (centrado) */
+.qr-monto { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; border: 2px solid var(--border); border-radius: 16px; cursor: text; }
 .qr-monto:focus-within { border-color: var(--morado); }
 .qr-monto span { font-weight: 700; color: var(--text-secondary); font-size: 1.1rem; }
-.qr-monto-inp { flex: 1; min-width: 0; border: none; outline: none; background: transparent; font: 700 2.2rem/1.1 'Fira Sans', sans-serif; font-variant-numeric: tabular-nums; color: var(--text); padding: 0; }
+.qr-monto-inp {
+  flex: 0 1 auto; field-sizing: content; min-width: 1.4ch; max-width: 78%; text-align: center;
+  border: none; outline: none; background: transparent; padding: 0;
+  font: 700 2.2rem/1.1 'Fira Sans', sans-serif; font-variant-numeric: tabular-nums; color: var(--text);
+}
 .qr-monto.gasto .qr-monto-inp { color: #C0262D; }
 .qr-monto.abono .qr-monto-inp { color: #15803D; }
+
+/* Campos */
 .qr-lbl { margin: 16px 0 8px; font-size: 0.74rem; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-secondary); }
 .qr-lbl small { text-transform: none; letter-spacing: 0; font-weight: 500; }
-.qr-chips { display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
+.qr-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .qr-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 99px; background: #fff; font-size: 0.86rem; font-weight: 600; color: var(--text); transition: all var(--transition); }
 .qr-chip.sel { border-color: var(--morado); background: var(--morado-ghost); color: var(--morado); }
-.qr-cuenta i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
-.qr-cuenta.sel { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--text); }
-.qr-fecha-nativa { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; pointer-events: none; }
+.qr-rapidos { margin-top: 10px; }
+.qr-rapidos .qr-chip { font-size: 0.8rem; min-height: 36px; padding: 6px 12px; }
+/* Lista desplegable (categoría y cuenta) */
+.qr-select { width: 100%; min-height: 50px; display: flex; align-items: center; gap: 10px; padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 12px; background: #fff; font-size: 0.95rem; font-weight: 600; color: var(--text); text-align: left; }
+.qr-select.abierta { border-color: var(--morado); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.qr-select.vacia .qr-select-txt { color: var(--text-light); font-weight: 500; }
+.qr-select-txt { flex: 1; }
+.qr-select svg { color: var(--text-secondary); transition: transform var(--transition); }
+.qr-select.abierta svg { transform: rotate(180deg); color: var(--morado); }
+.qr-select-ico { width: 28px; text-align: center; flex-shrink: 0; }
+.qr-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; }
+.qr-opts { border: 1.5px solid var(--morado); border-top: none; border-radius: 0 0 12px 12px; overflow: hidden; }
+.qr-opt { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 8px 14px; border: none; border-top: 1px solid var(--border); background: #fff; font-size: 0.92rem; font-weight: 500; color: var(--text); text-align: left; }
+.qr-opt b { margin-left: auto; color: var(--morado); }
+.qr-opt.sel { background: var(--morado-ghost); color: var(--morado); font-weight: 700; }
+.qr-opt:active { background: var(--morado-ghost); }
+.qr-sheet .dp-btn { width: 100%; min-height: 50px; border-radius: 12px; font-size: 0.95rem; }
 .qr-desc { min-height: 44px; }
 .qr-sugs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .qr-sugs:empty { display: none; }
 .qr-sug { padding: 6px 11px; border: none; border-radius: 99px; background: var(--bg); font-size: 0.8rem; color: var(--text-secondary); }
-.qr-vincular { width: 100%; min-height: 46px; border: 1.5px dashed var(--border); border-radius: 12px; background: #fff; color: var(--morado); font-weight: 600; font-size: 0.88rem; }
+.qr-vincular { width: 100%; min-height: 46px; display: flex; align-items: center; justify-content: center; border: 1.5px dashed var(--border); border-radius: 12px; background: #fff; color: var(--morado); font-weight: 600; font-size: 0.88rem; }
 .qr-cot-elegida { display: flex; align-items: center; gap: 6px; }
 .qr-cot-elegida .qr-cot { flex: 1; margin-bottom: 0; }
-.qr-quitar { width: 40px; height: 40px; border: none; border-radius: 50%; background: var(--bg); color: var(--text-secondary); flex-shrink: 0; }
+.qr-quitar { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 50%; background: var(--bg); color: var(--text-secondary); flex-shrink: 0; }
+
+/* Lista de eventos (abono y vincular gasto) */
 .qr-buscar { padding: 10px 18px 4px; }
 .qr-buscar-inp { min-height: 44px; }
 .qr-lista { padding-top: 6px; }
@@ -1374,9 +1404,9 @@ body.menu-abierto .qr-fab, body.qr-abierto .qr-fab, body:has(.modal-overlay.open
 .qr-evento-nums { display: flex; gap: 14px; margin-top: 10px; font-size: 0.72rem; color: var(--text-secondary); }
 .qr-evento-nums b { display: block; font-size: 0.9rem; color: var(--text); font-variant-numeric: tabular-nums; }
 .qr-evento-nums .debe b { color: #D97706; }
-.qr-rapidos { margin-top: 10px; }
-.qr-rapidos .qr-chip { font-size: 0.8rem; min-height: 36px; padding: 6px 12px; }
 .qr-aviso { margin-top: 10px; padding: 9px 12px; border-radius: 10px; background: #FFF7E6; color: #B45309; font-size: 0.82rem; font-weight: 600; }
+
+/* Aviso con "Deshacer" */
 .qr-snack {
   position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 3200; width: min(440px, calc(100vw - 24px));
   display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 16px; border-radius: 14px; background: #1A1A2E; color: #fff;
@@ -1388,7 +1418,13 @@ body.menu-abierto .qr-fab, body.qr-abierto .qr-fab, body:has(.modal-overlay.open
 .qr-snack-txt b { display: block; }
 .qr-snack-txt span { display: block; opacity: .85; font-size: 0.8rem; margin-top: 1px; }
 .qr-snack-btn { flex-shrink: 0; min-height: 40px; padding: 0 14px; border: none; border-radius: 10px; background: rgba(255,255,255,.14); color: #FBCFE8; font-weight: 700; font-size: 0.86rem; }
-.qr-switch { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+/* Los avisos normales van por encima del botón + y de la hoja */
+.toast-container { z-index: 3300; }
+body:has(.qr-fab) .toast-container { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+
+/* Interruptor "Sacudir el teléfono para anotar" (Configuración) */
+.qr-switch { display: flex; align-items: center; gap: 12px; cursor: pointer; text-transform: none; letter-spacing: 0; font-size: 0.92rem; color: var(--text); font-weight: 600; }
+.qr-switch b { font-weight: 600; }
 .qr-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .qr-switch span { width: 46px; height: 28px; border-radius: 99px; background: #D1D5DB; position: relative; flex-shrink: 0; transition: background var(--transition); }
 .qr-switch span::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: var(--shadow-sm); transition: transform var(--transition); }
@@ -1396,96 +1432,57 @@ body.menu-abierto .qr-fab, body.qr-abierto .qr-fab, body:has(.modal-overlay.open
 .qr-switch input:checked + span::after { transform: translateX(18px); }
 .qr-switch input:disabled + span { opacity: .4; }
 .qr-ajuste-nota { margin: 6px 0 0 58px; font-size: 0.78rem; color: var(--text-secondary); }
-body.qr-abierto { overflow: hidden; }
 
 @media (max-width: 768px) {
   .qr-fab { right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
-  .qr-sheet {
+  .qr-sheet {   /* hoja que sube desde abajo; qrAjustarTeclado() la sube encima del teclado */
     left: 0; right: 0; top: auto; bottom: 0; width: 100%; max-height: 92dvh; border-radius: 20px 20px 0 0;
-    transform: translateY(100%); opacity: 1;
+    transform: translateY(100%); opacity: 1; transition: transform .2s ease, bottom .12s ease;
   }
   .qr-sheet.open { transform: translateY(0); }
   .qr-sheet::before { content: ''; position: absolute; top: 6px; left: 50%; width: 38px; height: 4px; margin-left: -19px; border-radius: 99px; background: #D1D5DB; }
+  .qr-sheet[data-paso="abono-lista"], .qr-sheet[data-paso="gasto-cot"] { min-height: 60dvh; }
   .qr-head { padding-top: 16px; }
   .qr-foot { border-radius: 0; }
-  .qr-sheet[data-paso="abono-lista"], .qr-sheet[data-paso="gasto-cot"] { min-height: 60dvh; }
-}
-@media (max-width: 768px) {
-  .qr-sheet { transition: transform .2s ease, bottom .12s ease; }
-  .qr-sheet[data-paso="abono-lista"], .qr-sheet[data-paso="gasto-cot"] { height: auto; min-height: 60dvh; }
   .page { padding-bottom: 96px; }   /* que el botón + no tape lo último de cada lista */
+  body:has(.qr-fab) .toast-container { left: 12px; right: 12px; align-items: center; }
 }
-.qr-select { width: 100%; min-height: 50px; display: flex; align-items: center; gap: 10px; padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 12px; background: #fff; font-size: 0.95rem; font-weight: 600; color: var(--text); text-align: left; }
-.qr-select.abierta { border-color: var(--morado); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-.qr-select-txt { flex: 1; }
-.qr-select svg { color: var(--text-secondary); transition: transform var(--transition); }
-.qr-select.abierta svg { transform: rotate(180deg); color: var(--morado); }
-.qr-select-ico { width: 28px; text-align: center; font-size: 1.1rem; flex-shrink: 0; }
-.qr-opts { border: 1.5px solid var(--morado); border-top: none; border-radius: 0 0 12px 12px; overflow: hidden; }
-.qr-opt { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 8px 14px; border: none; border-top: 1px solid var(--border); background: #fff; font-size: 0.92rem; font-weight: 500; color: var(--text); text-align: left; }
-.qr-opt b { margin-left: auto; color: var(--morado); }
-.qr-opt.sel { background: var(--morado-ghost); color: var(--morado); font-weight: 700; }
-.qr-opt:active { background: var(--morado-ghost); }
-/* Monto centrado */
-.qr-monto { justify-content: center; align-items: center; padding: 14px; }
-.qr-monto-inp { flex: 0 1 auto; field-sizing: content; min-width: 1.4ch; max-width: 78%; text-align: center; }
 
-/* Cuentas y categorías (Configuración) */
+/* ── Cuentas y categorías de gastos (Configuración) ── */
 .lc-sec { margin-top: 16px; }
 .lc-tit { font-size: 0.74rem; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; }
 .lc-fila { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--border); }
 .lc-fila.off { opacity: .55; }
 .lc-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
-.lc-emoji { width: 22px; text-align: center; font-size: 1.05rem; flex-shrink: 0; }
 .lc-nom { flex: 1; min-width: 0; }
 .lc-nom b { display: block; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lc-nom small { font-size: 0.74rem; color: var(--text-secondary); }
 .lc-tag { color: #B45309; font-weight: 700; }
 .lc-acc { display: flex; gap: 2px; flex-shrink: 0; }
-.lc-acc .btn { padding: 6px 8px; font-size: 0.78rem; min-height: 36px; }
-.lc-borrar { color: #DC2626; }
+.lc-acc .btn { padding: 6px 8px; font-size: 0.78rem; min-height: 36px; color: var(--text-secondary); }
+.lc-acc .lc-borrar { color: #DC2626; }
 .lc-add { margin-top: 10px; }
 .lc-paleta { display: flex; flex-wrap: wrap; gap: 8px; }
 .lc-sw { width: 38px; height: 38px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--border); }
 .lc-sw.sel { box-shadow: 0 0 0 3px var(--morado); }
-.lc-em { width: 42px; height: 42px; border-radius: 10px; border: 1.5px solid var(--border); background: #fff; font-size: 1.25rem; }
-.lc-em.sel { border-color: var(--morado); background: var(--morado-ghost); }
 .lc-nota { margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary); }
 @media (max-width: 480px) { .lc-acc .btn:nth-child(2) { font-size: 0.72rem; padding: 6px 6px; } }
-/* La hoja queda por debajo de los desplegables propios de Kayra (calendario 3000): así la fecha se abre encima */
-.qr-back { z-index: 2990; }
-.qr-sheet { z-index: 2995; }
-.qr-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; }
-.qr-select.vacia .qr-select-txt { color: var(--text-light); font-weight: 500; }
-.qr-sheet .dp-btn { width: 100%; min-height: 50px; border-radius: 12px; font-size: 0.95rem; }
 
-/* Agenda del dashboard: pestañas a la izquierda y un solo botón a la derecha, en un renglón */
+/* ── Agenda del dashboard: pestañas a la izquierda y un solo botón a la derecha, en un renglón ── */
 .dash-agenda-head { gap: 8px; flex-wrap: nowrap; }
 .dash-agenda-head .dash-ir { white-space: nowrap; flex-shrink: 0; }
 @media (max-width: 420px) {
-  .dash-agenda-head { padding: 12px 12px; }
+  .dash-agenda-head { padding: 12px; }
   .dash-agenda-head .dash-tab { padding: 9px 11px; font-size: 0.8rem; }
   .dash-agenda-head .dash-ir { padding: 6px 8px; font-size: 0.8rem; }
 }
-/* Etiqueta del interruptor de sacudir: texto normal (no el estilo de etiqueta de formulario) */
-.qr-switch, .qr-switch b { text-transform: none; letter-spacing: 0; font-size: 0.92rem; color: var(--text); font-weight: 600; }
-/* Los avisos van por encima del botón + (no tapados por él) y por encima de la hoja */
-.toast-container { z-index: 3300; }
-body:has(.qr-fab) .toast-container { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
-@media (max-width: 768px) { body:has(.qr-fab) .toast-container { left: 12px; right: 12px; align-items: center; } }
-.qr-op.cot .qr-op-ico { background: var(--morado-ghost); }
-.qr-op.cot:active, .qr-op.cot:hover { border-color: var(--morado); }
+
+/* ── Selector de servicios: crear en el catálogo ── */
 .svc-pick-nuevo { background: var(--morado-ghost); }
 .svc-pick-nuevo .svc-pick-n { color: var(--morado); }
-/* Íconos de línea en lo nuevo (en lugar de emojis) */
+
+/* ── Íconos de línea (en lugar de emojis) ── */
 .ico { flex-shrink: 0; vertical-align: -3px; }
 .svc-pick-n .ico, .qr-vincular .ico, .btn .ico { margin-right: 6px; }
 .svc-pick-nuevo .ico { color: var(--morado); }
-.qr-op-ico .ico { margin: 0; }
-.qr-op.gasto .qr-op-ico { color: #C0262D; }
-.qr-op.abono .qr-op-ico { color: #15803D; }
-.qr-op.cot .qr-op-ico { color: var(--morado); }
-.qr-vincular { display: flex; align-items: center; justify-content: center; }
-.lc-acc .btn { color: var(--text-secondary); }
-.lc-acc .btn .ico { margin: 0; }
-.lc-acc .lc-borrar { color: #DC2626; }
+.qr-op-ico .ico, .lc-acc .btn .ico { margin: 0; }
