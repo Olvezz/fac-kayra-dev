@@ -4788,7 +4788,8 @@ function qrPintar(enfocar) {
   const fe = sh.querySelector('.qr-fecha');   // el mismo calendario de fechas del resto de Kayra
   if (fe) { dpMejorar(fe); fe.addEventListener('change', () => { if (fe.value) qr.fecha = fe.value > qrHoy() ? qrHoy() : fe.value; }); }
   if (qr.paso === 'gasto' && !qr.eligiendoCot) qrPintarSugerencias();
-  if (enfocar) {
+  // En el celular el teclado NO se abre solo: sale cuando se toca el monto. En PC (sin teclado en pantalla) sí se pone el cursor.
+  if (enfocar && !matchMedia('(pointer: coarse)').matches) {
     const foco = sh.querySelector('.qr-monto-inp') || (window.innerWidth > 768 ? sh.querySelector('.qr-buscar-inp') : null);
     if (foco) { foco.focus({ preventScroll: true }); const n = foco.value.length; try { foco.setSelectionRange(n, n); } catch {} }
   }
