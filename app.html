@@ -1397,6 +1397,7 @@ let appConfig   = {};
 let clientes    = [];
 let catalogo    = [];
 let editingCotId = null;
+let cotCargando = false;    // true mientras se abre una cotización: el estado no se auto-ajusta con totales a medias
 let cotAbonosActuales = []; // abonos de la cotización que se está creando/editando: [{fecha, monto}]
 let editingCotAntes = null; // snapshot de la cotización antes de editarla (para el detalle del log)
 let afterClienteSave = null; // callback para cotización
@@ -2482,7 +2483,10 @@ window.openEditCotizacion = async function(id) {
   document.getElementById('cotNotas').value       = c.notas || '';
   // Items
   document.getElementById('cotItems').innerHTML = '';
-  (c.items || []).forEach(it => addItemRow(it, { abierto: false }));
+  // Los items se agregan uno a uno y cada uno recalcula: con el total a medias, los abonos
+  // parecerían cubrirlo y el estado saltaría a "Pagada". Se carga todo y luego se recalcula.
+  cotCargando = true;
+  try { (c.items || []).forEach(it => addItemRow(it, { abierto: false })); } finally { cotCargando = false; }
   recalcTotales();
   document.getElementById('cotModal').classList.add('open');
 };
@@ -2700,7 +2704,7 @@ window.recalcTotales = function() {
   // reserva (Cotización → Reservado); cubrir el total la marca Pagada.
   // Nunca retrocede el estado ni toca Realizado/Anulada.
   const estadoSel = document.getElementById('cotEstado');
-  if (estadoSel) {
+  if (estadoSel && !cotCargando) {
     const anterior = estadoSel.value;
     const abonoActual = sumaAbonos();
     if (abonoActual > 0 && estadoSel.value === 'Cotización') estadoSel.value = 'Reservado';
