@@ -18,7 +18,7 @@ App web / PWA (HTML + Firebase) para cotizaciones, gastos, cuentas y cierres men
 - Excepción: una cotización *Pagada/Realizado* con saldo sin abono registrado no tiene fecha de cobro, y ese saldo cuenta en el mes del **evento**.
 - La fecha del evento solo enlaza y agrupa (cotizaciones del mes, conteos, eventos del mes).
 
-Estados: `Cotización → Reservado → Pagada → Realizado` (o `Anulada`). *Pagada* y *Realizado* cuentan el total como cobrado; en *Reservado* solo cuentan los abonos. Los abonos de una anulada se conservan; una devolución se registra como gasto. El estado avanza solo con los abonos: el primero pasa *Cotización* a *Reservado* y cubrir el total la marca *Pagada* (nunca retrocede ni toca *Realizado*/*Anulada*).
+Estados: `Cotización → Reservado → Pagada → Realizado` (o `Anulada`). *Pagada* y *Realizado* cuentan el total como cobrado; en *Reservado* solo cuentan los abonos. Los abonos de una anulada se conservan en las cuentas (al anularla sale un aviso); una devolución se registra como gasto. Una cotización con abonos nunca se borra sola, y al eliminarla a mano se avisa que ese dinero dejaría de contar. El estado avanza solo con los abonos: el primero pasa *Cotización* a *Reservado* y cubrir el total la marca *Pagada* (nunca retrocede ni toca *Realizado*/*Anulada*).
 
 Total de una cotización: `Σ cant × precio × (1 − desc%)` + ITBIS (Configuración) + transporte.
 

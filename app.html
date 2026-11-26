@@ -1962,16 +1962,18 @@ async function autoGestionarEventosVencidos() {
       const fe = c.fecha_evento.toDate ? c.fecha_evento.toDate() : new Date(c.fecha_evento);
       const diasPasados = (hoy - fe) / 86400000;
       if (diasPasados < 0) continue; // el evento todavía no ha pasado
+      // Con abonos nunca se borra: ese dinero entró y debe seguir contando en las cuentas.
+      const conDinero = abonosDe(c).some(a => a.monto > 0) || Number(c.abono) > 0;
 
       if (c.estado === 'Reservado') {
         if (diasPasados < DIAS_GRACIA) continue; // plazo de gracia: todavía se puede marcar como pagada/realizada
         await updateDoc(doc(db,'cotizaciones',d.id), { estado:'Anulada', auto_anulada_por_evento:true, actualizado_en: serverTimestamp() });
         await logAccion('Anuló', 'Cotización', `${c.numero} · pasaron ${DIAS_GRACIA}+ días del evento sin marcarse como realizado/pagado`, 'Sistema');
-        if (diasPasados > LIMITE_DIAS) {
+        if (diasPasados > LIMITE_DIAS && !conDinero) {
           await deleteDoc(doc(db,'cotizaciones',d.id));
           await logAccion('Eliminó', 'Cotización', `${c.numero} · ${LIMITE_DIAS} días desde el evento sin completarse`, 'Sistema');
         }
-      } else if (c.estado === 'Anulada' && c.auto_anulada_por_evento && diasPasados > LIMITE_DIAS) {
+      } else if (c.estado === 'Anulada' && c.auto_anulada_por_evento && diasPasados > LIMITE_DIAS && !conDinero) {
         await deleteDoc(doc(db,'cotizaciones',d.id));
         await logAccion('Eliminó', 'Cotización', `${c.numero} · ${LIMITE_DIAS} días desde el evento sin completarse`, 'Sistema');
       }
@@ -2491,6 +2493,12 @@ window.openEditCotizacion = async function(id) {
   document.getElementById('cotModal').classList.add('open');
 };
 window.closeCotModal = () => document.getElementById('cotModal').classList.remove('open');
+// Al anular una cotización con abonos, el dinero se queda en las cuentas (no se resta).
+document.getElementById('cotEstado')?.addEventListener('change', e => {
+  const abonado = sumaAbonos();
+  if (e.target.value === 'Anulada' && abonado > 0)
+    toast(`Los abonos (${formatMoney(abonado)}) se quedan en las cuentas. Si devolviste dinero, anótalo como gasto.`, 'info');
+});
 
 window.onClienteSelect = function(clienteId) {
   const c = clientes.find(x => x.id === clienteId);
@@ -2914,7 +2922,17 @@ window.saveCotizacion = async function() {
 };
 
 window.deleteCotizacion = async function(id, numero) {
-  if (!confirm(`¿Eliminar la cotización ${numero}?`)) return;
+  // Si tiene abonos, borrarla saca ese dinero de las cuentas: se sugiere anularla (los abonos se quedan).
+  let abonado = 0;
+  try { const s = await getDoc(doc(db,'cotizaciones',id)); if (s.exists()) { const c = s.data(); abonado = abonosDe(c).reduce((x, a) => x + a.monto, 0) || Number(c.abono) || 0; } } catch(e) {}
+  const msj = abonado > 0
+    ? `La cotización ${numero} tiene ${formatMoney(abonado)} en abonos.
+
+Si la eliminas, ese dinero deja de contar en las cuentas. Para que se quede, mejor cámbiala a "Anulada".
+
+¿Eliminarla de todos modos?`
+    : `¿Eliminar la cotización ${numero}?`;
+  if (!confirm(msj)) return;
   await deleteDoc(doc(db,'cotizaciones',id));
   logAccion('Eliminó', 'Cotización', numero);
   loadCotizaciones();
